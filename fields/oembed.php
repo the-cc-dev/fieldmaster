@@ -1,19 +1,19 @@
 <?php
 
 /*
-*  Fields API oEmbed Field Class
+*  FieldMaster oEmbed Field Class
 *
 *  All the logic for this field type
 *
-*  @class 		fields_field_oembed
-*  @extends		fields_field
-*  @package		Fields API
+*  @class 		fieldmaster_field_oembed
+*  @extends		fieldmaster_field
+*  @package		FieldMaster
 *  @subpackage	Fields
 */
 
-if( ! class_exists('fields_field_oembed') ) :
+if( ! class_exists('fieldmaster_field_oembed') ) :
 
-class fields_field_oembed extends fields_field {
+class fieldmaster_field_oembed extends fieldmaster_field {
 	
 	
 	/*
@@ -307,7 +307,7 @@ class fields_field_oembed extends fields_field {
 	
 }
 
-new fields_field_oembed();
+new fieldmaster_field_oembed();
 
 endif;
 

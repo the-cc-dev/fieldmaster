@@ -469,7 +469,7 @@ function have_rows( $selector, $post_id = false ) {
 	
 	
 	// empty?
-	if( empty($GLOBALS['fields_field']) ) {
+	if( empty($GLOBALS['fieldmaster_field']) ) {
 		
 		// reset
 		reset_rows( true );
@@ -481,8 +481,8 @@ function have_rows( $selector, $post_id = false ) {
 	} else {
 		
 		// vars
-		$row = end( $GLOBALS['fields_field'] );
-		$prev = prev( $GLOBALS['fields_field'] );
+		$row = end( $GLOBALS['fieldmaster_field'] );
+		$prev = prev( $GLOBALS['fieldmaster_field'] );
 		$change = false;
 		
 		
@@ -570,7 +570,7 @@ function have_rows( $selector, $post_id = false ) {
 		
 		
 		// add row
-		$GLOBALS['fields_field'][] = array(
+		$GLOBALS['fieldmaster_field'][] = array(
 			'selector'	=> $selector,
 			'name'		=> $field['name'], // used by update_sub_field
 			'value'		=> $value,
@@ -584,7 +584,7 @@ function have_rows( $selector, $post_id = false ) {
 		// vars
 		$value = $row['value'][ $row['i'] ][ $sub_field['key'] ];
 		
-		$GLOBALS['fields_field'][] = array(
+		$GLOBALS['fieldmaster_field'][] = array(
 			'selector'	=> $selector,
 			'name'		=> $row['name'] . '_' . $row['i'], // used by update_sub_field
 			'value'		=> $value,
@@ -597,7 +597,7 @@ function have_rows( $selector, $post_id = false ) {
 	
 	
 	// update vars
-	$row = end( $GLOBALS['fields_field'] );
+	$row = end( $GLOBALS['fieldmaster_field'] );
 	
 	
 	
@@ -635,11 +635,11 @@ function have_rows( $selector, $post_id = false ) {
 function the_row( $format = false ) {
 	
 	// vars
-	$depth = count($GLOBALS['fields_field']) - 1;
+	$depth = count($GLOBALS['fieldmaster_field']) - 1;
 
 	
 	// increase i of current row
-	$GLOBALS['fields_field'][ $depth ]['i']++;
+	$GLOBALS['fieldmaster_field'][ $depth ]['i']++;
 	
 	
 	// return
@@ -688,9 +688,9 @@ function get_row( $format = false ) {
 function fields_get_row() {
 	
 	// check and return row
-	if( !empty($GLOBALS['fields_field']) ) {
+	if( !empty($GLOBALS['fieldmaster_field']) ) {
 		
-		return end( $GLOBALS['fields_field'] );
+		return end( $GLOBALS['fieldmaster_field'] );
 		
 	}
 	
@@ -720,20 +720,20 @@ function reset_rows( $hard_reset = false ) {
 	// completely destroy?
 	if( $hard_reset )
 	{
-		$GLOBALS['fields_field'] = array();
+		$GLOBALS['fieldmaster_field'] = array();
 	}
 	else
 	{
 		// vars
-		$depth = count( $GLOBALS['fields_field'] ) - 1;
+		$depth = count( $GLOBALS['fieldmaster_field'] ) - 1;
 		
 		
 		// remove
-		unset( $GLOBALS['fields_field'][$depth] );
+		unset( $GLOBALS['fieldmaster_field'][$depth] );
 		
 		
 		// refresh index
-		$GLOBALS['fields_field'] = array_values($GLOBALS['fields_field']);
+		$GLOBALS['fieldmaster_field'] = array_values($GLOBALS['fieldmaster_field']);
 	}
 	
 	
@@ -975,7 +975,7 @@ function get_row_layout() {
 /*
 *  fields_shortcode()
 *
-*  This function is used to add basic shortcode support for the Fields API plugin
+*  This function is used to add basic shortcode support for the FieldMaster plugin
 *  eg. [fields field="heading" post_id="123" format_value="1"]
 *
 *  @type	function
@@ -1218,7 +1218,7 @@ function _fields_pre_save_post( $post_id, $form ) {
 /*
 *  fields_form()
 *
-*  This function is used to create an Fields API form.
+*  This function is used to create an FieldMaster form.
 *
 *  @type	function
 *  @since	1.1.4

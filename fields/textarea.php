@@ -1,19 +1,19 @@
 <?php
 
 /*
-*  Fields API Text Area Field Class
+*  FieldMaster Text Area Field Class
 *
 *  All the logic for this field type
 *
-*  @class 		fields_field_textarea
-*  @extends		fields_field
-*  @package		Fields API
+*  @class 		fieldmaster_field_textarea
+*  @extends		fieldmaster_field
+*  @package		FieldMaster
 *  @subpackage	Fields
 */
 
-if( ! class_exists('fields_field_textarea') ) :
+if( ! class_exists('fieldmaster_field_textarea') ) :
 
-class fields_field_textarea extends fields_field {
+class fieldmaster_field_textarea extends fieldmaster_field {
 	
 	
 	/*
@@ -132,7 +132,7 @@ class fields_field_textarea extends fields_field {
 	
 	function render_field_settings( $field ) {
 		
-		// Fields API4 migration
+		// FieldMaster4 migration
 		if( empty($field['ID']) ) {
 			
 			$field['new_lines'] = 'wpautop';
@@ -237,7 +237,7 @@ class fields_field_textarea extends fields_field {
 	
 }
 
-new fields_field_textarea();
+new fieldmaster_field_textarea();
 
 endif;
 

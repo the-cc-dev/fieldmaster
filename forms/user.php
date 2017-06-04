@@ -1,12 +1,12 @@
 <?php
 
 /*
-*  Fields API User Form Class
+*  FieldMaster User Form Class
 *
 *  All the logic for adding fields to users
 *
 *  @class 		fields_form_user
-*  @package		Fields API
+*  @package		FieldMaster
 *  @subpackage	Forms
 */
 
@@ -195,7 +195,7 @@ class fields_form_user {
 	/*
 	*  render
 	*
-	*  This function will render Fields API fields for a given $post_id parameter
+	*  This function will render FieldMaster fields for a given $post_id parameter
 	*
 	*  @type	function
 	*  @date	7/10/13

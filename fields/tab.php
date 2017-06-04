@@ -1,19 +1,19 @@
 <?php
 
 /*
-*  Fields API Tab Field Class
+*  FieldMaster Tab Field Class
 *
 *  All the logic for this field type
 *
-*  @class 		fields_field_tab
-*  @extends		fields_field
-*  @package		Fields API
+*  @class 		fieldmaster_field_tab
+*  @extends		fieldmaster_field
+*  @package		FieldMaster
 *  @subpackage	Fields
 */
 
-if( ! class_exists('fields_field_tab') ) :
+if( ! class_exists('fieldmaster_field_tab') ) :
 
-class fields_field_tab extends fields_field {
+class fieldmaster_field_tab extends fieldmaster_field {
 	
 	
 	/*
@@ -168,7 +168,7 @@ class fields_field_tab extends fields_field {
 	
 }
 
-new fields_field_tab();
+new fieldmaster_field_tab();
 
 endif;
 

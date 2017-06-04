@@ -1,19 +1,19 @@
 <?php
 
 /*
-*  Fields API Repeater Field Class
+*  FieldMaster Repeater Field Class
 *
 *  All the logic for this field type
 *
-*  @class 		fields_field_repeater
-*  @extends		fields_field
-*  @package		Fields API
+*  @class 		fieldmaster_field_repeater
+*  @extends		fieldmaster_field
+*  @package		FieldMaster
 *  @subpackage	Fields
 */
 
-if( ! class_exists('fields_field_repeater') ) :
+if( ! class_exists('fieldmaster_field_repeater') ) :
 
-class fields_field_repeater extends fields_field {
+class fieldmaster_field_repeater extends fieldmaster_field {
 	
 	
 	/*
@@ -897,7 +897,7 @@ class fields_field_repeater extends fields_field {
 
 }
 
-new fields_field_repeater();
+new fieldmaster_field_repeater();
 
 endif;
 

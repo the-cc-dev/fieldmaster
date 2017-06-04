@@ -1,6 +1,6 @@
 <?php
 
-class fields_field {
+class fieldmaster_field {
 	
 	var $name,
 		$title,

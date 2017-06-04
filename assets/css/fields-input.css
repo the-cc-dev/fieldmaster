@@ -265,7 +265,7 @@ html[dir="rtl"] .fields-fields.-left > .fields-field > .fields-input {
 }
 /*--------------------------------------------------------------------------------------------
 *
-*	Basic Fields API field wrap
+*	Basic FieldMaster field wrap
 *
 *--------------------------------------------------------------------------------------------*/
 /* add term */
@@ -1408,7 +1408,7 @@ html[dir="rtl"] .fields-taxonomy-field[data-type="select"] .fields-icon {
 *  Media Model
 *
 *---------------------------------------------------------------------------------------------*/
-/* WP sets tables to act as divs. Fields API uses tables, so these muct be reset */
+/* WP sets tables to act as divs. FieldMaster uses tables, so these muct be reset */
 .media-modal .compat-attachment-fields td.fields-input table {
   display: table;
 }

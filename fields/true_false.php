@@ -1,19 +1,19 @@
 <?php
 
 /*
-*  Fields API True / False Field Class
+*  FieldMaster True / False Field Class
 *
 *  All the logic for this field type
 *
-*  @class 		fields_field_true_false
-*  @extends		fields_field
-*  @package		Fields API
+*  @class 		fieldmaster_field_true_false
+*  @extends		fieldmaster_field
+*  @package		FieldMaster
 *  @subpackage	Fields
 */
 
-if( ! class_exists('fields_field_true_false') ) :
+if( ! class_exists('fieldmaster_field_true_false') ) :
 
-class fields_field_true_false extends fields_field {
+class fieldmaster_field_true_false extends fieldmaster_field {
 	
 	
 	/*
@@ -182,7 +182,7 @@ class fields_field_true_false extends fields_field {
 	
 }
 
-new fields_field_true_false();
+new fieldmaster_field_true_false();
 
 endif;
 

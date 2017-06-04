@@ -1,12 +1,12 @@
 <?php
 
 /*
-*  Fields API Comment Form Class
+*  FieldMaster Comment Form Class
 *
 *  All the logic for adding fields to comments
 *
 *  @class 		fields_form_comment
-*  @package		Fields API
+*  @package		FieldMaster
 *  @subpackage	Forms
 */
 
@@ -116,7 +116,7 @@ class fields_form_comment {
 	/*
 	*  edit_comment
 	*
-	*  This function is run on the admin comment.php page and will render the Fields API fields within custom metaboxes to look native
+	*  This function is run on the admin comment.php page and will render the FieldMaster fields within custom metaboxes to look native
 	*
 	*  @type	function
 	*  @date	19/10/13

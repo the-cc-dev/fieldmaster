@@ -1,19 +1,19 @@
 <?php
 
 /*
-*  Fields API Flexible Content Field Class
+*  FieldMaster Flexible Content Field Class
 *
 *  All the logic for this field type
 *
-*  @class 		fields_field_flexible_content
-*  @extends		fields_field
-*  @package		Fields API
+*  @class 		fieldmaster_field_flexible_content
+*  @extends		fieldmaster_field
+*  @package		FieldMaster
 *  @subpackage	Fields
 */
 
-if( ! class_exists('fields_field_flexible_content') ) :
+if( ! class_exists('fieldmaster_field_flexible_content') ) :
 
-class fields_field_flexible_content extends fields_field {
+class fieldmaster_field_flexible_content extends fieldmaster_field {
 	
 	
 	/*
@@ -1215,7 +1215,7 @@ class fields_field_flexible_content extends fields_field {
 	
 }
 
-new fields_field_flexible_content();
+new fieldmaster_field_flexible_content();
 
 endif;
 

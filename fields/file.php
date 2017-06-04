@@ -1,19 +1,19 @@
 <?php
 
 /*
-*  Fields API File Field Class
+*  FieldMaster File Field Class
 *
 *  All the logic for this field type
 *
-*  @class 		fields_field_file
-*  @extends		fields_field
-*  @package		Fields API
+*  @class 		fieldmaster_field_file
+*  @extends		fieldmaster_field
+*  @package		FieldMaster
 *  @subpackage	Fields
 */
 
-if( ! class_exists('fields_field_file') ) :
+if( ! class_exists('fieldmaster_field_file') ) :
 
-class fields_field_file extends fields_field {
+class fieldmaster_field_file extends fieldmaster_field {
 	
 	
 	/*
@@ -380,7 +380,7 @@ class fields_field_file extends fields_field {
 	/*
 	*  wp_prepare_attachment_for_js
 	*
-	*  this filter allows Fields API to add in extra data to an attachment JS object
+	*  this filter allows FieldMaster to add in extra data to an attachment JS object
 	*
 	*  @type	function
 	*  @date	1/06/13
@@ -414,7 +414,7 @@ class fields_field_file extends fields_field {
 	
 }
 
-new fields_field_file();
+new fieldmaster_field_file();
 
 endif;
 

@@ -1,12 +1,12 @@
 <?php
 
 /*
-*  Fields API Taxonomy Form Class
+*  FieldMaster Taxonomy Form Class
 *
 *  All the logic for adding fields to taxonomy terms
 *
 *  @class 		fields_form_taxonomy
-*  @package		Fields API
+*  @package		FieldMaster
 *  @subpackage	Forms
 */
 
@@ -297,7 +297,7 @@ class fields_form_taxonomy {
 		}
 		
 		
-		// bail early if this form does not contain Fields API data
+		// bail early if this form does not contain FieldMaster data
 		if( !$('#addtag').find('#fields-form-data').exists() ) {
 			
 			return true;

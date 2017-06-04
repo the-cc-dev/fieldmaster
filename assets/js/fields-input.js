@@ -1470,7 +1470,7 @@ var fields;
 			}
 			
 			
-			// PHP error (too may themes will have warnings / errors. Don't show these in Fields API taxonomy popup)
+			// PHP error (too may themes will have warnings / errors. Don't show these in FieldMaster taxonomy popup)
 /*
 			if( typeof json === 'string' ) {
 				
@@ -5304,7 +5304,7 @@ console.time("fields_test_ready");
 				_wpPluploadSettings.defaults.multipart_params._fieldsuploader = args.field;
 				
 				
-				// remove fields_field so future Uploaders won't inherit
+				// remove fieldmaster_field so future Uploaders won't inherit
 				frame.on('open', function(){
 					
 					delete _wpPluploadSettings.defaults.multipart_params._fieldsuploader;
@@ -8267,7 +8267,7 @@ console.time("fields_test_ready");
 			}
 			
 			
-			// bail early if this form does not contain Fields API data
+			// bail early if this form does not contain FieldMaster data
 			if( !e.$el.find('#fields-form-data').exists() ) {
 			
 				return true;

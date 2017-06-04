@@ -5,7 +5,7 @@ extract($args);
 ?>
 <div id="fields-upgrade-wrap" class="wrap">
 	
-	<h2><?php _e("Fields API Database Upgrade",'fields'); ?></h2>
+	<h2><?php _e("FieldMaster Database Upgrade",'fields'); ?></h2>
 	
 <?php if( !empty($updates) ): ?>
 	

@@ -50,7 +50,7 @@ function fields_get_valid_options_page( $page = '' ) {
 	));
 	
 	
-	// Fields API4 compatibility
+	// FieldMaster4 compatibility
 	$migrate = array(
 		'title' 	=> 'page_title',
 		'menu'		=> 'menu_title',

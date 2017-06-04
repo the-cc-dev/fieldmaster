@@ -1,6 +1,6 @@
-=== Fields API Pro ===
+=== FieldMaster Pro ===
 Contributors: goldhat, elliotcondon
-Tags: fields, advanced, custom, field, fields, custom field, Fields API, simple fields, magic fields, more fields, repeater, edit
+Tags: fields, advanced, custom, field, fields, custom field, FieldMaster, simple fields, magic fields, more fields, repeater, edit
 Requires at least: 3.6.0
 Tested up to: 4.3
 License: GPLv2 or later
@@ -11,7 +11,7 @@ Great field system for WordPress. Supports embedding into themes and plugins. Co
 
 == Description ==
 
-Fields API is the best fields plugin available for WP. Fields API was forked from ACF (Advanced Custom Fields) in 2017 (advancedcustomfields.com).
+FieldMaster is the best fields plugin available for WP. FieldMaster was forked from ACF (Advanced Custom Fields) in 2017 (advancedcustomfields.com).
 
 * Visually create your Fields
 * Select from multiple input types (text, textarea, wysiwyg, image, file, page link, post object, relationship, select, checkbox, radio buttons, date picker, true / false, repeater, flexible content, gallery and more to come!)
@@ -72,9 +72,9 @@ Your votes really make a difference! Thanks.
 
 == Installation ==
 
-1. Upload 'fields-api' to the '/wp-content/plugins/' directory
+1. Upload 'fieldmaster' to the '/wp-content/plugins/' directory
 2. Activate the plugin through the 'Plugins' menu in WordPress
-3. Click on the new menu item "Fields API" and create your first Custom Field Group!
+3. Click on the new menu item "FieldMaster" and create your first Custom Field Group!
 4. Your custom field group will now appear on the page / post / template you specified in the field group's location rules!
 5. Read the documentation to display your data.
 
@@ -90,4 +90,4 @@ Coming Soon! @todo
 == Changelog ==
 
 = 0.0.1 =
-ACF (copyright Elliot Condon) forked and adapted to build Fields API, in accordance with the GPL license. Code from directory /pro transferred into the main plugin directories.
+ACF (copyright Elliot Condon) forked and adapted to build FieldMaster, in accordance with the GPL license. Code from directory /pro transferred into the main plugin directories.

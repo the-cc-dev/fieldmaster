@@ -106,13 +106,13 @@ function fields_append_setting( $name, $value ) {
 /*
 *  fields_get_path
 *
-*  This function will return the path to a file within the Fields API plugin folder
+*  This function will return the path to a file within the FieldMaster plugin folder
 *
 *  @type	function
 *  @date	28/09/13
 *  @since	5.0.0
 *
-*  @param	$path (string) the relative path from the root of the Fields API plugin folder
+*  @param	$path (string) the relative path from the root of the FieldMaster plugin folder
 *  @return	(string)
 */
 
@@ -126,13 +126,13 @@ function fields_get_path( $path ) {
 /*
 *  fields_get_dir
 *
-*  This function will return the url to a file within the Fields API plugin folder
+*  This function will return the url to a file within the FieldMaster plugin folder
 *
 *  @type	function
 *  @date	28/09/13
 *  @since	5.0.0
 *
-*  @param	$path (string) the relative path from the root of the Fields API plugin folder
+*  @param	$path (string) the relative path from the root of the FieldMaster plugin folder
 *  @return	(string)
 */
 
@@ -1923,7 +1923,7 @@ function fields_debug_end() {
 /*
 *  fields_get_updates
 *
-*  This function will reutrn all or relevant updates for Fields API
+*  This function will reutrn all or relevant updates for FieldMaster
 *
 *  @type	function
 *  @date	12/05/2014
@@ -2926,7 +2926,7 @@ function fields_get_current_url() {
 /*
 *  fields_current_user_can_admin
 *
-*  This function will return true if the current user can administrate the Fields API field groups
+*  This function will return true if the current user can administrate the FieldMaster field groups
 *
 *  @type	function
 *  @date	9/02/2015

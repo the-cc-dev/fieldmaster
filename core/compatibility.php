@@ -54,8 +54,8 @@ class fields_compatibility {
 
 	function init() {
 
-		// Fields API_LITE
-		if( defined('FIELDS_API_LITE') && FIELDS_API_LITE ) {
+		// FieldMaster_LITE
+		if( defined('FIELDMASTER_LITE') && FIELDMASTER_LITE ) {
 
 			fields_update_setting('show_admin', false);
 
@@ -67,7 +67,7 @@ class fields_compatibility {
 	/*
 	*  get_valid_field
 	*
-	*  This function will provide compatibility with Fields API4 fields
+	*  This function will provide compatibility with FieldMaster4 fields
 	*
 	*  @type	function
 	*  @date	23/04/2014
@@ -141,7 +141,7 @@ class fields_compatibility {
 	/*
 	*  get_valid_relationship_field
 	*
-	*  This function will provide compatibility with Fields API4 fields
+	*  This function will provide compatibility with FieldMaster4 fields
 	*
 	*  @type	function
 	*  @date	23/04/2014
@@ -191,7 +191,7 @@ class fields_compatibility {
 	/*
 	*  get_valid_textarea_field
 	*
-	*  This function will provide compatibility with Fields API4 fields
+	*  This function will provide compatibility with FieldMaster4 fields
 	*
 	*  @type	function
 	*  @date	23/04/2014
@@ -221,7 +221,7 @@ class fields_compatibility {
 	/*
 	*  get_valid_image_field
 	*
-	*  This function will provide compatibility with Fields API4 fields
+	*  This function will provide compatibility with FieldMaster4 fields
 	*
 	*  @type	function
 	*  @date	23/04/2014
@@ -257,7 +257,7 @@ class fields_compatibility {
 	/*
 	*  get_valid_wysiwyg_field
 	*
-	*  This function will provide compatibility with Fields API4 fields
+	*  This function will provide compatibility with FieldMaster4 fields
 	*
 	*  @type	function
 	*  @date	23/04/2014
@@ -289,7 +289,7 @@ class fields_compatibility {
 	/*
 	*  get_valid_date_picker_field
 	*
-	*  This function will provide compatibility with Fields API4 fields
+	*  This function will provide compatibility with FieldMaster4 fields
 	*
 	*  @type	function
 	*  @date	23/04/2014
@@ -330,7 +330,7 @@ class fields_compatibility {
 	/*
 	*  get_valid_taxonomy_field
 	*
-	*  This function will provide compatibility with Fields API4 fields
+	*  This function will provide compatibility with FieldMaster4 fields
 	*
 	*  @type	function
 	*  @date	23/04/2014
@@ -359,7 +359,7 @@ class fields_compatibility {
 	/*
 	*  get_valid_field_group
 	*
-	*  This function will provide compatibility with Fields API4 field groups
+	*  This function will provide compatibility with FieldMaster4 field groups
 	*
 	*  @type	function
 	*  @date	23/04/2014

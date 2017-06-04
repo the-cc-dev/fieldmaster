@@ -39,7 +39,7 @@ $rule_operators = apply_filters( 'fields/location/rule_operators', array(
 <div class="fields-field">
 	<div class="fields-label">
 		<label><?php _e("Rules",'fields'); ?></label>
-		<p><?php _e("Create a set of rules to determine which edit screens will use these fields API",'fields'); ?></p>
+		<p><?php _e("Create a set of rules to determine which edit screens will use these FieldMaster",'fields'); ?></p>
 	</div>
 	<div class="fields-input">
 		<div class="rule-groups">
@@ -86,7 +86,7 @@ $rule_operators = apply_filters( 'fields/location/rule_operators', array(
 									// create field
 									fields_render_field(array(
 										'type'		=> 'select',
-										'prefix'	=> "fields_field_group[location][{$group_id}][{$rule_id}]",
+										'prefix'	=> "fieldmaster_field_group[location][{$group_id}][{$rule_id}]",
 										'name'		=> 'param',
 										'value'		=> $rule['param'],
 										'choices'	=> $rule_types,
@@ -99,7 +99,7 @@ $rule_operators = apply_filters( 'fields/location/rule_operators', array(
 									// create field
 									fields_render_field(array(
 										'type'		=> 'select',
-										'prefix'	=> "fields_field_group[location][{$group_id}][{$rule_id}]",
+										'prefix'	=> "fieldmaster_field_group[location][{$group_id}][{$rule_id}]",
 										'name'		=> 'operator',
 										'value'		=> $rule['operator'],
 										'choices' 	=> $rule_operators,

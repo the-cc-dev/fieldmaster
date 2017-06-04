@@ -6,7 +6,7 @@ fields_render_field_wrap(array(
 	'instructions'	=> '',
 	'type'			=> 'select',
 	'name'			=> 'active',
-	'prefix'		=> 'fields_field_group',
+	'prefix'		=> 'fieldmaster_field_group',
 	'value'			=> $field_group['active'],
 	'choices' 		=> array(
 		1				=>	__("Active",'fields'),
@@ -21,7 +21,7 @@ fields_render_field_wrap(array(
 	'instructions'	=> '',
 	'type'			=> 'select',
 	'name'			=> 'style',
-	'prefix'		=> 'fields_field_group',
+	'prefix'		=> 'fieldmaster_field_group',
 	'value'			=> $field_group['style'],
 	'choices' 		=> array(
 		'default'			=>	__("Standard (WP metabox)",'fields'),
@@ -36,7 +36,7 @@ fields_render_field_wrap(array(
 	'instructions'	=> '',
 	'type'			=> 'select',
 	'name'			=> 'position',
-	'prefix'		=> 'fields_field_group',
+	'prefix'		=> 'fieldmaster_field_group',
 	'value'			=> $field_group['position'],
 	'choices' 		=> array(
 		'fields_after_title'	=> __("High (after title)",'fields'),
@@ -53,7 +53,7 @@ fields_render_field_wrap(array(
 	'instructions'	=> '',
 	'type'			=> 'select',
 	'name'			=> 'label_placement',
-	'prefix'		=> 'fields_field_group',
+	'prefix'		=> 'fieldmaster_field_group',
 	'value'			=> $field_group['label_placement'],
 	'choices' 		=> array(
 		'top'			=>	__("Top aligned",'fields'),
@@ -68,7 +68,7 @@ fields_render_field_wrap(array(
 	'instructions'	=> '',
 	'type'			=> 'select',
 	'name'			=> 'instruction_placement',
-	'prefix'		=> 'fields_field_group',
+	'prefix'		=> 'fieldmaster_field_group',
 	'value'			=> $field_group['instruction_placement'],
 	'choices' 		=> array(
 		'label'		=>	__("Below labels",'fields'),
@@ -83,7 +83,7 @@ fields_render_field_wrap(array(
 	'instructions'	=> __('Field groups with a lower order will appear first','fields'),
 	'type'			=> 'number',
 	'name'			=> 'menu_order',
-	'prefix'		=> 'fields_field_group',
+	'prefix'		=> 'fieldmaster_field_group',
 	'value'			=> $field_group['menu_order'],
 ));
 
@@ -94,7 +94,7 @@ fields_render_field_wrap(array(
 	'instructions'	=> __('Shown in field group list','fields'),
 	'type'			=> 'text',
 	'name'			=> 'description',
-	'prefix'		=> 'fields_field_group',
+	'prefix'		=> 'fieldmaster_field_group',
 	'value'			=> $field_group['description'],
 ));
 
@@ -105,14 +105,14 @@ fields_render_field_wrap(array(
 	'instructions'	=> __('<b>Select</b> items to <b>hide</b> them from the edit screen.','fields') . '<br /><br />' . __("If multiple field groups appear on an edit screen, the first field group's options will be used (the one with the lowest order number)",'fields'),
 	'type'			=> 'checkbox',
 	'name'			=> 'hide_on_screen',
-	'prefix'		=> 'fields_field_group',
+	'prefix'		=> 'fieldmaster_field_group',
 	'value'			=> $field_group['hide_on_screen'],
 	'toggle'		=> true,
 	'choices' => array(
 		'permalink'			=>	__("Permalink", 'fields'),
 		'the_content'		=>	__("Content Editor",'fields'),
 		'excerpt'			=>	__("Excerpt", 'fields'),
-		'custom_fields'		=>	__("Fields API", 'fields'),
+		'custom_fields'		=>	__("FieldMaster", 'fields'),
 		'discussion'		=>	__("Discussion", 'fields'),
 		'comments'			=>	__("Comments", 'fields'),
 		'revisions'			=>	__("Revisions", 'fields'),
@@ -133,7 +133,7 @@ do_action('fields/render_field_group_settings', $field_group);
 		
 ?>
 <div class="fields-hidden">
-	<input type="hidden" name="fields_field_group[key]" value="<?php echo $field_group['key']; ?>" />
+	<input type="hidden" name="fieldmaster_field_group[key]" value="<?php echo $field_group['key']; ?>" />
 </div>
 <script type="text/javascript">
 if( typeof fields !== 'undefined' ) {

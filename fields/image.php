@@ -1,19 +1,19 @@
 <?php
 
 /*
-*  Fields API Image Field Class
+*  FieldMaster Image Field Class
 *
 *  All the logic for this field type
 *
-*  @class 		fields_field_image
-*  @extends		fields_field
-*  @package		Fields API
+*  @class 		fieldmaster_field_image
+*  @extends		fieldmaster_field
+*  @package		FieldMaster
 *  @subpackage	Fields
 */
 
-if( ! class_exists('fields_field_image') ) :
+if( ! class_exists('fieldmaster_field_image') ) :
 
-class fields_field_image extends fields_field {
+class fieldmaster_field_image extends fieldmaster_field {
 	
 	
 	/*
@@ -408,7 +408,7 @@ function image_size_names_choose( $sizes )
 	/*
 	*  wp_prepare_attachment_for_js
 	*
-	*  this filter allows Fields API to add in extra data to an attachment JS object
+	*  this filter allows FieldMaster to add in extra data to an attachment JS object
 	*  This sneaky hook adds the missing sizes to each attachment in the 3.5 uploader. 
 	*  It would be a lot easier to add all the sizes to the 'image_size_names_choose' filter but 
 	*  then it will show up on the normal the_content editor
@@ -505,7 +505,7 @@ function image_size_names_choose( $sizes )
 	
 }
 
-new fields_field_image();
+new fieldmaster_field_image();
 
 endif;
 

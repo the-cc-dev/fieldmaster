@@ -1,12 +1,12 @@
 <?php
 
 /*
-*  Fields API Admin Field Groups Class
+*  FieldMaster Admin Field Groups Class
 *
 *  All the logic for editing a list of field groups
 *
 *  @class 		fields_admin_field_groups
-*  @package		Fields API
+*  @package		FieldMaster
 *  @subpackage	Admin
 */
 

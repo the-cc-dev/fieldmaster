@@ -58,7 +58,7 @@ function fields_get_field_type_label( $field_type ) {
 
 
 /*
-*  fields_field_type_exists
+*  fieldmaster_field_type_exists
 *
 *  This function will check if the field_type is available
 *
@@ -70,7 +70,7 @@ function fields_get_field_type_label( $field_type ) {
 *  @return	(boolean)
 */
 
-function fields_field_type_exists( $field_type ) {
+function fieldmaster_field_type_exists( $field_type ) {
 
 	// vars
 	$label = fields_get_field_type_label( $field_type );
@@ -483,7 +483,7 @@ function fields_render_field( $field = false ) {
 *  @date	28/09/13
 *  @since	5.0.0
 *
-*  @param	$field (array) must be a valid Fields API field array
+*  @param	$field (array) must be a valid FieldMaster field array
 *  @param	$el (string) modifys the rendered wrapping elements. Default to 'div', but can be 'tr', 'ul', 'ol', 'dt' or custom
 *  @param	$instruction (string) specifys the placement of the instructions. Default to 'label', but can be 'field'
 *  @param	$atts (array) an array of custom attributes to render on the $el
@@ -1056,7 +1056,7 @@ function _fields_get_field_by_name( $name = '', $db_only = false ) {
 		'orderby' 			=> 'menu_order title',
 		'order'				=> 'ASC',
 		'suppress_filters'	=> false,
-		'fields_field_name'	=> $name
+		'fieldmaster_field_name'	=> $name
 	);
 	
 	
@@ -1182,7 +1182,7 @@ function fields_get_field_id( $key = '' ) {
 		'orderby' 			=> 'menu_order title',
 		'order'				=> 'ASC',
 		'suppress_filters'	=> false,
-		'fields_field_key'		=> $key
+		'fieldmaster_field_key'		=> $key
 	);
 	
 	

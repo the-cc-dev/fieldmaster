@@ -1,12 +1,12 @@
 <?php
 
 /*
-*  Fields API Admin Update Class
+*  FieldMaster Admin Update Class
 *
 *  All the logic for updates
 *
 *  @class 		fields_admin_update
-*  @package		Fields API
+*  @package		FieldMaster
 *  @subpackage	Admin
 */
 
@@ -110,7 +110,7 @@ class fields_admin_update {
 
 
 		// add page
-		add_submenu_page('update-core.php', __('Upgrade Fields API','fields'), __('Upgrade Fields API','fields'), fields_get_setting('capability'),'fields-upgrade', array($this,'network_html'));
+		add_submenu_page('update-core.php', __('Upgrade FieldMaster','fields'), __('Upgrade FieldMaster','fields'), fields_get_setting('capability'),'fields-upgrade', array($this,'network_html'));
 
 	}
 

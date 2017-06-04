@@ -1601,7 +1601,7 @@
 			var self = this;
 			
 			
-			// Note: Need to find a differen 'on' event. Now that attachments load Fields API, this function can't rely on a timeout. Instead, hook into a render function foreach item
+			// Note: Need to find a differen 'on' event. Now that attachments load FieldMaster, this function can't rely on a timeout. Instead, hook into a render function foreach item
 			
 			// set timeout for 0, then it will always run last after the add event
 			setTimeout(function(){

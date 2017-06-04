@@ -1,19 +1,19 @@
 <?php
 
 /*
-*  Fields API Password Field Class
+*  FieldMaster Password Field Class
 *
 *  All the logic for this field type
 *
-*  @class 		fields_field_password
-*  @extends		fields_field
-*  @package		Fields API
+*  @class 		fieldmaster_field_password
+*  @extends		fieldmaster_field
+*  @package		FieldMaster
 *  @subpackage	Fields
 */
 
-if( ! class_exists('fields_field_password') ) :
+if( ! class_exists('fieldmaster_field_password') ) :
 
-class fields_field_password extends fields_field {
+class fieldmaster_field_password extends fieldmaster_field {
 	
 	
 	/*
@@ -161,7 +161,7 @@ class fields_field_password extends fields_field {
 	
 }
 
-new fields_field_password();
+new fieldmaster_field_password();
 
 endif;
 

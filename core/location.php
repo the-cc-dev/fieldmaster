@@ -325,7 +325,7 @@ class fields_location {
 		$term = get_term_by( 'slug', $data['term'], $data['taxonomy'] );
 		
 		
-		// attempt get term via ID (Fields API4 uses ID)
+		// attempt get term via ID (FieldMaster4 uses ID)
 		if( !$term && is_numeric($data['term']) ) {
 			
 			$term = get_term_by( 'id', $data['term'], $data['taxonomy'] );

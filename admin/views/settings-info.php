@@ -6,8 +6,8 @@ extract( $args );
 ?>
 <div class="wrap about-wrap fields-wrap">
 	
-	<h1><?php _e("Welcome to Fields API",'fields'); ?> <?php echo $version; ?></h1>
-	<div class="about-text"><?php printf(__("Thank you for updating! Fields API %s is bigger and better than ever before. We hope you like it.", 'fields'), $version); ?></div>
+	<h1><?php _e("Welcome to FieldMaster",'fields'); ?> <?php echo $version; ?></h1>
+	<div class="about-text"><?php printf(__("Thank you for updating! FieldMaster %s is bigger and better than ever before. We hope you like it.", 'fields'), $version); ?></div>
 	<div class="fields-icon logo">
 		<i class="fields-sprite-logo"></i>
 	</div>
@@ -31,7 +31,7 @@ extract( $args );
 		<div>
 			<img src="http://assets.advancedcustomfields.com/info/5.0.0/design.png">
 			<h3><?php _e("Improved Design", 'fields'); ?></h3>
-			<p><?php _e("Many fields have undergone a visual refresh to make Fields API look better than ever! Noticeable changes are seen on the gallery, relationship and oEmbed (new) fields!", 'fields'); ?></p>
+			<p><?php _e("Many fields have undergone a visual refresh to make FieldMaster look better than ever! Noticeable changes are seen on the gallery, relationship and oEmbed (new) fields!", 'fields'); ?></p>
 		</div>
 		<div>
 			<img src="http://assets.advancedcustomfields.com/info/5.0.0/sub-fields.png">
@@ -47,20 +47,20 @@ extract( $args );
 	<div class="feature-section fields-three-col">
 	
 		<div>
-			<h3><?php _e("Introducing Fields API PRO", 'fields'); ?></h3>
+			<h3><?php _e("Introducing FieldMaster PRO", 'fields'); ?></h3>
 			<p><?php _e("We're changing the way premium functionality is delivered in an exciting way!", 'fields'); ?></p>
-			<p><?php printf(__('All 4 premium add-ons have been combined into a new <a href="%s">Pro version of Fields API</a>. With both personal and developer licenses available, premium functionality is more affordable and accessible than ever before!', 'fields'), esc_url('http://www.advancedcustomfields.com/pro')); ?></p>
+			<p><?php printf(__('All 4 premium add-ons have been combined into a new <a href="%s">Pro version of FieldMaster</a>. With both personal and developer licenses available, premium functionality is more affordable and accessible than ever before!', 'fields'), esc_url('http://www.advancedcustomfields.com/pro')); ?></p>
 		</div>
 		
 		<div>
 			<h3><?php _e("Powerful Features", 'fields'); ?></h3>
-			<p><?php _e("Fields API PRO contains powerful features such as repeatable data, flexible content layouts, a beautiful gallery field and the ability to create extra admin options pages!", 'fields'); ?></p>
-			<p><?php printf(__('Read more about <a href="%s">Fields API PRO features</a>.', 'fields'), esc_url('http://www.advancedcustomfields.com/pro')); ?></p>
+			<p><?php _e("FieldMaster PRO contains powerful features such as repeatable data, flexible content layouts, a beautiful gallery field and the ability to create extra admin options pages!", 'fields'); ?></p>
+			<p><?php printf(__('Read more about <a href="%s">FieldMaster PRO features</a>.', 'fields'), esc_url('http://www.advancedcustomfields.com/pro')); ?></p>
 		</div>
 		
 		<div>
 			<h3><?php _e("Easy Upgrading", 'fields'); ?></h3>
-			<p><?php printf(__('To help make upgrading easy, <a href="%s">login to your store account</a> and claim a free copy of Fields API PRO!', 'fields'), esc_url('http://www.advancedcustomfields.com/my-account/')); ?></p>
+			<p><?php printf(__('To help make upgrading easy, <a href="%s">login to your store account</a> and claim a free copy of FieldMaster PRO!', 'fields'), esc_url('http://www.advancedcustomfields.com/my-account/')); ?></p>
 			<p><?php printf(__('We also wrote an <a href="%s">upgrade guide</a> to answer any questions, but if you do have one, please contact our support team via the <a href="%s">help desk</a>', 'fields'), esc_url('http://www.advancedcustomfields.com/resources/updates/upgrading-v4-v5/'), esc_url('http://support.advancedcustomfields.com')); ?>
 			
 		</div>
@@ -75,7 +75,7 @@ extract( $args );
 		
 		<div>
 			<h4><?php _e("Smarter field settings", 'fields'); ?></h4>
-			<p><?php _e("Fields API now saves its field settings as individual post objects", 'fields'); ?></p>
+			<p><?php _e("FieldMaster now saves its field settings as individual post objects", 'fields'); ?></p>
 		</div>
 		
 		<div>

@@ -1,12 +1,12 @@
 <?php
 
 /*
-*  Fields API Attachment Form Class
+*  FieldMaster Attachment Form Class
 *
 *  All the logic for adding fields to attachments
 *
 *  @class 		fields_form_attachment
-*  @package		Fields API
+*  @package		FieldMaster
 *  @subpackage	Forms
 */
 

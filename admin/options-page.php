@@ -34,7 +34,7 @@ class fields_pro_options_page {
 	/*
 	*  fields_location_rules_types
 	*
-	*  this function will add "Options Page" to the Fields API location rules
+	*  this function will add "Options Page" to the FieldMaster location rules
 	*
 	*  @type	function
 	*  @date	2/02/13
@@ -54,7 +54,7 @@ class fields_pro_options_page {
 	/*
 	*  fields_location_rules_values_options_page
 	*
-	*  this function will populate the available pages in the Fields API location rules
+	*  this function will populate the available pages in the FieldMaster location rules
 	*
 	*  @type	function
 	*  @date	2/02/13

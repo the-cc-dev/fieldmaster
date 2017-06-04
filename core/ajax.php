@@ -1,12 +1,12 @@
 <?php
 
 /*
-*  Fields API AJAX Class
+*  FieldMaster AJAX Class
 *
 *  All the logic for misc AJAX functionality
 *
 *  @class 		fields_ajax
-*  @package		Fields API
+*  @package		FieldMaster
 *  @subpackage	Core
 */
 

@@ -9,7 +9,7 @@ extract( $args );
 
 
 // add prefix
-$field['prefix'] = "fields_fields[{$field['ID']}]";
+$field['prefix'] = "fieldmaster_fields[{$field['ID']}]";
 
 
 // vars
@@ -63,7 +63,7 @@ $atts['class'] = str_replace('_', '-', $atts['class']);
 			</li>
 			<li class="li-field-name"><?php echo $field['name']; ?></li>
 			<li class="li-field-type">
-				<?php if( fields_field_type_exists($field['type']) ): ?>
+				<?php if( fieldmaster_field_type_exists($field['type']) ): ?>
 					<?php echo fields_get_field_type_label($field['type']); ?>
 				<?php else: ?>
 					<b><?php _e('Error', 'fields'); ?></b> <?php _e('Field type does not exist', 'fields'); ?>

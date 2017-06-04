@@ -1,19 +1,19 @@
 <?php
 
 /*
-*  Fields API WYSIWYG Field Class
+*  FieldMaster WYSIWYG Field Class
 *
 *  All the logic for this field type
 *
-*  @class 		fields_field_wysiwyg
-*  @extends		fields_field
-*  @package		Fields API
+*  @class 		fieldmaster_field_wysiwyg
+*  @extends		fieldmaster_field
+*  @package		FieldMaster
 *  @subpackage	Fields
 */
 
-if( ! class_exists('fields_field_wysiwyg') ) :
+if( ! class_exists('fieldmaster_field_wysiwyg') ) :
 
-class fields_field_wysiwyg extends fields_field {
+class fieldmaster_field_wysiwyg extends fieldmaster_field {
 	
 	var $exists = 0;
 	
@@ -445,7 +445,7 @@ class fields_field_wysiwyg extends fields_field {
 	
 }
 
-new fields_field_wysiwyg();
+new fieldmaster_field_wysiwyg();
 
 endif;
 

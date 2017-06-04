@@ -1,12 +1,12 @@
 <?php
 
 /*
-*  Fields API Post Form Class
+*  FieldMaster Post Form Class
 *
 *  All the logic for adding fields to posts
 *
 *  @class 		fields_form_post
-*  @package		Fields API
+*  @package		FieldMaster
 *  @subpackage	Forms
 */
 
@@ -227,7 +227,7 @@ class fields_form_post {
 		add_action('edit_form_after_title', array($this, 'edit_form_after_title'));
 		
 		
-		// remove Fields API from meta postbox
+		// remove FieldMaster from meta postbox
 		add_filter('is_protected_meta', array($this, 'is_protected_meta'), 10, 3);
 	}
 	
@@ -235,7 +235,7 @@ class fields_form_post {
 	/*
 	*  edit_form_after_title
 	*
-	*  This action will allow Fields API to render metaboxes after the title
+	*  This action will allow FieldMaster to render metaboxes after the title
 	*
 	*  @type	action
 	*  @date	17/08/13
@@ -449,7 +449,7 @@ if( typeof fields !== 'undefined' ) {
 	/*
 	*  wp_insert_post_empty_content
 	*
-	*  This function will allow WP to insert a new post without title / content if Fields API data exists
+	*  This function will allow WP to insert a new post without title / content if FieldMaster data exists
 	*
 	*  @type	function
 	*  @date	16/07/2014
@@ -539,7 +539,7 @@ if( typeof fields !== 'undefined' ) {
 	/*
 	*  is_protected_meta
 	*
-	*  This function will remove any Fields API meta from showing in the meta postbox
+	*  This function will remove any FieldMaster meta from showing in the meta postbox
 	*
 	*  @type	function
 	*  @date	12/04/2014

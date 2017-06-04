@@ -29,7 +29,7 @@ class fields_settings_updates {
 	/*
 	*  admin_menu
 	*
-	*  This function will add the Fields API menu item to the WP admin
+	*  This function will add the FieldMaster menu item to the WP admin
 	*
 	*  @type	action (admin_menu)
 	*  @date	28/09/13

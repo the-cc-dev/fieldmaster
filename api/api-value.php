@@ -197,7 +197,7 @@ function fields_update_value( $value = null, $post_id = 0, $field ) {
 	// attempted to save values as individual rows for better WP_Query compatibility. Issues are clear that order would not work.
 	if( is_numeric($post_id) )
 	{
-		// allow Fields API to save to revision!
+		// allow FieldMaster to save to revision!
 		$return = update_metadata('post', $post_id, $field['name'], $value );
 				  update_metadata('post', $post_id, '_' . $field['name'], $field['key']);
 	}

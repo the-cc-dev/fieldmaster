@@ -1,19 +1,19 @@
 <?php
 
 /*
-*  Fields API Select Field Class
+*  FieldMaster Select Field Class
 *
 *  All the logic for this field type
 *
-*  @class 		fields_field_select
-*  @extends		fields_field
-*  @package		Fields API
+*  @class 		fieldmaster_field_select
+*  @extends		fieldmaster_field
+*  @package		FieldMaster
 *  @subpackage	Fields
 */
 
-if( ! class_exists('fields_field_select') ) :
+if( ! class_exists('fieldmaster_field_select') ) :
 
-class fields_field_select extends fields_field {
+class fieldmaster_field_select extends fieldmaster_field {
 	
 	
 	/*
@@ -461,7 +461,7 @@ class fields_field_select extends fields_field {
 	
 	function load_value( $value, $post_id, $field ) {
 		
-		// Fields API4 null
+		// FieldMaster4 null
 		if( $value === 'null' ) {
 		
 			return false;
@@ -542,7 +542,7 @@ class fields_field_select extends fields_field {
 	
 }
 
-new fields_field_select();
+new fieldmaster_field_select();
 
 endif;
 

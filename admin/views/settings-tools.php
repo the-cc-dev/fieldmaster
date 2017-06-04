@@ -35,7 +35,7 @@ if( $field_groups ) {
 			<h3><?php _e('Export Field Groups', 'fields'); ?></h3>
 		</div>
 		<div class="inner">
-			<p><?php _e('Select the field groups you would like to export and then select your export method. Use the download button to export to a .json file which you can then import to another Fields API installation. Use the generate button to export to PHP code which you can place in your theme.', 'fields'); ?></p>
+			<p><?php _e('Select the field groups you would like to export and then select your export method. Use the download button to export to a .json file which you can then import to another FieldMaster installation. Use the generate button to export to PHP code which you can place in your theme.', 'fields'); ?></p>
 			
 			<form method="post" action="">
 			<div class="fields-hidden">
@@ -64,7 +64,7 @@ if( $field_groups ) {
 			<h3><?php _e('Import Field Groups', 'fields'); ?></h3>
 		</div>
 		<div class="inner">
-			<p><?php _e('Select the Fields API JSON file you would like to import. When you click the import button below, Fields API will import the field groups.', 'fields'); ?></p>
+			<p><?php _e('Select the FieldMaster JSON file you would like to import. When you click the import button below, FieldMaster will import the field groups.', 'fields'); ?></p>
 			
 			<form method="post" action="" enctype="multipart/form-data">
 			<div class="fields-hidden">

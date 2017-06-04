@@ -52,7 +52,7 @@ class fields_revisions {
 		}
 		
 		
-		// add to fields if Fields API has changed
+		// add to fields if FieldMaster has changed
 		if( !empty($_POST['_fieldschanged']) ) {
 			
 			$fields['_fieldschanged'] = 'different than 1';
@@ -70,7 +70,7 @@ class fields_revisions {
 	*  force_save_revision
 	*
 	*  This filter will return false and force WP to save a revision. This is required due to
-	*  WP checking only post_title, post_excerpt and post_content values, not Fields API.
+	*  WP checking only post_title, post_excerpt and post_content values, not FieldMaster.
 	*
 	*  @type	filter
 	*  @date	19/09/13
@@ -98,7 +98,7 @@ class fields_revisions {
 	/*
 	*  wp_post_revision_fields
 	*
-	*  This filter will add the Fields API fields to the returned array
+	*  This filter will add the FieldMaster fields to the returned array
 	*  Versions 3.5 and 3.6 of WP feature different uses of the revisions filters, so there are
 	*  some hacks to allow both versions to work correctly
 	*

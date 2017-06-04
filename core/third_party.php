@@ -1,12 +1,12 @@
 <?php
 
 /*
-*  Fields API 3rd Party Compatibility Class
+*  FieldMaster 3rd Party Compatibility Class
 *
 *  All the logic for 3rd party functionality
 *
 *  @class 		fields_third_party
-*  @package		Fields API
+*  @package		FieldMaster
 *  @subpackage	Core
 */
 
@@ -55,7 +55,7 @@ class fields_third_party {
 	
 	function admin_head_tabify() {
 		
-		// remove Fields API from the tabs
+		// remove FieldMaster from the tabs
 		add_filter('tabify_posttypes',			array($this, 'tabify_posttypes'));
 		
 		
@@ -68,7 +68,7 @@ class fields_third_party {
 	/*
 	*  tabify_posttypes
 	*
-	*  This function removes Fields API post types from the tabify edit screen (post type selection sidebar)
+	*  This function removes FieldMaster post types from the tabify edit screen (post type selection sidebar)
 	*
 	*  @type	function
 	*  @date	9/10/12
@@ -115,7 +115,7 @@ class fields_third_party {
 				
 				// vars
 				$id = "fields-{$field_group['key']}";
-				$title = 'Fields API: ' . $field_group['title'];
+				$title = 'FieldMaster: ' . $field_group['title'];
 
 				
 				

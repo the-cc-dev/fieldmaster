@@ -1,19 +1,19 @@
 <?php
 
 /*
-*  Fields API Message Field Class
+*  FieldMaster Message Field Class
 *
 *  All the logic for this field type
 *
-*  @class 		fields_field_message
-*  @extends		fields_field
-*  @package		Fields API
+*  @class 		fieldmaster_field_message
+*  @extends		fieldmaster_field
+*  @package		FieldMaster
 *  @subpackage	Fields
 */
 
-if( ! class_exists('fields_field_message') ) :
+if( ! class_exists('fieldmaster_field_message') ) :
 
-class fields_field_message extends fields_field {
+class fieldmaster_field_message extends fieldmaster_field {
 	
 	
 	/*
@@ -151,7 +151,7 @@ class fields_field_message extends fields_field {
 	
 }
 
-new fields_field_message();
+new fieldmaster_field_message();
 
 endif;
 

@@ -1,21 +1,21 @@
 <?php
 
 /*
-*  Fields API Checkbox Field Class
+*  FieldMaster Checkbox Field Class
 *
 *  All the logic for this field type
 *
-*  @class 		fields_field_checkbox
-*  @extends		fields_field
-*  @package		Fields API
+*  @class 		fieldmaster_field_checkbox
+*  @extends		fieldmaster_field
+*  @package		FieldMaster
 *  @subpackage	Fields
 */
 
-if( ! class_exists('fields_field_checkbox') ) :
+if( ! class_exists('fieldmaster_field_checkbox') ) :
 
-class fields_field_checkbox extends fields_field {
-	
-	
+class fieldmaster_field_checkbox extends fieldmaster_field {
+
+
 	/*
 	*  __construct
 	*
@@ -28,9 +28,9 @@ class fields_field_checkbox extends fields_field {
 	*  @param	n/a
 	*  @return	n/a
 	*/
-	
+
 	function __construct() {
-		
+
 		// vars
 		$this->name = 'checkbox';
 		$this->label = __("Checkbox",'fields');
@@ -41,13 +41,13 @@ class fields_field_checkbox extends fields_field {
 			'default_value'	=> '',
 			'toggle'		=> 0
 		);
-		
-		
+
+
 		// do not delete!
     	parent::__construct();
 	}
-		
-	
+
+
 	/*
 	*  render_field()
 	*
@@ -62,127 +62,127 @@ class fields_field_checkbox extends fields_field {
 	*  @param	$field (array) the $field being edited
 	*  @return	n/a
 	*/
-	
+
 	function render_field( $field ) {
-		
+
 		// decode value (convert to array)
 		$field['value'] = fields_get_array($field['value'], false);
-		
-		
+
+
 		// hiden input
 		fields_hidden_input(array(
 			'type'	=> 'hidden',
 			'name'	=> $field['name'],
 		));
-		
-		
+
+
 		// vars
 		$i = 0;
 		$li = '';
 		$all_checked = true;
-		
-		
+
+
 		// checkbox saves an array
 		$field['name'] .= '[]';
-		
-		
+
+
 		// foreach choices
 		if( !empty($field['choices']) ) {
-			
+
 			foreach( $field['choices'] as $value => $label ) {
-				
+
 				// increase counter
 				$i++;
-				
-				
+
+
 				// vars
 				$atts = array(
 					'type'	=> 'checkbox',
-					'id'	=> $field['id'], 
+					'id'	=> $field['id'],
 					'name'	=> $field['name'],
 					'value'	=> $value,
 				);
-				
-				
+
+
 				// is choice selected?
 				if( in_array($value, $field['value']) ) {
-					
+
 					$atts['checked'] = 'checked';
-					
+
 				} else {
-					
+
 					$all_checked = false;
-					
+
 				}
-				
-				
+
+
 				if( isset($field['disabled']) && fields_in_array($value, $field['disabled']) ) {
-				
+
 					$atts['disabled'] = 'disabled';
-					
+
 				}
-				
-				
+
+
 				// each input ID is generated with the $key, however, the first input must not use $key so that it matches the field's label for attribute
 				if( $i > 1 ) {
-				
+
 					$atts['id'] .= '-' . $value;
-					
+
 				}
-				
-				
+
+
 				// append HTML
 				$li .= '<li><label><input ' . fields_esc_attr( $atts ) . '/>' . $label . '</label></li>';
-				
+
 			}
-			
-			
+
+
 			// toggle all
 			if( $field['toggle'] ) {
-				
+
 				// vars
 				$label = __("Toggle All", 'fields');
 				$atts = array(
 					'type'	=> 'checkbox',
 					'class'	=> 'fields-checkbox-toggle'
 				);
-				
-				
+
+
 				// custom label
 				if( is_string($field['toggle']) ) {
-					
+
 					$label = $field['toggle'];
-					
+
 				}
-				
-				
+
+
 				// checked
 				if( $all_checked ) {
-					
+
 					$atts['checked'] = 'checked';
-					
+
 				}
-				
-				
+
+
 				// append HTML
 				$li = '<li><label><input ' . fields_esc_attr( $atts ) . '/>' . $label . '</label></li>' . $li;
-					
+
 			}
-		
+
 		}
-		
-		
+
+
 		// class
 		$field['class'] .= ' fields-checkbox-list';
 		$field['class'] .= ($field['layout'] == 'horizontal') ? ' fields-hl' : ' fields-bl';
 
-		
+
 		// return
 		echo '<ul ' . fields_esc_attr(array( 'class' => $field['class'] )) . '>' . $li . '</ul>';
-		
+
 	}
-	
-	
+
+
 	/*
 	*  render_field_settings()
 	*
@@ -195,23 +195,23 @@ class fields_field_checkbox extends fields_field {
 	*
 	*  @param	$field	- an array holding all the field's data
 	*/
-	
+
 	function render_field_settings( $field ) {
-		
+
 		// encode choices (convert from array)
 		$field['choices'] = fields_encode_choices($field['choices']);
 		$field['default_value'] = fields_encode_choices($field['default_value']);
-				
-		
+
+
 		// choices
 		fields_render_field_setting( $field, array(
 			'label'			=> __('Choices','fields'),
 			'instructions'	=> __('Enter each choice on a new line.','fields') . '<br /><br />' . __('For more control, you may specify both a value and label like this:','fields'). '<br /><br />' . __('red : Red','fields'),
 			'type'			=> 'textarea',
 			'name'			=> 'choices',
-		));	
-		
-		
+		));
+
+
 		// default_value
 		fields_render_field_setting( $field, array(
 			'label'			=> __('Default Value','fields'),
@@ -219,39 +219,39 @@ class fields_field_checkbox extends fields_field {
 			'type'			=> 'textarea',
 			'name'			=> 'default_value',
 		));
-		
-		
+
+
 		// layout
 		fields_render_field_setting( $field, array(
 			'label'			=> __('Layout','fields'),
 			'instructions'	=> '',
 			'type'			=> 'radio',
 			'name'			=> 'layout',
-			'layout'		=> 'horizontal', 
+			'layout'		=> 'horizontal',
 			'choices'		=> array(
-				'vertical'		=> __("Vertical",'fields'), 
+				'vertical'		=> __("Vertical",'fields'),
 				'horizontal'	=> __("Horizontal",'fields')
 			)
 		));
-		
-		
+
+
 		// layout
 		fields_render_field_setting( $field, array(
 			'label'			=> __('Toggle','fields'),
 			'instructions'	=> __('Prepend an extra checkbox to toggle all choices','fields'),
 			'type'			=> 'radio',
 			'name'			=> 'toggle',
-			'layout'		=> 'horizontal', 
+			'layout'		=> 'horizontal',
 			'choices'		=> array(
 				1				=> __("Yes",'fields'),
 				0				=> __("No",'fields'),
 			)
 		));
-		
-		
+
+
 	}
-	
-	
+
+
 	/*
 	*  update_field()
 	*
@@ -268,17 +268,17 @@ class fields_field_checkbox extends fields_field {
 	*/
 
 	function update_field( $field ) {
-		
+
 		// decode choices (convert to array)
 		$field['choices'] = fields_decode_choices($field['choices']);
 		$field['default_value'] = fields_decode_choices($field['default_value']);
-		
-		
+
+
 		// return
 		return $field;
 	}
-	
-	
+
+
 	/*
 	*  update_value()
 	*
@@ -294,33 +294,33 @@ class fields_field_checkbox extends fields_field {
 	*
 	*  @return	$value - the modified value
 	*/
-	
+
 	function update_value( $value, $post_id, $field ) {
-		
+
 		// validate
 		if( empty($value) ) {
-		
+
 			return $value;
-			
+
 		}
-		
-		
+
+
 		// array
 		if( is_array($value) ) {
-			
+
 			// save value as strings, so we can clearly search for them in SQL LIKE statements
 			$value = array_map('strval', $value);
-			
+
 		}
-		
-		
+
+
 		// return
 		return $value;
 	}
-	
+
 }
 
-new fields_field_checkbox();
+new fieldmaster_field_checkbox();
 
 endif;
 

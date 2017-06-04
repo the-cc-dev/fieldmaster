@@ -1,19 +1,19 @@
 <?php
 
 /*
-*  Fields API Google Map Field Class
+*  FieldMaster Google Map Field Class
 *
 *  All the logic for this field type
 *
-*  @class 		fields_field_google_map
-*  @extends		fields_field
-*  @package		Fields API
+*  @class 		fieldmaster_field_google_map
+*  @extends		fieldmaster_field
+*  @package		FieldMaster
 *  @subpackage	Fields
 */
 
-if( ! class_exists('fields_field_google_map') ) :
+if( ! class_exists('fieldmaster_field_google_map') ) :
 
-class fields_field_google_map extends fields_field {
+class fieldmaster_field_google_map extends fieldmaster_field {
 	
 	
 	/*
@@ -277,7 +277,7 @@ class fields_field_google_map extends fields_field {
 	}
 }
 
-new fields_field_google_map();
+new fieldmaster_field_google_map();
 
 endif;
 

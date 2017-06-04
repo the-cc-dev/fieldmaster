@@ -1,12 +1,12 @@
 <?php
 
 /*
-*  Fields API Widget Form Class
+*  FieldMaster Widget Form Class
 *
 *  All the logic for adding fields to widgets
 *
 *  @class 		fields_form_widget
-*  @package		Fields API
+*  @package		FieldMaster
 *  @subpackage	Forms
 */
 
@@ -195,7 +195,7 @@ class fields_form_widget {
 	/*
 	*  widget_update_callback
 	*
-	*  This function will hook into the widget update filter and save Fields API data
+	*  This function will hook into the widget update filter and save FieldMaster data
 	*
 	*  @type	function
 	*  @date	27/05/2015
@@ -290,7 +290,7 @@ class fields_form_widget {
 		}
 		
 		
-		// bail early if this form does not contain Fields API data
+		// bail early if this form does not contain FieldMaster data
 		if( !$form.find('#fields-form-data').exists() ) {
 		
 			return true;

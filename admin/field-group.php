@@ -1,12 +1,12 @@
 <?php
 
 /*
-*  Fields API Admin Field Group Class
+*  FieldMaster Admin Field Group Class
 *
 *  All the logic for editing a field group
 *
 *  @class 		fields_admin_field_group
-*  @package		Fields API
+*  @package		FieldMaster
 *  @subpackage	Admin
 */
 
@@ -307,7 +307,7 @@ class fields_admin_field_group {
 	/*
 	*  edit_form_after_title
 	*
-	*  This action will allow Fields API to render metaboxes after the title
+	*  This action will allow FieldMaster to render metaboxes after the title
 	*
 	*  @type	action
 	*  @date	17/08/13
@@ -381,11 +381,11 @@ class fields_admin_field_group {
 
 
         // save fields
-		unset( $_POST['fields_fields']['fieldscloneindex'] );
+		unset( $_POST['fieldmaster_fields']['fieldscloneindex'] );
 
-		if( !empty($_POST['fields_fields']) ) {
+		if( !empty($_POST['fieldmaster_fields']) ) {
 
-			foreach( $_POST['fields_fields'] as $field ) {
+			foreach( $_POST['fieldmaster_fields'] as $field ) {
 
 				// vars
 				$specific = false;
@@ -439,12 +439,12 @@ class fields_admin_field_group {
 
 
 		// add args
-        $_POST['fields_field_group']['ID'] = $post_id;
-        $_POST['fields_field_group']['title'] = $_POST['post_title'];
+        $_POST['fieldmaster_field_group']['ID'] = $post_id;
+        $_POST['fieldmaster_field_group']['title'] = $_POST['post_title'];
 
 
 		// save field group
-        fields_update_field_group( $_POST['fields_field_group'] );
+        fields_update_field_group( $_POST['fieldmaster_field_group'] );
 
 
         // return
@@ -902,7 +902,7 @@ class fields_admin_field_group {
 		// create field
 		fields_render_field(array(
 			'type'		=> 'select',
-			'prefix'	=> "fields_field_group[location][{$options['group_id']}][{$options['rule_id']}]",
+			'prefix'	=> "fieldmaster_field_group[location][{$options['group_id']}][{$options['rule_id']}]",
 			'name'		=> 'value',
 			'value'		=> $options['value'],
 			'choices'	=> $choices,
@@ -1099,7 +1099,7 @@ class fields_admin_field_group {
 		// render options
 		$field = fields_get_valid_field(array(
 			'type'		=> 'select',
-			'name'		=> 'fields_field_group',
+			'name'		=> 'fieldmaster_field_group',
 			'choices'	=> $choices
 		));
 

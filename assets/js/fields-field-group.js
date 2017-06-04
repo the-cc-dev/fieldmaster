@@ -475,11 +475,11 @@
 					
 				} else if( save == 'meta' ) {
 					
-					$(this).children('.settings').find('[name^="fields_fields[' + ID + ']"]').remove();
+					$(this).children('.settings').find('[name^="fieldmaster_fields[' + ID + ']"]').remove();
 					
 				} else {
 					
-					$(this).find('[name^="fields_fields[' + ID + ']"]').remove();
+					$(this).find('[name^="fieldmaster_fields[' + ID + ']"]').remove();
 					
 				}
 				

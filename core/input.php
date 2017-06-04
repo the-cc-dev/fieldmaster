@@ -66,7 +66,7 @@ class fields_input {
 	/*
 	*  admin_enqueue_scripts
 	*
-	*  This function will enqueue all the required scripts / styles for Fields API
+	*  This function will enqueue all the required scripts / styles for FieldMaster
 	*
 	*  @type	action (fields/input/admin_enqueue_scripts)
 	*  @date	6/10/13
@@ -281,7 +281,7 @@ class fields_input_listener {
 /*
 *  fields_admin_init
 *
-*  This function is used to setup all actions / functionality for an admin page which will contain Fields API inputs
+*  This function is used to setup all actions / functionality for an admin page which will contain FieldMaster inputs
 *
 *  @type	function
 *  @date	6/10/13

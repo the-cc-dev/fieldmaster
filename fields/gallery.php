@@ -1,19 +1,19 @@
 <?php
 
 /*
-*  Fields API Gallery Field Class
+*  FieldMaster Gallery Field Class
 *
 *  All the logic for this field type
 *
-*  @class 		fields_field_gallery
-*  @extends		fields_field
-*  @package		Fields API
+*  @class 		fieldmaster_field_gallery
+*  @extends		fieldmaster_field
+*  @package		FieldMaster
 *  @subpackage	Fields
 */
 
-if( ! class_exists('fields_field_gallery') ) :
+if( ! class_exists('fieldmaster_field_gallery') ) :
 
-class fields_field_gallery extends fields_field {
+class fieldmaster_field_gallery extends fieldmaster_field {
 	
 	
 	/*
@@ -827,7 +827,7 @@ class fields_field_gallery extends fields_field {
 	
 }
 
-new fields_field_gallery();
+new fieldmaster_field_gallery();
 
 endif;
 
