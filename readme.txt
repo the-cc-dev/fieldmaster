@@ -1,4 +1,4 @@
-=== FieldMaster Pro ===
+=== FieldMaster ===
 Contributors: goldhat, elliotcondon
 Tags: fields, advanced, custom, field, fields, custom field, FieldMaster, simple fields, magic fields, more fields, repeater, edit
 Requires at least: 3.6.0
