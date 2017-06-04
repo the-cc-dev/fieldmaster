@@ -3,7 +3,7 @@
 Plugin Name: FieldMaster
 Plugin URI: https://goldhat.ca
 Description: FieldMaster for create field interfaces and data storage in WordPress.
-Version: 0.0.1
+Version: 6.0.0
 Author: GoldHat Group
 Author URI: https://goldhat.ca
 Copyright: GoldHat Group, Elliot Condon
@@ -61,7 +61,7 @@ class fieldsAPI {
 
 			// basic
 			'name'				=> __('FieldMaster', 'fields'),
-			'version'			=> '0.0.1',
+			'version'			=> '6.0.0',
 
 			// urls
 			'basename'			=> plugin_basename( __FILE__ ),
