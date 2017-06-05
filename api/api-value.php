@@ -1,125 +1,55 @@
 <?php
 
 /*
-*  fields_get_value
+*  fieldmaster_get_metadata
 *
-*  This function will load in a field's value
+*  This function will get a value from the DB
 *
 *  @type	function
-*  @date	28/09/13
-*  @since	5.0.0
+*  @date	16/10/2015
+*  @since	5.2.3
 *
-*  @param	$value (mixed)
-*  @param	$post_id (int)
-*  @param	$field (array)
-*  @param	$format (boolean)
-*  @param	$format_template (boolean)
-*  @return	(mixed)
+*  @param	$post_id (mixed)
+*  @param	$name (string)
+*  @param	$hidden (boolean)
+*  @return	$return (mixed)
 */
 
-function fields_get_value( $post_id, $field, $db_only = false ) {
+function fieldmaster_get_metadata( $post_id = 0, $name = '', $hidden = false ) {
 	
 	// vars
 	$value = null;
+	$prefix = $hidden ? '_' : '';
 	
 	
-	// try cache
-	$found = false;
-	$cache = wp_cache_get( "load_value/post_id={$post_id}/name={$field['name']}", 'fields', false, $found );
-	
-	if( $found ) {
-	
-		return $cache;
-		
-	}	
+	// get post_id info
+	$info = fieldmaster_get_post_id_info($post_id);
 	
 	
-	// load value depending on the $type
-	if( empty($post_id) ) {
-		
-		// do nothing
+	// bail early if no $post_id (fieldmaster_form - new_post)
+	if( !$info['id'] ) return $value;
 	
-	} elseif( is_numeric($post_id) ) {
+	
+	// option
+	if( $info['type'] === 'option' ) {
 		
-		$v = get_post_meta( $post_id, $field['name'], false );
+		$name = $prefix . $post_id . '_' . $name;
+		$value = get_option( $name, null );
 		
-		// value is an array
-		if( isset($v[0]) ) {
-		
-		 	$value = $v[0];
-		 	
-	 	}
-
-	} elseif( strpos($post_id, 'user_') !== false ) {
-		
-		$user_id = str_replace('user_', '', $post_id);
-		$user_id = intval( $user_id );
-		
-		$v = get_user_meta( $user_id, $field['name'], false );
-		
-		// value is an array
-		if( isset($v[0]) ) {
-		
-		 	$value = $v[0];
-		 	
-	 	}
-	 	
-	} elseif( strpos($post_id, 'comment_') !== false ) {
-		
-		$comment_id = str_replace('comment_', '', $post_id);
-		$comment_id = intval( $comment_id );
-		
-		$v = get_comment_meta( $comment_id, $field['name'], false );
-		
-		// value is an array
-		if( isset($v[0]) ) {
-		
-		 	$value = $v[0];
-		 	
-	 	}
-	 	
+	// meta
 	} else {
 		
-		$v = get_option( "{$post_id}_{$field['name']}", null );
-	
-		if( ! is_null($v) ) {
+		$name = $prefix . $name;
+		$meta = get_metadata( $info['type'], $info['id'], $name, false );
 		
-			$value = $v;
-			
+		if( isset($meta[0]) ) {
+		
+		 	$value = $meta[0];
+		 	
 	 	}
-	}
-	
-	
-	// no value? try default_value
-	if( $value === null && isset($field['default_value']) ) {
-		
-		$value = $field['default_value'];
 		
 	}
 	
-	
-	// if value was duplicated, it may now be a serialized string!
-	$value = maybe_unserialize( $value );
-	
-	
-	// bail early if db only value (no need to update cache)
-	if( $db_only ) {
-		
-		return $value;
-		
-	}
-	
-	
-	// filter for 3rd party customization
-	$value = apply_filters( "fields/load_value", $value, $post_id, $field );
-	$value = apply_filters( "fields/load_value/type={$field['type']}", $value, $post_id, $field );
-	$value = apply_filters( "fields/load_value/name={$field['name']}", $value, $post_id, $field );
-	$value = apply_filters( "fields/load_value/key={$field['key']}", $value, $post_id, $field );
-	
-	
-	//update cache
-	wp_cache_set( "load_value/post_id={$post_id}/name={$field['name']}", $value, 'fields' );
-
 	
 	// return
 	return $value;
@@ -128,114 +58,110 @@ function fields_get_value( $post_id, $field, $db_only = false ) {
 
 
 /*
-*  fields_format_value
+*  fieldmaster_update_metadata
 *
-*  This function will format the value for front end use
+*  This function will update a value from the DB
 *
 *  @type	function
-*  @date	3/07/2014
-*  @since	5.0.0
+*  @date	16/10/2015
+*  @since	5.2.3
 *
-*  @param	$value (mixed)
 *  @param	$post_id (mixed)
-*  @param	$field (array)
-*  @return	$value
+*  @param	$name (string)
+*  @param	$value (mixed)
+*  @param	$hidden (boolean)
+*  @return	$return (boolean)
 */
 
-function fields_format_value( $value, $post_id, $field ) {
-	
-	// apply filters
-	$value = apply_filters( "fields/format_value", $value, $post_id, $field );
-	$value = apply_filters( "fields/format_value/type={$field['type']}", $value, $post_id, $field );
-	$value = apply_filters( "fields/format_value/name={$field['name']}", $value, $post_id, $field );
-	$value = apply_filters( "fields/format_value/key={$field['key']}", $value, $post_id, $field );
-	
-	
-	// return
-	return $value;
-	
-} 
-
-
-/*
-*  fields_update_value
-*
-*  updates a value into the db
-*
-*  @type	action
-*  @date	23/01/13
-*
-*  @param	{mixed}		$value		the value to be saved
-*  @param	{int}		$post_id 	the post ID to save the value to
-*  @param	{array}		$field		the field array
-*  @param	{boolean}	$exact		allows the update_value filter to be skipped
-*  @return	N/A
-*/
-
-function fields_update_value( $value = null, $post_id = 0, $field ) {
+function fieldmaster_update_metadata( $post_id = 0, $name = '', $value = '', $hidden = false ) {
 	
 	// vars
 	$return = false;
+	$prefix = $hidden ? '_' : '';
 	
 	
-	// strip slashes
-	if( fields_get_setting('stripslashes') ) {
+	// get post_id info
+	$info = fieldmaster_get_post_id_info($post_id);
+	
+	
+	// bail early if no $post_id (fieldmaster_form - new_post)
+	if( !$info['id'] ) return $return;
+	
+	
+	// option
+	if( $info['type'] === 'option' ) {
 		
-		$value = stripslashes_deep($value);
+		$name = $prefix . $post_id . '_' . $name;
+		$return = fieldmaster_update_option( $name, $value );
+		
+	// meta
+	} else {
+		
+		$name = $prefix . $name;
+		$return = update_metadata( $info['type'], $info['id'], $name, $value );
 		
 	}
 	
-	
-	// filter for 3rd party customization
-	$value = apply_filters( "fields/update_value", $value, $post_id, $field );
-	$value = apply_filters( "fields/update_value/type={$field['type']}", $value, $post_id, $field );
-	$value = apply_filters( "fields/update_value/name={$field['name']}", $value, $post_id, $field );
-	$value = apply_filters( "fields/update_value/key={$field['key']}", $value, $post_id, $field );
-	
-
-	// note:
-	// attempted to save values as individual rows for better WP_Query compatibility. Issues are clear that order would not work.
-	if( is_numeric($post_id) )
-	{
-		// allow FieldMaster to save to revision!
-		$return = update_metadata('post', $post_id, $field['name'], $value );
-				  update_metadata('post', $post_id, '_' . $field['name'], $field['key']);
-	}
-	elseif( strpos($post_id, 'user_') !== false )
-	{
-		$user_id = str_replace('user_', '', $post_id);
-		$return = update_metadata('user', $user_id, $field['name'], $value);
-				  update_metadata('user', $user_id, '_' . $field['name'], $field['key']);
-	}
-	elseif( strpos($post_id, 'comment_') !== false )
-	{
-		$comment_id = str_replace('comment_', '', $post_id);
-		$return = update_metadata('comment', $comment_id, $field['name'], $value);
-				  update_metadata('comment', $comment_id, '_' . $field['name'], $field['key']);
-	}
-	else
-	{
-		// for some reason, update_option does not use stripslashes_deep.
-		// update_metadata -> http://core.trac.wordpress.org/browser/tags/3.4.2/wp-includes/meta.php#L82: line 101 (does use stripslashes_deep)
-		// update_option -> http://core.trac.wordpress.org/browser/tags/3.5.1/wp-includes/option.php#L0: line 215 (does not use stripslashes_deep)
-		$value = stripslashes_deep($value);
-		
-		$return = fields_update_option( $post_id . '_' . $field['name'], $value );
-				  fields_update_option( '_' . $post_id . '_' . $field['name'], $field['key'] );
-	}
-	
-	
-	// clear cache
-	wp_cache_delete( "load_value/post_id={$post_id}/name={$field['name']}", 'fields' );
-
 	
 	// return
 	return $return;
+	
 }
 
 
 /*
-*  fields_update_option
+*  fieldmaster_delete_metadata
+*
+*  This function will delete a value from the DB
+*
+*  @type	function
+*  @date	16/10/2015
+*  @since	5.2.3
+*
+*  @param	$post_id (mixed)
+*  @param	$name (string)
+*  @param	$hidden (boolean)
+*  @return	$return (boolean)
+*/
+
+function fieldmaster_delete_metadata( $post_id = 0, $name = '', $hidden = false ) {
+	
+	// vars
+	$return = false;
+	$prefix = $hidden ? '_' : '';
+	
+	
+	// get post_id info
+	$info = fieldmaster_get_post_id_info($post_id);
+	
+	
+	// bail early if no $post_id (fieldmaster_form - new_post)
+	if( !$info['id'] ) return $return;
+	
+	
+	// option
+	if( $info['type'] === 'option' ) {
+		
+		$name = $prefix . $post_id . '_' . $name;
+		$return = delete_option( $name );
+		
+	// meta
+	} else {
+		
+		$name = $prefix . $name;
+		$return = delete_metadata( $info['type'], $info['id'], $name );
+		
+	}
+	
+	
+	// return
+	return $return;
+	
+}
+
+
+/*
+*  fieldmaster_update_option
 *
 *  This function is a wrapper for the WP update_option but provides logic for a 'no' autoload
 *
@@ -245,10 +171,11 @@ function fields_update_value( $value = null, $post_id = 0, $field ) {
 *
 *  @param	$option (string)
 *  @param	$value (mixed)
+*  @param	autoload (mixed)
 *  @return	(boolean)
 */
 
-function fields_update_option( $option = '', $value = false, $autoload = null ) {
+function fieldmaster_update_option( $option = '', $value = '', $autoload = null ) {
 	
 	// vars
 	$deprecated = '';
@@ -258,11 +185,17 @@ function fields_update_option( $option = '', $value = false, $autoload = null ) 
 	// autoload
 	if( $autoload === null ){
 		
-		$autoload = fields_get_setting('autoload') ? 'yes' : 'no';
+		$autoload = fieldmaster_get_setting('autoload') ? 'yes' : 'no';
 		
 	}
 	
 	
+	// for some reason, update_option does not use stripslashes_deep.
+	// update_metadata -> https://core.trac.wordpress.org/browser/tags/3.4.2/wp-includes/meta.php#L82: line 101 (does use stripslashes_deep)
+	// update_option -> https://core.trac.wordpress.org/browser/tags/3.5.1/wp-includes/option.php#L0: line 215 (does not use stripslashes_deep)
+	$value = stripslashes_deep($value);
+		
+		
 	// add or update
 	if( get_option($option) !== false ) {
 	
@@ -282,7 +215,172 @@ function fields_update_option( $option = '', $value = false, $autoload = null ) 
 
 
 /*
-*  fields_delete_value
+*  fieldmaster_get_value
+*
+*  This function will load in a field's value
+*
+*  @type	function
+*  @date	28/09/13
+*  @since	5.0.0
+*
+*  @param	$post_id (int)
+*  @param	$field (array)
+*  @return	(mixed)
+*/
+
+function fieldmaster_get_value( $post_id = 0, $field ) {
+	
+	// vars
+	$cache_key = "get_value/post_id={$post_id}/name={$field['name']}";
+	
+	
+	// return early if cache is found
+	if( fieldmaster_isset_cache($cache_key) ) {
+		
+		return fieldmaster_get_cache($cache_key);
+		
+	}
+	
+	
+	// load value
+	$value = fieldmaster_get_metadata( $post_id, $field['name'] );
+	
+	
+	// if value was duplicated, it may now be a serialized string!
+	$value = maybe_unserialize( $value );
+	
+	
+	// no value? try default_value
+	if( $value === null && isset($field['default_value']) ) {
+		
+		$value = $field['default_value'];
+		
+	}
+	
+	
+	// filter for 3rd party customization
+	$value = apply_filters( "fieldmaster/load_value", $value, $post_id, $field );
+	$value = apply_filters( "fieldmaster/load_value/type={$field['type']}", $value, $post_id, $field );
+	$value = apply_filters( "fieldmaster/load_value/name={$field['_name']}", $value, $post_id, $field );
+	$value = apply_filters( "fieldmaster/load_value/key={$field['key']}", $value, $post_id, $field );
+	
+	
+	// update cache
+	fieldmaster_set_cache($cache_key, $value);
+
+	
+	// return
+	return $value;
+	
+}
+
+
+/*
+*  fieldmaster_format_value
+*
+*  This function will format the value for front end use
+*
+*  @type	function
+*  @date	3/07/2014
+*  @since	5.0.0
+*
+*  @param	$value (mixed)
+*  @param	$post_id (mixed)
+*  @param	$field (array)
+*  @return	$value
+*/
+
+function fieldmaster_format_value( $value, $post_id, $field ) {
+	
+	// vars
+	$cache_key = "format_value/post_id={$post_id}/name={$field['name']}";
+	
+	
+	// return early if cache is found
+	if( fieldmaster_isset_cache($cache_key) ) {
+		
+		return fieldmaster_get_cache($cache_key);
+		
+	}
+	
+	
+	// apply filters
+	$value = apply_filters( "fieldmaster/format_value", $value, $post_id, $field );
+	$value = apply_filters( "fieldmaster/format_value/type={$field['type']}", $value, $post_id, $field );
+	$value = apply_filters( "fieldmaster/format_value/name={$field['_name']}", $value, $post_id, $field );
+	$value = apply_filters( "fieldmaster/format_value/key={$field['key']}", $value, $post_id, $field );
+	
+	
+	// update cache
+	fieldmaster_set_cache($cache_key, $value);
+	
+	
+	// return
+	return $value;
+	
+} 
+
+
+/*
+*  fieldmaster_update_value
+*
+*  updates a value into the db
+*
+*  @type	action
+*  @date	23/01/13
+*
+*  @param	$value (mixed)
+*  @param	$post_id (mixed)
+*  @param	$field (array)
+*  @return	(boolean)
+*/
+
+function fieldmaster_update_value( $value = null, $post_id = 0, $field ) {
+	
+	// strip slashes
+	if( fieldmaster_get_setting('stripslashes') ) {
+		
+		$value = stripslashes_deep($value);
+		
+	}
+	
+	
+	// filter for 3rd party customization
+	$value = apply_filters( "fieldmaster/update_value", $value, $post_id, $field );
+	$value = apply_filters( "fieldmaster/update_value/type={$field['type']}", $value, $post_id, $field );
+	$value = apply_filters( "fieldmaster/update_value/name={$field['_name']}", $value, $post_id, $field );
+	$value = apply_filters( "fieldmaster/update_value/key={$field['key']}", $value, $post_id, $field );
+	
+	
+	// allow null to delete
+	if( $value === null ) {
+		
+		return fieldmaster_delete_value( $post_id, $field );
+		
+	}
+	
+	
+	// update value
+	$return = fieldmaster_update_metadata( $post_id, $field['name'], $value );
+	
+	
+	// update reference
+	fieldmaster_update_metadata( $post_id, $field['name'], $field['key'], true );
+	
+	
+	// clear cache
+	fieldmaster_delete_cache("get_value/post_id={$post_id}/name={$field['name']}");
+	fieldmaster_delete_cache("format_value/post_id={$post_id}/name={$field['name']}");
+
+	
+	// return
+	return $return;
+	
+}
+
+
+/*
+*  fieldmaster_delete_value
 *
 *  This function will delete a value from the database
 *
@@ -291,91 +389,133 @@ function fields_update_option( $option = '', $value = false, $autoload = null ) 
 *  @since	5.0.0
 *
 *  @param	$post_id (mixed)
-*  @param	$key (string|array) the meta_name or $field
+*  @param	$field (array)
 *  @return	(boolean)
 */
 
-function fields_delete_value( $post_id = 0, $key = '' ) {
-	
-	// vars
-	$field = false;
-	$return = false;
-	
-	
-	// string
-	if( is_string($key) ) {
-		
-		// find selector
-		$field = fields_get_field_reference( $key, $post_id );
-		
-		
-		// get field key
-		$field = fields_get_field( $field );
-	
-	
-	// field
-	} elseif( is_array($key) ) {
-		
-		// set vars
-		$field = $key;
-		$key = $field['name'];
-	
-	
-	// bail early if not valid key
-	} else {
-		
-		return false;
-		
-	}
-	
+function fieldmaster_delete_value( $post_id = 0, $field ) {
 	
 	// action for 3rd party customization
-	do_action("fields/delete_value", $post_id, $key, $field);
-	
-	if( $field ) {
-		
-		do_action("fields/delete_value/type={$field['type']}", $post_id, $key, $field);
-		do_action("fields/delete_value/name={$field['_name']}", $post_id, $key, $field);
-		do_action("fields/delete_value/key={$field['key']}", $post_id, $key, $field);
-		
-	}
+	do_action("fieldmaster/delete_value", $post_id, $field['name'], $field);
+	do_action("fieldmaster/delete_value/type={$field['type']}", $post_id, $field['name'], $field);
+	do_action("fieldmaster/delete_value/name={$field['_name']}", $post_id, $field['name'], $field);
+	do_action("fieldmaster/delete_value/key={$field['key']}", $post_id, $field['name'], $field);
 	
 	
-	// post
-	if( is_numeric($post_id) ) {
-		
-		$return = delete_metadata('post', $post_id, $key );
-				  delete_metadata('post', $post_id, '_' . $key );
+	// delete value
+	$return = fieldmaster_delete_metadata( $post_id, $field['name'] );
 	
-	// user		  
-	} elseif( strpos($post_id, 'user_') !== false ) {
-		
-		$user_id = str_replace('user_', '', $post_id);
-		$return = delete_metadata('user', $user_id, $key);
-				  delete_metadata('user', $user_id, '_' . $key);
 	
-	// comment
-	} elseif( strpos($post_id, 'comment_') !== false ) {
-		
-		$comment_id = str_replace('comment_', '', $post_id);
-		$return = delete_metadata('comment', $comment_id, $key);
-				  delete_metadata('comment', $comment_id, '_' . $key);
-	
-	// option
-	} else {
-		
-		$return = delete_option( $post_id . '_' . $key );
-				  delete_option( '_' . $post_id . '_' . $key );
-				  
-	}
+	// delete reference
+	fieldmaster_delete_metadata( $post_id, $field['name'], true );
 	
 	
 	// clear cache
-	wp_cache_delete( "load_value/post_id={$post_id}/name={$key}", 'fields' );
+	fieldmaster_delete_cache("get_value/post_id={$post_id}/name={$field['name']}");
+	fieldmaster_delete_cache("format_value/post_id={$post_id}/name={$field['name']}");
 	
 	
 	// return
 	return $return;
+	
 }
+
+
+/*
+*  fieldmaster_copy_postmeta
+*
+*  This function will copy postmeta from one post to another.
+*  Very useful for saving and restoring revisions
+*
+*  @type	function
+*  @date	25/06/2016
+*  @since	5.3.8
+*
+*  @param	$from_post_id (int)
+*  @param	$to_post_id (int)
+*  @return	n/a
+*/
+
+function fieldmaster_copy_postmeta( $from_post_id, $to_post_id ) {
+	
+	// get all postmeta
+	$meta = get_post_meta( $from_post_id );
+	
+	
+	// bail early if no meta
+	if( !$meta ) return;
+
+	
+	// loop
+	foreach( $meta as $name => $value ) {
+		
+		// attempt to find key value
+		$key = fieldmaster_maybe_get( $meta, '_'.$name );
+		
+		
+		// bail ealry if no key
+		if( !$key ) continue;
+		
+		
+		// update vars
+		$value = $value[0];
+		$key = $key[0];
+		
+		
+		// bail early if $key is a not a field_key
+		if( !fieldmaster_is_field_key($key) ) continue;
+		
+		
+		// get_post_meta will return array before running maybe_unserialize
+		$value = maybe_unserialize( $value );
+		
+		
+		// add in slashes
+		// - update_post_meta will unslash the value, so we must first slash it to avoid losing backslashes
+		// - https://codex.wordpress.org/Function_Reference/update_post_meta#Character_Escaping
+		if( is_string($value) ) {
+			
+			$value =  wp_slash($value);
+			
+		}
+		
+		
+		// update value
+		fieldmaster_update_metadata( $to_post_id, $name, $value );
+		fieldmaster_update_metadata( $to_post_id, $name, $key, true );
+					
+	}
+
+}
+
+
+/*
+*  fieldmaster_preview_value
+*
+*  This function will return a human freindly 'preview' for a given field value
+*
+*  @type	function
+*  @date	24/10/16
+*  @since	5.5.0
+*
+*  @param	$value (mixed)
+*  @param	$post_id (mixed)
+*  @param	$field (array)
+*  @return	(string)
+*/
+
+function fieldmaster_preview_value( $value, $post_id, $field ) {
+	
+	// apply filters
+	$value = apply_filters( "fieldmaster/preview_value", $value, $post_id, $field );
+	$value = apply_filters( "fieldmaster/preview_value/type={$field['type']}", $value, $post_id, $field );
+	$value = apply_filters( "fieldmaster/preview_value/name={$field['_name']}", $value, $post_id, $field );
+	$value = apply_filters( "fieldmaster/preview_value/key={$field['key']}", $value, $post_id, $field );
+	
+	
+	// return
+	return $value;
+	
+} 
 
 ?>

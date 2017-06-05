@@ -1,58 +1,59 @@
 <?php 
 
 // vars
-$field_groups = fields_extract_var( $args, 'field_groups');
+$field_groups = fieldmaster_extract_var( $args, 'field_groups');
+
+
+// replace
+$str_replace = array(
+	"  "			=> "\t",
+	"'!!__(!!\'"	=> "__('",
+	"!!\', !!\'"	=> "', '",
+	"!!\')!!'"		=> "')"
+);
+
+$preg_replace = array(
+	'/([\t\r\n]+?)array/'	=> 'array',
+	'/[0-9]+ => array/'		=> 'array'
+);
 
 ?>
-<div class="wrap fields-settings-wrap">
+<div class="wrap fieldmaster-settings-wrap">
 	
-	<h2><?php _e('Tools', 'fields'); ?></h2>
+	<h1><?php _e('Tools', 'fieldmaster'); ?></h1>
 	
-	<div class="fields-box">
+	<div class="fieldmaster-box">
 		<div class="title">
-			<h3><?php _e('Export Field Groups to PHP', 'fields'); ?></h3>
+			<h3><?php _e('Export Field Groups to PHP', 'fieldmaster'); ?></h3>
 		</div>
 		
 		<div class="inner">
-			<p><?php _e("The following code can be used to register a local version of the selected field group(s). A local field group can provide many benefits such as faster load times, version control & dynamic fields/settings. Simply copy and paste the following code to your theme's functions.php file or include it within an external file.", 'fields'); ?></p>
+			<p><?php _e("The following code can be used to register a local version of the selected field group(s). A local field group can provide many benefits such as faster load times, version control & dynamic fields/settings. Simply copy and paste the following code to your theme's functions.php file or include it within an external file.", 'fieldmaster'); ?></p>
 			
 			<textarea class="pre" readonly="true"><?php
 			
-			echo "if( function_exists('fields_add_local_field_group') ):" . "\r\n" . "\r\n";
+			echo "if( function_exists('fieldmaster_add_local_field_group') ):" . "\r\n" . "\r\n";
 			
 			foreach( $field_groups as $field_group ) {
-								
+						
 				// code
 				$code = var_export($field_group, true);
 				
 				
 				// change double spaces to tabs
-				$code = str_replace("  ", "\t", $code);
-				
-				
-				// replace
-				$replace = array(
-					'/([\t\r\n]+?)array/'			=> 'array',
-					'/[0-9]+ => array/'				=> 'array'
-				);
-				
-				
-				// textdomain
-				if( $domain = fields_get_setting('export_textdomain') ) {
-					
-					$replace["/'title' => (.+),/"] = "'title' => __($1, '$domain'),";
-					$replace["/'label' => (.+),/"] = "'label' => __($1, '$domain'),";
-					$replace["/'instructions' => (.+),/"] = "'instructions' => __($1, '$domain'),";
-					
-				}
+				$code = str_replace( array_keys($str_replace), array_values($str_replace), $code );
 				
 				
 				// correctly formats "=> array("
-				$code = preg_replace( array_keys($replace), array_values($replace), $code);
+				$code = preg_replace( array_keys($preg_replace), array_values($preg_replace), $code );
+				
+				
+				// esc_textarea
+				$code = esc_textarea( $code );
 				
 				
 				// echo
-				echo "fields_add_local_field_group({$code});" . "\r\n" . "\r\n";
+				echo "fieldmaster_add_local_field_group({$code});" . "\r\n" . "\r\n";
 			
 			}
 			
@@ -65,7 +66,7 @@ $field_groups = fields_extract_var( $args, 'field_groups');
 	</div>
 	
 </div>
-<div class="fields-hidden">
+<div class="fieldmaster-hidden">
 	<style type="text/css">
 		textarea.pre {
 			width: 100%;

@@ -1,7 +1,7 @@
 <?php 
 
 /*
-*  fields_is_field_group_key
+*  fieldmaster_is_field_group_key
 *
 *  This function will return true or false for the given $group_key parameter
 *
@@ -13,22 +13,22 @@
 *  @return	(boolean)
 */
 
-function fields_is_field_group_key( $key = '' ) {
+function fieldmaster_is_field_group_key( $key = '' ) {
+	
+	// bail early if not string
+	if( !is_string($key) ) return false;
+	
+	
+	// bail early if is numeric (could be numeric string '123')
+	if( is_numeric($key) ) return false;
+	
 	
 	// look for 'field_' prefix
-	if( is_string($key) && substr($key, 0, 6) === 'group_' ) {
-		
-		return true;
-		
-	}
+	if( substr($key, 0, 6) === 'group_' ) return true;
 	
 	
 	// allow local field group key to not start with prefix
-	if( fields_is_local_field_group($key) ) {
-		
-		return true;
-		
-	}
+	if( fieldmaster_is_local_field_group($key) ) return true;
 	
 	
 	// return
@@ -38,45 +38,7 @@ function fields_is_field_group_key( $key = '' ) {
 
 
 /*
-*  fields_get_valid_field_group_key
-*
-*  This function will return a valid field group key starting with 'group_'
-*
-*  @type	function
-*  @date	2/02/2015
-*  @since	5.1.5
-*
-*  @param	$key (string)
-*  @return	$key
-*/
-
-function fields_get_valid_field_group_key( $key = '' ) {
-	
-	// test if valid
-	if( !fields_is_field_group_key($key) ) {
-		
-		// empty
-		if( !$key ) {
-			
-			$key = uniqid();
-			
-		} 
-		
-		
-		// add prefix
-		$key = "group_{$key}";
-		
-	}
-	
-	
-	// return
-	return $key;
-	
-}
-
-
-/*
-*  fields_get_valid_field_group
+*  fieldmaster_get_valid_field_group
 *
 *  This function will fill in any missing keys to the $field_group array making it valid
 *
@@ -88,10 +50,10 @@ function fields_get_valid_field_group_key( $key = '' ) {
 *  @return	$field_group (array)
 */
 
-function fields_get_valid_field_group( $field_group = false ) {
+function fieldmaster_get_valid_field_group( $field_group = false ) {
 	
 	// parse in defaults
-	$field_group = fields_parse_args( $field_group, array(
+	$field_group = wp_parse_args( $field_group, array(
 		'ID'					=> 0,
 		'key'					=> '',
 		'title'					=> '',
@@ -109,8 +71,12 @@ function fields_get_valid_field_group( $field_group = false ) {
 	
 	
 	// filter
-	$field_group = apply_filters('fields/get_valid_field_group', $field_group);
+	$field_group = apply_filters('fieldmaster/validate_field_group', $field_group);
 
+	
+	// translate
+	$field_group = fieldmaster_translate_field_group( $field_group );
+	
 	
 	// return
 	return $field_group;
@@ -119,7 +85,46 @@ function fields_get_valid_field_group( $field_group = false ) {
 
 
 /*
-*  fields_get_field_groups
+*  fieldmaster_translate_field_group
+*
+*  This function will translate field group's settings
+*
+*  @type	function
+*  @date	8/03/2016
+*  @since	5.3.2
+*
+*  @param	$field_group (array)
+*  @return	$field_group
+*/
+
+function fieldmaster_translate_field_group( $field_group ) {
+	
+	// vars
+	$l10n = fieldmaster_get_setting('l10n');
+	$l10n_textdomain = fieldmaster_get_setting('l10n_textdomain');
+	
+	
+	// if
+	if( $l10n && $l10n_textdomain ) {
+		
+		// translate
+		$field_group['title'] = fieldmaster_translate( $field_group['title'] );
+		
+		
+		// filters
+		$field_group = apply_filters( "fieldmaster/translate_field_group", $field_group );
+		
+	}
+	
+	
+	// return
+	return $field_group;
+	
+}
+
+
+/*
+*  fieldmaster_get_field_groups
 *
 *  This function will return an array of field groupss for the given args. Similar to the WP get_posts function
 *
@@ -131,66 +136,83 @@ function fields_get_valid_field_group( $field_group = false ) {
 *  @return	$field_groups (array)
 */
 
-function fields_get_field_groups( $args = false ) {
+function fieldmaster_get_field_groups( $args = false ) {
 	
 	// vars
 	$field_groups = array();
+	$post_ids = array();
+	$cache_key = "get_field_groups";
 	
 	
-	// cache
-	$found = false;
-	$cache = wp_cache_get( 'get_field_groups', 'fields', false, $found );
-	
-	if( $found ) {
+	// check cache for ids
+	if( fieldmaster_isset_cache($cache_key) ) {
 		
-		return fields_filter_field_groups( $cache, $args );
+		$post_ids = fieldmaster_get_cache($cache_key);
+	
+	// query DB for child ids
+	} else {
+		
+		// query
+		$posts = get_posts(array(
+			'post_type'					=> 'fm-field-group',
+			'posts_per_page'			=> -1,
+			'orderby' 					=> 'menu_order title',
+			'order' 					=> 'asc',
+			'suppress_filters'			=> false, // allow WPML to modify the query
+			'post_status'				=> array('publish', 'fieldmaster-disabled'),
+			'update_post_meta_cache'	=> false
+		));
+		
+		
+		// loop
+		if( $posts ) {
+			
+			foreach( $posts as $post ) {
+				
+				$post_ids[] = $post->ID;
+				
+			}
+				
+		}
+		
+		
+		// update cache
+		fieldmaster_set_cache($cache_key, $post_ids);
 		
 	}
 	
 	
-	// load from DB
-	$posts = get_posts(array(
-		'post_type'					=> 'fields-field-group',
-		'posts_per_page'			=> -1,
-		'orderby' 					=> 'menu_order title',
-		'order' 					=> 'asc',
-		'suppress_filters'			=> false, // allow WPML to modify the query
-		'post_status'				=> array('publish', 'fields-disabled'),
-		'update_post_meta_cache'	=> false
-	));
-	
-	
-	// loop through and load field groups
-	if( $posts ) {
+	// load field groups
+	foreach( $post_ids as $post_id ) {
 		
-		foreach( $posts as $post ) {
-			
-			// add to return array
-			$field_groups[] = fields_get_field_group( $post );
-			
-		}
+		$field_groups[] = fieldmaster_get_field_group( $post_id );
 		
 	}
 	
 	
 	// filter
-	$field_groups = apply_filters('fields/get_field_groups', $field_groups);
+	// - allows local field groups to be appended
+	$field_groups = apply_filters('fieldmaster/get_field_groups', $field_groups);
 	
 	
-	// set cache
-	wp_cache_set( 'get_field_groups', $field_groups, 'fields' );
-			
+	// filter via args
+	if( $args ) {
+		
+		$field_groups = fieldmaster_filter_field_groups( $field_groups, $args );
+		
+	}
+	
 	
 	// return		
-	return fields_filter_field_groups( $field_groups, $args );
+	return $field_groups;
 	
 }
 
 
 /*
-*  fields_filter_field_groups
+*  fieldmaster_filter_field_groups
 *
-*  This function is used by fields_get_field_groups to filter out fields groups based on location rules
+*  This function is used by fieldmaster_get_field_groups to filter out fields groups based on location rules
 *
 *  @type	function
 *  @date	29/11/2013
@@ -201,7 +223,7 @@ function fields_get_field_groups( $args = false ) {
 *  @return	$field_groups (array)
 */
 
-function fields_filter_field_groups( $field_groups, $args = false ) {
+function fieldmaster_filter_field_groups( $field_groups, $args = false ) {
 	
 	// bail early if empty sargs
 	if( empty($args) || empty($field_groups) ) {
@@ -219,7 +241,7 @@ function fields_filter_field_groups( $field_groups, $args = false ) {
 	foreach( $keys as $key ) {
 		
 		// get visibility
-		$visibility = fields_get_field_group_visibility( $field_groups[ $key ], $args );
+		$visibility = fieldmaster_get_field_group_visibility( $field_groups[ $key ], $args );
 		
 		
 		// unset
@@ -243,7 +265,7 @@ function fields_filter_field_groups( $field_groups, $args = false ) {
 
 
 /*
-*  fields_get_field_group
+*  fieldmaster_get_field_group
 *
 *  This function will take either a post object, post ID or even null (for global $post), and
 *  will then return a valid field group array
@@ -256,74 +278,89 @@ function fields_filter_field_groups( $field_groups, $args = false ) {
 *  @return	$field_group (array)
 */
 
-function fields_get_field_group( $selector = false ) {
+function fieldmaster_get_field_group( $selector = null ) {
 	
 	// vars
 	$field_group = false;
-	$k = 'ID';
-	$v = 0;
+	$type = 'ID';
 	
 	
-	// $post_id or $key
-	if( is_numeric($selector) )
-	{
-		$v = $selector;
-	}
-	elseif( is_string($selector) )
-	{
-		$k = 'key';
-		$v = $selector;
-	}
-	elseif( is_object($selector) )
-	{
-		$v = $selector->ID;
-	}
-	else
-	{
+	// ID
+	if( is_numeric($selector) ) {
+		
+		// do nothing
+	
+	// object
+	} elseif( is_object($selector) ) {
+		
+		$selector = $selector->ID;
+	
+	// string
+	} elseif( is_string($selector) ) {
+		
+		$type = 'key';
+	
+	// other
+	} else {
+		
 		return false;
+		
 	}
 	
 	
-	// get cache key
-	$cache_key = "get_field_group/{$k}={$v}";
+	// return early if cache is found
+	$cache_key = "get_field_group/{$type}={$selector}";
 	
-	
-	// get cache
-	$found = false;
-	$cache = wp_cache_get( $cache_key, 'fields', false, $found );
-	
-	if( $found )
-	{
-		return $cache;
+	if( fieldmaster_isset_cache($cache_key) ) {
+		
+		return fieldmaster_get_cache($cache_key);
+		
 	}
 	
 	
-	// get field group from ID or key
-	if( $k == 'ID' )
-	{
-		$field_group = _fields_get_field_group_by_id( $v );
+	// ID
+	if( $type == 'ID' ) {
+		
+		$field_group = _fieldmaster_get_field_group_by_id( $selector );
+	
+	// key	
+	} else {
+		
+		$field_group = _fieldmaster_get_field_group_by_key( $selector );
+	
 	}
-	else
-	{
-		$field_group = _fields_get_field_group_by_key( $v );
-	}
+	
+	
+	// bail early if no field
+	if( !$field_group ) return false;
+	
+	
+	// validate
+	$field_group = fieldmaster_get_valid_field_group( $field_group );
 	
 	
 	// filter for 3rd party customization
-	$field_group = apply_filters('fields/get_field_group', $field_group);
+	$field_group = apply_filters('fieldmaster/get_field_group', $field_group);
 	
 	
-	// set cache
-	wp_cache_set( $cache_key, $field_group, 'fields' );
+	// update cache
+	// - Use key instead of ID for best compatibility (not all field groups exist in the DB)
+	$cache_key = fieldmaster_set_cache("get_field_group/key={$field_group['key']}", $field_group);
+	
+	
+	// update cache reference
+	// - allow cache to return if using an ID selector
+	fieldmaster_set_cache_reference("get_field_group/ID={$field_group['ID']}", $cache_key);
 	
 	
 	// return
 	return $field_group;
+	
 }
 
 
 /*
-*  _fields_get_field_group_by_id
+*  _fieldmaster_get_field_group_by_id
 *
 *  This function will get a field group by its ID
 *
@@ -335,18 +372,14 @@ function fields_get_field_group( $selector = false ) {
 *  @return	$field_group (array)
 */
 
-function _fields_get_field_group_by_id( $post_id = 0 ) {
+function _fieldmaster_get_field_group_by_id( $post_id = 0 ) {
 	
 	// get post
 	$post = get_post( $post_id );
 	
 	
 	// bail early if no post, or is not a field group
-	if( empty($post) || $post->post_type != 'fields-field-group' ) {
-	
-		return false;
-		
-	}
+	if( empty($post) || $post->post_type != 'fm-field-group' ) return false;
 	
 	
 	// modify post_status (new field-group starts as auto-draft)
@@ -361,6 +394,10 @@ function _fields_get_field_group_by_id( $post_id = 0 ) {
 	$field_group = maybe_unserialize( $post->post_content );
 	
 	
+	// new field group does not contain any post_content
+	if( empty($field_group) ) $field_group = array();
+	
+	
 	// update attributes
 	$field_group['ID'] = $post->ID;
 	$field_group['title'] = $post->post_title;
@@ -369,22 +406,22 @@ function _fields_get_field_group_by_id( $post_id = 0 ) {
 	$field_group['active'] = ($post->post_status === 'publish') ? 1 : 0;
 	
 	
-	// is JSON
-	if( fields_is_local_field_group( $field_group['key'] ) ) {
+	// override with JSON
+	if( fieldmaster_is_local_field_group( $field_group['key'] ) ) {
 		
-		// override
-		$field_group = fields_get_local_field_group( $field_group['key'] );
+		// load JSON field
+		$local = fieldmaster_get_local_field_group( $field_group['key'] );
 		
 		
 		// restore ID
-		$field_group['ID'] = $post->ID;
+		$local['ID'] = $post->ID;
+		
+		
+		// return
+		return $local;
 		
 	}
 	
-		
-	// validate
-	$field_group = fields_get_valid_field_group( $field_group );
-
 	
 	// return
 	return $field_group;
@@ -393,7 +430,7 @@ function _fields_get_field_group_by_id( $post_id = 0 ) {
 
 
 /*
-*  _fields_get_field_group_by_key
+*  _fieldmaster_get_field_group_by_key
 *
 *  This function will get a field group by its key
 *
@@ -405,35 +442,55 @@ function _fields_get_field_group_by_id( $post_id = 0 ) {
 *  @return	$field_group (array)
 */
 
-function _fields_get_field_group_by_key( $key = '' ) {
-	
-	// vars
-	$field_group = false;
-		
+function _fieldmaster_get_field_group_by_key( $key = '' ) {
 	
 	// try JSON before DB to save query time
-	if( fields_is_local_field_group( $key ) ) {
+	if( fieldmaster_is_local_field_group( $key ) ) {
 		
-		$field_group = fields_get_local_field_group( $key );
-		
-		// validate
-		$field_group = fields_get_valid_field_group( $field_group );
-	
-		// return
-		return $field_group;
+		return fieldmaster_get_local_field_group( $key );
 		
 	}
+	
+	
+	// vars
+	$post_id = fieldmaster_get_field_group_id( $key );
+	
+	
+	// bail early if no post_id
+	if( !$post_id ) return false;
+		
+	
+	// return
+	return _fieldmaster_get_field_group_by_id( $post_id );
+	
+}
 
+
+/*
+*  fieldmaster_get_field_group_id
+*
+*  This function will lookup a field group's ID from the DB
+*  Useful for local fields to find DB sibling
+*
+*  @type	function
+*  @date	25/06/2015
+*  @since	5.5.8
+*
+*  @param	$key (string)
+*  @return	$post_id (int)
+*/
+
+function fieldmaster_get_field_group_id( $key = '' ) {
 	
 	// vars
 	$args = array(
 		'posts_per_page'	=> 1,
-		'post_type'			=> 'fields-field-group',
+		'post_type'			=> 'fm-field-group',
 		'orderby' 			=> 'menu_order title',
 		'order'				=> 'ASC',
 		'suppress_filters'	=> false,
-		'post_status'		=> array('publish', 'fields-disabled', 'trash'),
-		'fields_group_key'		=> $key
+		'post_status'		=> array('publish', 'fieldmaster-disabled', 'trash'),
+		'fieldmaster_group_key'		=> $key
 	);
 	
 	
@@ -442,25 +499,17 @@ function _fields_get_field_group_by_key( $key = '' ) {
 	
 	
 	// validate
-	if( empty($posts[0]) ) {
-	
-		return $field_group;
-			
-	}
-	
-	
-	// load from ID
-	$field_group = _fields_get_field_group_by_id( $posts[0]->ID );
+	if( empty($posts) ) return 0;
 	
 	
 	// return
-	return $field_group;
+	return $posts[0]->ID;
 	
 }
 
 
 /*
-*  fields_update_field_group
+*  fieldmaster_update_field_group
 *
 *  This function will update a field group into the database.
 *  The returned field group will always contain an ID
@@ -473,22 +522,27 @@ function _fields_get_field_group_by_key( $key = '' ) {
 *  @return	$field_group (array)
 */
 
-function fields_update_field_group( $field_group = array() ) {
+function fieldmaster_update_field_group( $field_group = array() ) {
 	
 	// validate
-	$field_group = fields_get_valid_field_group( $field_group );
+	$field_group = fieldmaster_get_valid_field_group( $field_group );
 	
 	
 	// may have been posted. Remove slashes
 	$field_group = wp_unslash( $field_group );
 	
 	
+	// parse types (converts string '0' to int 0)
+	$field_group = fieldmaster_parse_types( $field_group );
+	
+	
 	// locations may contain 'uniquid' array keys
 	$field_group['location'] = array_values( $field_group['location'] );
 	
-	foreach( $field_group['location'] as $k => $v )
-	{
+	foreach( $field_group['location'] as $k => $v ) {
+		
 		$field_group['location'][ $k ] = array_values( $v );
+		
 	}
 	
 	
@@ -497,7 +551,7 @@ function fields_update_field_group( $field_group = array() ) {
 	
 	
 	// extract some args
-	$extract = fields_extract_vars($data, array(
+	$extract = fieldmaster_extract_vars($data, array(
 		'ID',
 		'key',
 		'title',
@@ -509,14 +563,14 @@ function fields_update_field_group( $field_group = array() ) {
 	
 	// vars
 	$data = maybe_serialize( $data );
-    $post_status = $extract['active'] ? 'publish' : 'fields-disabled';
+    $post_status = $extract['active'] ? 'publish' : 'fieldmaster-disabled';
     
     
     // save
     $save = array(
     	'ID'			=> $extract['ID'],
     	'post_status'	=> $post_status,
-    	'post_type'		=> 'fields-field-group',
+    	'post_type'		=> 'fm-field-group',
     	'post_title'	=> $extract['title'],
     	'post_name'		=> $extract['key'],
     	'post_excerpt'	=> sanitize_title($extract['title']),
@@ -526,7 +580,7 @@ function fields_update_field_group( $field_group = array() ) {
     
     
     // allow field groups to contain the same name
-	add_filter( 'wp_unique_post_slug', 'fields_update_field_group_wp_unique_post_slug', 100, 6 ); 
+	add_filter( 'wp_unique_post_slug', 'fieldmaster_update_field_group_wp_unique_post_slug', 100, 6 ); 
 	
     
     // update the field group and update the ID
@@ -542,13 +596,11 @@ function fields_update_field_group( $field_group = array() ) {
 	
 	
 	// action for 3rd party customization
-	do_action('fields/update_field_group', $field_group);
+	do_action('fieldmaster/update_field_group', $field_group);
 	
 	
 	// clear cache
-	wp_cache_delete("get_field_group/ID={$field_group['ID']}", 'fields');
-	wp_cache_delete("get_field_group/key={$field_group['key']}", 'fields');
-	wp_cache_delete("get_field_groups", 'fields');
+	fieldmaster_delete_cache("get_field_group/key={$field_group['key']}");
 	
 	
     // return
@@ -556,9 +608,9 @@ function fields_update_field_group( $field_group = array() ) {
 	
 }
 
-function fields_update_field_group_wp_unique_post_slug( $slug, $post_ID, $post_status, $post_type, $post_parent, $original_slug ) {
+function fieldmaster_update_field_group_wp_unique_post_slug( $slug, $post_ID, $post_status, $post_type, $post_parent, $original_slug ) {
 		
-	if( $post_type == 'fields-field-group' ) {
+	if( $post_type == 'fm-field-group' ) {
 	
 		$slug = $original_slug;
 	
@@ -569,7 +621,7 @@ function fields_update_field_group_wp_unique_post_slug( $slug, $post_ID, $post_s
 
 
 /*
-*  fields_duplicate_field_group
+*  fieldmaster_duplicate_field_group
 *
 *  This function will duplicate a field group into the database
 *
@@ -582,14 +634,14 @@ function fields_update_field_group_wp_unique_post_slug( $slug, $post_ID, $post_s
 *  @return	$field_group (array)
 */
 
-function fields_duplicate_field_group( $selector = 0, $new_post_id = 0 ) {
+function fieldmaster_duplicate_field_group( $selector = 0, $new_post_id = 0 ) {
 	
-	// disable JSON to avoid conflicts between DB and JSON
-	fields_disable_local();
+	// disable filters to ensure FieldMaster loads raw data from DB
+	fieldmaster_disable_filters();
 	
 	
 	// load the origional field gorup
-	$field_group = fields_get_field_group( $selector );
+	$field_group = fieldmaster_get_field_group( $selector );
 	
 	
 	// bail early if field group did not load correctly
@@ -612,25 +664,25 @@ function fields_duplicate_field_group( $selector = 0, $new_post_id = 0 ) {
 	// add (copy)
 	if( !$new_post_id ) {
 		
-		$field_group['title'] .= ' (' . __("copy", 'fields') . ')';
+		$field_group['title'] .= ' (' . __("copy", 'fieldmaster') . ')';
 		
 	}
 	
 	
 	// save
-	$field_group = fields_update_field_group( $field_group );
+	$field_group = fieldmaster_update_field_group( $field_group );
 	
 	
 	// get fields
-	$fields = fields_get_fields( $orig_field_group );
+	$fields = fieldmaster_get_fields( $orig_field_group );
 	
 	
 	// duplicate fields
-	fields_duplicate_fields( $fields, $field_group['ID'] );
+	fieldmaster_duplicate_fields( $fields, $field_group['ID'] );
 	
 	
 	// action for 3rd party customization
-	do_action('fields/duplicate_field_group', $field_group);
+	do_action('fieldmaster/duplicate_field_group', $field_group);
 	
 	
 	// return
@@ -640,7 +692,7 @@ function fields_duplicate_field_group( $selector = 0, $new_post_id = 0 ) {
 
 
 /*
-*  fields_get_field_count
+*  fieldmaster_get_field_count
 *
 *  This function will return the number of fields for the given field group
 *
@@ -652,7 +704,7 @@ function fields_duplicate_field_group( $selector = 0, $new_post_id = 0 ) {
 *  @return	(int)
 */
 
-function fields_get_field_count( $field_group ) {
+function fieldmaster_get_field_count( $field_group ) {
 	
 	// vars
 	$count = 0;
@@ -661,7 +713,7 @@ function fields_get_field_count( $field_group ) {
 	// local
 	if( !$field_group['ID'] ) {
 		
-		$count = fields_count_local_fields( $field_group['key'] );	
+		$count = fieldmaster_count_local_fields( $field_group['key'] );	
 	
 	// DB	
 	} else {
@@ -669,7 +721,7 @@ function fields_get_field_count( $field_group ) {
 		// load fields
 		$posts = get_posts(array(
 			'posts_per_page'	=> -1,
-			'post_type'			=> 'fields-field',
+			'post_type'			=> 'fm-field',
 			'orderby'			=> 'menu_order',
 			'order'				=> 'ASC',
 			'suppress_filters'	=> true, // DO NOT allow WPML to modify the query
@@ -684,7 +736,7 @@ function fields_get_field_count( $field_group ) {
 	
 	
 	// filter for 3rd party customization
-	$count = apply_filters('fields/get_field_count', $count, $field_group);
+	$count = apply_filters('fieldmaster/get_field_count', $count, $field_group);
 	
 	
 	// return
@@ -694,7 +746,7 @@ function fields_get_field_count( $field_group ) {
 
 
 /*
-*  fields_delete_field_group
+*  fieldmaster_delete_field_group
 *
 *  This function will delete the field group and its fields from the DB
 *
@@ -706,33 +758,29 @@ function fields_get_field_count( $field_group ) {
 *  @return	(boolean)
 */
 
-function fields_delete_field_group( $selector = 0 ) {
+function fieldmaster_delete_field_group( $selector = 0 ) {
 	
-	// disable JSON to avoid conflicts between DB and JSON
-	fields_disable_local();
+	// disable filters to ensure FieldMaster loads raw data from DB
+	fieldmaster_disable_filters();
 	
 	
 	// load the origional field gorup
-	$field_group = fields_get_field_group( $selector );
+	$field_group = fieldmaster_get_field_group( $selector );
 	
 	
 	// bail early if field group did not load correctly
-	if( empty($field_group) ) {
-	
-		return false;
-	
-	}
+	if( empty($field_group) ) return false;
 	
 	
 	// get fields
-	$fields = fields_get_fields($field_group);
+	$fields = fieldmaster_get_fields($field_group);
 	
 	
 	if( !empty($fields) ) {
 	
 		foreach( $fields as $field ) {
 			
-			fields_delete_field( $field['ID'] );
+			fieldmaster_delete_field( $field['ID'] );
 		
 		}
 	
@@ -744,7 +792,7 @@ function fields_delete_field_group( $selector = 0 ) {
 	
 	
 	// action for 3rd party customization
-	do_action('fields/delete_field_group', $field_group);
+	do_action('fieldmaster/delete_field_group', $field_group);
 	
 	
 	// return
@@ -753,7 +801,7 @@ function fields_delete_field_group( $selector = 0 ) {
 
 
 /*
-*  fields_trash_field_group
+*  fieldmaster_trash_field_group
 *
 *  This function will trash the field group and its fields
 *
@@ -765,33 +813,29 @@ function fields_delete_field_group( $selector = 0 ) {
 *  @return	(boolean)
 */
 
-function fields_trash_field_group( $selector = 0 ) {
+function fieldmaster_trash_field_group( $selector = 0 ) {
 	
-	// disable JSON to avoid conflicts between DB and JSON
-	fields_disable_local();
+	// disable filters to ensure FieldMaster loads raw data from DB
+	fieldmaster_disable_filters();
 	
 	
 	// load the origional field gorup
-	$field_group = fields_get_field_group( $selector );
+	$field_group = fieldmaster_get_field_group( $selector );
 	
 	
 	// bail early if field group did not load correctly
-	if( empty($field_group) ) {
-	
-		return false;
-	
-	}
+	if( empty($field_group) ) return false;
 	
 	
 	// get fields
-	$fields = fields_get_fields($field_group);
+	$fields = fieldmaster_get_fields($field_group);
 	
 	
 	if( !empty($fields) ) {
 	
 		foreach( $fields as $field ) {
 			
-			fields_trash_field( $field['ID'] );
+			fieldmaster_trash_field( $field['ID'] );
 			
 		}
 		
@@ -803,7 +847,7 @@ function fields_trash_field_group( $selector = 0 ) {
 	
 	
 	// action for 3rd party customization
-	do_action('fields/trash_field_group', $field_group);
+	do_action('fieldmaster/trash_field_group', $field_group);
 	
 	
 	// return
@@ -812,7 +856,7 @@ function fields_trash_field_group( $selector = 0 ) {
 
 
 /*
-*  fields_untrash_field_group
+*  fieldmaster_untrash_field_group
 *
 *  This function will restore from trash the field group and its fields
 *
@@ -824,33 +868,29 @@ function fields_trash_field_group( $selector = 0 ) {
 *  @return	(boolean)
 */
 
-function fields_untrash_field_group( $selector = 0 ) {
+function fieldmaster_untrash_field_group( $selector = 0 ) {
 	
-	// disable JSON to avoid conflicts between DB and JSON
-	fields_disable_local();
+	// disable filters to ensure FieldMaster loads raw data from DB
+	fieldmaster_disable_filters();
 	
 	
 	// load the origional field gorup
-	$field_group = fields_get_field_group( $selector );
+	$field_group = fieldmaster_get_field_group( $selector );
 	
 	
 	// bail early if field group did not load correctly
-	if( empty($field_group) ) {
-	
-		return false;
-		
-	}
+	if( empty($field_group) ) return false;
 	
 	
 	// get fields
-	$fields = fields_get_fields($field_group);
+	$fields = fieldmaster_get_fields($field_group);
 	
 	
 	if( !empty($fields) ) {
 	
 		foreach( $fields as $field ) {
 			
-			fields_untrash_field( $field['ID'] );
+			fieldmaster_untrash_field( $field['ID'] );
 		
 		}
 	
@@ -862,7 +902,7 @@ function fields_untrash_field_group( $selector = 0 ) {
 	
 	
 	// action for 3rd party customization
-	do_action('fields/untrash_field_group', $field_group);
+	do_action('fieldmaster/untrash_field_group', $field_group);
 	
 	
 	// return
@@ -872,7 +912,7 @@ function fields_untrash_field_group( $selector = 0 ) {
 
 
 /*
-*  fields_get_field_group_style
+*  fieldmaster_get_field_group_style
 *
 *  This function will render the CSS for a given field group
 *
@@ -884,17 +924,14 @@ function fields_untrash_field_group( $selector = 0 ) {
 *  @return	n/a
 */
 
-function fields_get_field_group_style( $field_group ) {
+function fieldmaster_get_field_group_style( $field_group ) {
 	
 	// vars
 	$e = '';
 	
 	
-	// validate
-	if( !is_array($field_group['hide_on_screen']) )
-	{
-		return $e;
-	}
+	// bail early if no array or is empty
+	if( !fieldmaster_is_array($field_group['hide_on_screen']) ) return $e;
 	
 	
 	// add style to html
@@ -975,12 +1012,13 @@ function fields_get_field_group_style( $field_group ) {
 	
 	
 	// return	
-	return apply_filters('fields/get_field_group_style', $e, $field_group);
+	return apply_filters('fieldmaster/get_field_group_style', $e, $field_group);
+	
 }
 
 
 /*
-*  fields_import_field_group
+*  fieldmaster_import_field_group
 *
 *  This function will import a field group from JSON into the DB
 *
@@ -992,7 +1030,11 @@ function fields_get_field_group_style( $field_group ) {
 *  @return	$id (int)
 */
 
-function fields_import_field_group( $field_group ) {
+function fieldmaster_import_field_group( $field_group ) {
+	
+	// disable filters to ensure FieldMaster loads raw data from DB
+	fieldmaster_disable_filters();
+	
 	
 	// vars
 	$ref = array();
@@ -1000,23 +1042,19 @@ function fields_import_field_group( $field_group ) {
 	
 	
 	// extract fields
-	$fields = fields_extract_var($field_group, 'fields');
+	$fields = fieldmaster_extract_var($field_group, 'fields');
 	
 	
 	// format fields
-	$fields = fields_prepare_fields_for_import( $fields );
+	$fields = fieldmaster_prepare_fields_for_import( $fields );
 	
 	
 	// remove old fields
 	if( $field_group['ID'] ) {
 		
-		// disable local - important as to avoid 'fields_get_fields_by_id' returning fields with ID = 0
-		fields_disable_local();
-	
-		
 		// load fields
-		$db_fields = fields_get_fields_by_id( $field_group['ID'] );
-		$db_fields = fields_prepare_fields_for_import( $db_fields );
+		$db_fields = fieldmaster_get_fields_by_id( $field_group['ID'] );
+		$db_fields = fieldmaster_prepare_fields_for_import( $db_fields );
 		
 		
 		// get field keys
@@ -1037,21 +1075,21 @@ function fields_import_field_group( $field_group ) {
 			
 			if( !in_array($field['key'], $keys) ) {
 				
-				fields_delete_field( $field['ID'] );
+				fieldmaster_delete_field( $field['ID'] );
 				
 			}
 			
 		}
 		
-		
-		// enable local - important as to allow local to find new fields and save json file
-		fields_enable_local();
-		
 	}
+	
+	
+	// enable local filter for JSON to be created
+	fieldmaster_enable_filter('local');
 	
 			
 	// save field group
-	$field_group = fields_update_field_group( $field_group );
+	$field_group = fieldmaster_update_field_group( $field_group );
 	
 	
 	// add to ref
@@ -1097,7 +1135,7 @@ function fields_import_field_group( $field_group ) {
 		
 		
 		// save field
-		$field = fields_update_field( $field );
+		$field = fieldmaster_update_field( $field );
 		
 		
 		// add to ref
@@ -1109,6 +1147,41 @@ function fields_import_field_group( $field_group ) {
 	// return new field group
 	return $field_group;
 	
+}
+
+
+/*
+*  fieldmaster_prepare_field_group_for_export
+*
+*  description
+*
+*  @type	function
+*  @date	4/12/2015
+*  @since	5.3.2
+*
+*  @param	$post_id (int)
+*  @return	$post_id (int)
+*/
+
+function fieldmaster_prepare_field_group_for_export( $field_group ) {
+	
+	// extract some args
+	$extract = fieldmaster_extract_vars($field_group, array(
+		'ID',
+		'local'	// local may have added 'php' or 'json'
+	));
+	
+	
+	// prepare fields
+	$field_group['fields'] = fieldmaster_prepare_fields_for_export( $field_group['fields'] );
+	
+	
+	// filter for 3rd party customization
+	$field_group = apply_filters('fieldmaster/prepare_field_group_for_export', $field_group);
+	
+	
+	// return
+	return $field_group;
 }
 
 

@@ -33,7 +33,7 @@ class fieldmaster_field_google_map extends fieldmaster_field {
 		
 		// vars
 		$this->name = 'google_map';
-		$this->label = __("Google Map",'fields');
+		$this->label = __("Google Map",'fieldmaster');
 		$this->category = 'jquery';
 		$this->defaults = array(
 			'height'		=> '',
@@ -48,8 +48,8 @@ class fieldmaster_field_google_map extends fieldmaster_field {
 			'zoom'			=> '14'
 		);
 		$this->l10n = array(
-			'locating'			=> __("Locating",'fields'),
-			'browser_support'	=> __("Sorry, this browser does not support geolocation",'fields'),
+			'locating'			=> __("Locating",'fieldmaster'),
+			'browser_support'	=> __("Sorry, this browser does not support geolocation",'fieldmaster'),
 		);
 		
 		
@@ -81,7 +81,7 @@ class fieldmaster_field_google_map extends fieldmaster_field {
 		
 		
 		// value
-		$field['value'] = fields_parse_args($field['value'], array(
+		$field['value'] = wp_parse_args($field['value'], array(
 			'address'	=> '',
 			'lat'		=> '',
 			'lng'		=> ''
@@ -103,8 +103,7 @@ class fieldmaster_field_google_map extends fieldmaster_field {
 		// vars
 		$atts = array(
 			'id'			=> $field['id'],
-			'class'			=> "fields-google-map {$field['class']}",
-			'data-id'		=> $field['id'] . '-' . uniqid(), 
+			'class'			=> "fieldmaster-google-map {$field['class']}",
 			'data-lat'		=> $field['center_lat'],
 			'data-lng'		=> $field['center_lng'],
 			'data-zoom'		=> $field['zoom'],
@@ -119,24 +118,24 @@ class fieldmaster_field_google_map extends fieldmaster_field {
 		}
 		
 ?>
-<div <?php fields_esc_attr_e($atts); ?>>
+<div <?php fieldmaster_esc_attr_e($atts); ?>>
 	
-	<div class="fields-hidden">
+	<div class="fieldmaster-hidden">
 		<?php foreach( $field['value'] as $k => $v ): ?>
 			<input type="hidden" class="input-<?php echo $k; ?>" name="<?php echo esc_attr($field['name']); ?>[<?php echo $k; ?>]" value="<?php echo esc_attr( $v ); ?>" />
 		<?php endforeach; ?>
 	</div>
 	
-	<div class="title fields-soh">
+	<div class="title fieldmaster-soh">
 		
-		<div class="actions fields-soh-target">
-			<a href="#" data-name="search" class="fields-icon fields-icon-search grey" title="<?php _e("Search", 'fields'); ?>"></a>
-			<a href="#" data-name="clear" class="fields-icon fields-icon-cancel grey" title="<?php _e("Clear location", 'fields'); ?>"></a>
-			<a href="#" data-name="locate" class="fields-icon fields-icon-location grey" title="<?php _e("Find current location", 'fields'); ?>"></a>
+		<div class="actions fieldmaster-soh-target">
+			<a href="#" data-name="search" class="fieldmaster-icon -search grey" title="<?php _e("Search", 'fieldmaster'); ?>"></a>
+			<a href="#" data-name="clear" class="fieldmaster-icon -cancel grey" title="<?php _e("Clear location", 'fieldmaster'); ?>"></a>
+			<a href="#" data-name="locate" class="fieldmaster-icon -location grey" title="<?php _e("Find current location", 'fieldmaster'); ?>"></a>
 		</div>
 		
-		<input class="search" type="text" placeholder="<?php _e("Search for address...",'fields'); ?>" value="<?php echo $field['value']['address']; ?>" />
-		<i class="fields-loading"></i>
+		<input class="search" type="text" placeholder="<?php _e("Search for address...",'fieldmaster'); ?>" value="<?php echo $field['value']['address']; ?>" />
+		<i class="fieldmaster-loading"></i>
 				
 	</div>
 	
@@ -164,9 +163,9 @@ class fieldmaster_field_google_map extends fieldmaster_field {
 	function render_field_settings( $field ) {
 		
 		// center_lat
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Center','fields'),
-			'instructions'	=> __('Center the initial map','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Center','fieldmaster'),
+			'instructions'	=> __('Center the initial map','fieldmaster'),
 			'type'			=> 'text',
 			'name'			=> 'center_lat',
 			'prepend'		=> 'lat',
@@ -175,23 +174,21 @@ class fieldmaster_field_google_map extends fieldmaster_field {
 		
 		
 		// center_lng
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Center','fields'),
-			'instructions'	=> __('Center the initial map','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Center','fieldmaster'),
+			'instructions'	=> __('Center the initial map','fieldmaster'),
 			'type'			=> 'text',
 			'name'			=> 'center_lng',
 			'prepend'		=> 'lng',
 			'placeholder'	=> $this->default_values['center_lng'],
-			'wrapper'		=> array(
-				'data-append' => 'center_lat'
-			)
+			'_append' 		=> 'center_lat'
 		));
 		
 		
 		// zoom
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Zoom','fields'),
-			'instructions'	=> __('Set the initial zoom level','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Zoom','fieldmaster'),
+			'instructions'	=> __('Set the initial zoom level','fieldmaster'),
 			'type'			=> 'text',
 			'name'			=> 'zoom',
 			'placeholder'	=> $this->default_values['zoom']
@@ -199,9 +196,9 @@ class fieldmaster_field_google_map extends fieldmaster_field {
 		
 		
 		// allow_null
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Height','fields'),
-			'instructions'	=> __('Customise the map height','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Height','fieldmaster'),
+			'instructions'	=> __('Customise the map height','fieldmaster'),
 			'type'			=> 'text',
 			'name'			=> 'height',
 			'append'		=> 'px',
@@ -275,10 +272,63 @@ class fieldmaster_field_google_map extends fieldmaster_field {
 		// return
 		return $value;
 	}
+	
+	
+	/*
+   	*  input_admin_footer
+   	*
+   	*  description
+   	*
+   	*  @type	function
+   	*  @date	6/03/2014
+   	*  @since	5.0.0
+   	*
+   	*  @param	$post_id (int)
+   	*  @return	$post_id (int)
+   	*/
+   	
+   	function input_admin_footer() {
+	   	
+	   	// bail ealry if no qneueu
+	   	if( !fieldmaster_get_setting('enqueue_google_maps') ) return;
+	   	
+	   	
+	   	// vars
+	   	$api = array(
+			'key'		=> fieldmaster_get_setting('google_api_key'),
+			'client'	=> fieldmaster_get_setting('google_api_client'),
+			'libraries'	=> 'places',
+			'ver'		=> 3,
+			'callback'	=> ''
+	   	);
+	   	
+	   	
+	   	// filter
+	   	$api = apply_filters('fieldmaster/fields/google_map/api', $api);
+	   	
+	   	
+	   	// remove empty
+	   	if( empty($api['key']) ) unset($api['key']);
+	   	if( empty($api['client']) ) unset($api['client']);
+	   	
+	   	
+	   	// construct url
+	   	$url = add_query_arg($api, 'https://maps.googleapis.com/maps/api/js');
+	   	
+?>
+<script type="text/javascript">
+	if( fieldmaster ) fieldmaster.fields.google_map.url = '<?php echo $url; ?>';
+</script>
+<?php
+	
+   	}
+   	
 }
 
-new fieldmaster_field_google_map();
 
-endif;
+// initialize
+fieldmaster_register_field_type( new fieldmaster_field_google_map() );
+
+endif; // class_exists check
 
 ?>

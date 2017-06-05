@@ -33,7 +33,7 @@ class fieldmaster_field_file extends fieldmaster_field {
 		
 		// vars
 		$this->name = 'file';
-		$this->label = __("File",'fields');
+		$this->label = __("File",'fieldmaster');
 		$this->category = 'content';
 		$this->defaults = array(
 			'return_format'	=> 'array',
@@ -43,16 +43,15 @@ class fieldmaster_field_file extends fieldmaster_field {
 			'mime_types'	=> ''
 		);
 		$this->l10n = array(
-			'select'		=> __("Select File",'fields'),
-			'edit'			=> __("Edit File",'fields'),
-			'update'		=> __("Update File",'fields'),
-			'uploadedTo'	=> __("uploaded to this post",'fields'),
+			'select'		=> __("Select File",'fieldmaster'),
+			'edit'			=> __("Edit File",'fieldmaster'),
+			'update'		=> __("Update File",'fieldmaster'),
+			'uploadedTo'	=> __("Uploaded to this post",'fieldmaster'),
 		);
 		
 		
 		// filters
 		add_filter('get_media_item_args',			array($this, 'get_media_item_args'));
-		add_filter('wp_prepare_attachment_for_js',	array($this, 'wp_prepare_attachment_for_js'), 10, 3);
 		
 		
 		// do not delete!
@@ -76,13 +75,13 @@ class fieldmaster_field_file extends fieldmaster_field {
 	function render_field( $field ) {
 		
 		// vars
-		$uploader = fields_get_setting('uploader');
+		$uploader = fieldmaster_get_setting('uploader');
 		
 		
 		// enqueue
 		if( $uploader == 'wp' ) {
 			
-			fields_enqueue_uploader();
+			fieldmaster_enqueue_uploader();
 			
 		}
 		
@@ -91,46 +90,50 @@ class fieldmaster_field_file extends fieldmaster_field {
 		$o = array(
 			'icon'		=> '',
 			'title'		=> '',
-			'size'		=> '',
 			'url'		=> '',
-			'name'		=> '',
+			'filesize'	=> '',
+			'filename'	=> '',
 		);
 		
 		$div = array(
-			'class'				=> 'fields-file-uploader fields-cf',
+			'class'				=> 'fieldmaster-file-uploader fieldmaster-cf',
 			'data-library' 		=> $field['library'],
 			'data-mime_types'	=> $field['mime_types'],
 			'data-uploader'		=> $uploader
 		);
 		
 		
-		// has value
-		if( $field['value'] && is_numeric($field['value']) ) {
+		// has value?
+		if( $field['value'] ) {
 			
 			$file = get_post( $field['value'] );
 			
 			if( $file ) {
 				
-				$div['class'] .= ' has-value';
-				
 				$o['icon'] = wp_mime_type_icon( $file->ID );
 				$o['title']	= $file->post_title;
-				$o['size'] = @size_format(filesize( get_attached_file( $file->ID ) ));
+				$o['filesize'] = @size_format(filesize( get_attached_file( $file->ID ) ));
 				$o['url'] = wp_get_attachment_url( $file->ID );
 				
 				$explode = explode('/', $o['url']);
-				$o['name'] = end( $explode );	
+				$o['filename'] = end( $explode );	
 							
 			}
 			
+			
+			// url exists
+			if( $o['url'] ) {
+				
+				$div['class'] .= ' has-value';
+			
+			}
+						
 		}
 				
 ?>
-<div <?php fields_esc_attr_e($div); ?>>
-	<div class="fields-hidden">
-		<?php fields_hidden_input(array( 'name' => $field['name'], 'value' => $field['value'], 'data-name' => 'id' )); ?>
-	</div>
-	<div class="show-if-value file-wrap fields-soh">
+<div <?php fieldmaster_esc_attr_e($div); ?>>
+	<?php fieldmaster_hidden_input(array( 'name' => $field['name'], 'value' => $field['value'], 'data-name' => 'id' )); ?>
+	<div class="show-if-value file-wrap fieldmaster-soh">
 		<div class="file-icon">
 			<img data-name="icon" src="<?php echo $o['icon']; ?>" alt=""/>
 		</div>
@@ -139,19 +142,19 @@ class fieldmaster_field_file extends fieldmaster_field {
 				<strong data-name="title"><?php echo $o['title']; ?></strong>
 			</p>
 			<p>
-				<strong><?php _e('File Name', 'fields'); ?>:</strong>
-				<a data-name="name" href="<?php echo $o['url']; ?>" target="_blank"><?php echo $o['name']; ?></a>
+				<strong><?php _e('File name', 'fieldmaster'); ?>:</strong>
+				<a data-name="filename" href="<?php echo $o['url']; ?>" target="_blank"><?php echo $o['filename']; ?></a>
 			</p>
 			<p>
-				<strong><?php _e('File Size', 'fields'); ?>:</strong>
-				<span data-name="size"><?php echo $o['size']; ?></span>
+				<strong><?php _e('File size', 'fieldmaster'); ?>:</strong>
+				<span data-name="filesize"><?php echo $o['filesize']; ?></span>
 			</p>
 			
-			<ul class="fields-hl fields-soh-target">
+			<ul class="fieldmaster-hl fieldmaster-soh-target">
 				<?php if( $uploader != 'basic' ): ?>
-					<li><a class="fields-icon fields-icon-pencil dark" data-name="edit" href="#"></a></li>
+					<li><a class="fieldmaster-icon -pencil dark" data-name="edit" href="#"></a></li>
 				<?php endif; ?>
-				<li><a class="fields-icon fields-icon-cancel dark" data-name="remove" href="#"></a></li>
+				<li><a class="fieldmaster-icon -cancel dark" data-name="remove" href="#"></a></li>
 			</ul>
 		</div>
 	</div>
@@ -159,14 +162,16 @@ class fieldmaster_field_file extends fieldmaster_field {
 		<?php if( $uploader == 'basic' ): ?>
 			
 			<?php if( $field['value'] && !is_numeric($field['value']) ): ?>
-				<div class="fields-error-message"><p><?php echo $field['value']; ?></p></div>
+				<div class="fieldmaster-error-message"><p><?php echo $field['value']; ?></p></div>
 			<?php endif; ?>
 			
-			<input type="file" name="<?php echo $field['name']; ?>" id="<?php echo $field['id']; ?>" />
+			<label class="fieldmaster-basic-uploader">
+				<input type="file" name="<?php echo $field['name']; ?>" id="<?php echo $field['id']; ?>" />
+			</label>
 			
 		<?php else: ?>
 			
-			<p style="margin:0;"><?php _e('No File selected','fields'); ?> <a data-name="add" class="fields-button" href="#"><?php _e('Add File','fields'); ?></a></p>
+			<p style="margin:0;"><?php _e('No file selected','fieldmaster'); ?> <a data-name="add" class="fieldmaster-button button" href="#"><?php _e('Add File','fieldmaster'); ?></a></p>
 			
 		<?php endif; ?>
 		
@@ -210,60 +215,60 @@ class fieldmaster_field_file extends fieldmaster_field {
 		
 		
 		// return_format
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Return Value','fields'),
-			'instructions'	=> __('Specify the returned value on front end','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Return Value','fieldmaster'),
+			'instructions'	=> __('Specify the returned value on front end','fieldmaster'),
 			'type'			=> 'radio',
 			'name'			=> 'return_format',
 			'layout'		=> 'horizontal',
 			'choices'		=> array(
-				'array'			=> __("File Array",'fields'),
-				'url'			=> __("File URL",'fields'),
-				'id'			=> __("File ID",'fields')
+				'array'			=> __("File Array",'fieldmaster'),
+				'url'			=> __("File URL",'fieldmaster'),
+				'id'			=> __("File ID",'fieldmaster')
 			)
 		));
 		
 		
 		// library
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Library','fields'),
-			'instructions'	=> __('Limit the media library choice','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Library','fieldmaster'),
+			'instructions'	=> __('Limit the media library choice','fieldmaster'),
 			'type'			=> 'radio',
 			'name'			=> 'library',
 			'layout'		=> 'horizontal',
 			'choices' 		=> array(
-				'all'			=> __('All', 'fields'),
-				'uploadedTo'	=> __('Uploaded to post', 'fields')
+				'all'			=> __('All', 'fieldmaster'),
+				'uploadedTo'	=> __('Uploaded to post', 'fieldmaster')
 			)
 		));
 		
 		
 		// min
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Minimum','fields'),
-			'instructions'	=> __('Restrict which files can be uploaded','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Minimum','fieldmaster'),
+			'instructions'	=> __('Restrict which files can be uploaded','fieldmaster'),
 			'type'			=> 'text',
 			'name'			=> 'min_size',
-			'prepend'		=> __('File size', 'fields'),
+			'prepend'		=> __('File size', 'fieldmaster'),
 			'append'		=> 'MB',
 		));
 		
 		
 		// max
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Maximum','fields'),
-			'instructions'	=> __('Restrict which files can be uploaded','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Maximum','fieldmaster'),
+			'instructions'	=> __('Restrict which files can be uploaded','fieldmaster'),
 			'type'			=> 'text',
 			'name'			=> 'max_size',
-			'prepend'		=> __('File size', 'fields'),
+			'prepend'		=> __('File size', 'fieldmaster'),
 			'append'		=> 'MB',
 		));
 		
 		
 		// allowed type
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Allowed file types','fields'),
-			'instructions'	=> __('Comma separated list. Leave blank for all types','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Allowed file types','fieldmaster'),
+			'instructions'	=> __('Comma separated list. Leave blank for all types','fieldmaster'),
 			'type'			=> 'text',
 			'name'			=> 'mime_types',
 		));
@@ -290,11 +295,11 @@ class fieldmaster_field_file extends fieldmaster_field {
 	function format_value( $value, $post_id, $field ) {
 		
 		// bail early if no value
-		if( empty($value) ) {
+		if( empty($value) ) return false;
 		
-			return $value;
-			
-		}
+		
+		// bail early if not numeric (error message)
+		if( !is_numeric($value) ) return false;
 		
 		
 		// convert to int
@@ -308,7 +313,7 @@ class fieldmaster_field_file extends fieldmaster_field {
 			
 		} elseif( $field['return_format'] == 'array' ) {
 			
-			return fields_get_attachment( $value );
+			return fieldmaster_get_attachment( $value );
 		}
 		
 		
@@ -336,7 +341,7 @@ class fieldmaster_field_file extends fieldmaster_field {
 	    return($vars);
 	    
 	}
-	   	
+	
 	
 	/*
 	*  update_value()
@@ -356,66 +361,100 @@ class fieldmaster_field_file extends fieldmaster_field {
 	
 	function update_value( $value, $post_id, $field ) {
 		
-		// array?
-		if( is_array($value) && isset($value['ID']) ) {
+		// bail early if is empty
+		if( empty($value) ) return false;
 		
-			return $value['ID'];	
+		
+		// validate
+		if( is_array($value) && isset($value['ID']) ) { 
+			
+			$value = $value['ID'];
+			
+		} elseif( is_object($value) && isset($value->ID) ) { 
+			
+			$value = $value->ID;
 			
 		}
 		
 		
-		// object?
-		if( is_object($value) && isset($value->ID) ) {
+		// bail early if not attachment ID
+		if( !$value || !is_numeric($value) ) return false;
 		
-			return $value->ID;
-			
-		}
+		
+		// confirm type
+		$value = (int) $value;
+		
+		
+		// maybe connect attacment to post 
+		fieldmaster_connect_attachment_to_post( $value, $post_id );
 		
 		
 		// return
 		return $value;
+		
 	}
+		
 	
 	
 	/*
-	*  wp_prepare_attachment_for_js
+	*  validate_value
 	*
-	*  this filter allows FieldMaster to add in extra data to an attachment JS object
+	*  This function will validate a basic file input
 	*
 	*  @type	function
-	*  @date	1/06/13
+	*  @date	11/02/2014
+	*  @since	5.0.0
 	*
-	*  @param	{int}	$post_id
-	*  @return	{int}	$post_id
+	*  @param	$post_id (int)
+	*  @return	$post_id (int)
 	*/
 	
-	function wp_prepare_attachment_for_js( $response, $attachment, $meta ) {
+	function validate_value( $valid, $value, $field, $input ){
 		
-		// default
-		$fs = '0 kb';
+		// bail early if empty		
+		if( empty($value) ) return $valid;
 		
 		
-		// supress PHP warnings caused by corrupt images
-		if( $i = @filesize( get_attached_file( $attachment->ID ) ) ) {
+		// bail ealry if is numeric
+		if( is_numeric($value) ) return $valid;
 		
-			$fs = size_format( $i );
+		
+		// bail ealry if not basic string
+		if( !is_string($value) ) return $valid;
+		
+		
+		// decode value
+		$file = null;
+		parse_str($value, $file);
+		
+		
+		// bail early if no attachment
+		if( empty($file) ) return $valid;
+		
+		
+		// get errors
+		$errors = fieldmaster_validate_attachment( $file, $field, 'basic_upload' );
+		
+		
+		// append error
+		if( !empty($errors) ) {
+			
+			$valid = implode("\n", $errors);
 			
 		}
 		
 		
-		// update JSON
-		$response['filesize'] = $fs;
-		
-		
-		// return
-		return $response;
+		// return		
+		return $valid;
 		
 	}
 	
 }
 
-new fieldmaster_field_file();
 
-endif;
+// initialize
+fieldmaster_register_field_type( new fieldmaster_field_file() );
+
+endif; // class_exists check
 
 ?>

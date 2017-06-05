@@ -2,16 +2,16 @@
 
 // vars
 $field = array(
-	'label'		=> __('Select Field Groups', 'fields'),
+	'label'		=> __('Select Field Groups', 'fieldmaster'),
 	'type'		=> 'checkbox',
-	'name'		=> 'fields_export_keys',
+	'name'		=> 'fieldmaster_export_keys',
 	'prefix'	=> false,
 	'value'		=> false,
 	'toggle'	=> true,
 	'choices'	=> array(),
 );
 
-$field_groups = fields_get_field_groups();
+$field_groups = fieldmaster_get_field_groups();
 
 
 // populate choices
@@ -26,29 +26,29 @@ if( $field_groups ) {
 }
 
 ?>
-<div class="wrap fields-settings-wrap">
+<div class="wrap fieldmaster-settings-wrap">
 	
-	<h2><?php _e('Tools', 'fields'); ?></h2>
+	<h1><?php _e('Tools', 'fieldmaster'); ?></h1>
 	
-	<div class="fields-box" id="fields-export-field-groups">
+	<div class="fieldmaster-box" id="fieldmaster-export-field-groups">
 		<div class="title">
-			<h3><?php _e('Export Field Groups', 'fields'); ?></h3>
+			<h3><?php _e('Export Field Groups', 'fieldmaster'); ?></h3>
 		</div>
 		<div class="inner">
-			<p><?php _e('Select the field groups you would like to export and then select your export method. Use the download button to export to a .json file which you can then import to another FieldMaster installation. Use the generate button to export to PHP code which you can place in your theme.', 'fields'); ?></p>
+			<p><?php _e('Select the field groups you would like to export and then select your export method. Use the download button to export to a .json file which you can then import to another FieldMaster installation. Use the generate button to export to PHP code which you can place in your theme.', 'fieldmaster'); ?></p>
 			
 			<form method="post" action="">
-			<div class="fields-hidden">
-				<input type="hidden" name="_fieldsnonce" value="<?php echo wp_create_nonce( 'export' ); ?>" />
+			<div class="fieldmaster-hidden">
+				<input type="hidden" name="_fieldmasternonce" value="<?php echo wp_create_nonce( 'export' ); ?>" />
 			</div>
 			<table class="form-table">
                 <tbody>
-	                <?php fields_render_field_wrap( $field, 'tr' ); ?>
+	                <?php fieldmaster_render_field_wrap( $field, 'tr' ); ?>
 					<tr>
 						<th></th>
 						<td>
-							<input type="submit" name="download" class="fields-button blue" value="<?php _e('Download export file', 'fields'); ?>" />
-							<input type="submit" name="generate" class="fields-button blue" value="<?php _e('Generate export code', 'fields'); ?>" />
+							<input type="submit" name="download" class="button button-primary" value="<?php _e('Download export file', 'fieldmaster'); ?>" />
+							<input type="submit" name="generate" class="button button-primary" value="<?php _e('Generate export code', 'fieldmaster'); ?>" />
 						</td>
 					</tr>
 				</tbody>
@@ -59,31 +59,31 @@ if( $field_groups ) {
 	</div>
 
 	
-	<div class="fields-box">
+	<div class="fieldmaster-box">
 		<div class="title">
-			<h3><?php _e('Import Field Groups', 'fields'); ?></h3>
+			<h3><?php _e('Import Field Groups', 'fieldmaster'); ?></h3>
 		</div>
 		<div class="inner">
-			<p><?php _e('Select the FieldMaster JSON file you would like to import. When you click the import button below, FieldMaster will import the field groups.', 'fields'); ?></p>
+			<p><?php _e('Select the FieldMaster JSON file you would like to import. When you click the import button below, FieldMaster will import the field groups.', 'fieldmaster'); ?></p>
 			
 			<form method="post" action="" enctype="multipart/form-data">
-			<div class="fields-hidden">
-				<input type="hidden" name="_fieldsnonce" value="<?php echo wp_create_nonce( 'import' ); ?>" />
+			<div class="fieldmaster-hidden">
+				<input type="hidden" name="_fieldmasternonce" value="<?php echo wp_create_nonce( 'import' ); ?>" />
 			</div>
 			<table class="form-table">
                 <tbody>
                 	<tr>
                     	<th>
-                    		<label><?php _e('Select File', 'fields'); ?></label>
+                    		<label><?php _e('Select File', 'fieldmaster'); ?></label>
                     	</th>
 						<td>
-							<input type="file" name="fields_import_file">
+							<input type="file" name="fieldmaster_import_file">
 						</td>
 					</tr>
 					<tr>
 						<th></th>
 						<td>
-							<input type="submit" class="fields-button blue" value="<?php _e('Import', 'fields'); ?>" />
+							<input type="submit" class="button button-primary" value="<?php _e('Import', 'fieldmaster'); ?>" />
 						</td>
 					</tr>
 				</tbody>

@@ -1,7 +1,8 @@
 <?php 
 
-// global
-global $post;
+// vars
+$field = false;
+$i = 0;
 
 
 // extract args
@@ -14,7 +15,7 @@ $field['prefix'] = "fieldmaster_fields[{$field['ID']}]";
 
 // vars
 $atts = array(
-	'class' => "fields-field-object fields-field-object-{$field['type']}",
+	'class' => "fm-field-object fm-field-object-{$field['type']}",
 	'data-id'	=> $field['ID'],
 	'data-key'	=> $field['key'],
 	'data-type'	=> $field['type'],
@@ -33,179 +34,165 @@ $meta = array(
 $atts['class'] = str_replace('_', '-', $atts['class']);
 
 ?>
-<div <?php echo fields_esc_attr( $atts ); ?>>
+<div <?php echo fieldmaster_esc_attr( $atts ); ?>>
 	
 	<div class="meta">
 		<?php foreach( $meta as $k => $v ):
 			
-			fields_hidden_input(array( 'class' => "input-{$k}", 'name' => "{$field['prefix']}[{$k}]", 'value' => $v ));
+			fieldmaster_hidden_input(array( 'class' => "input-{$k}", 'name' => "{$field['prefix']}[{$k}]", 'value' => $v ));
 				
 		endforeach; ?>
 	</div>
 	
 	<div class="handle">
-		<ul class="fields-hl fields-tbody">
+		<ul class="fieldmaster-hl fieldmaster-tbody">
 			<li class="li-field-order">
-				<span class="fields-icon fields-icon-order"><?php echo ($i + 1); ?></span>
+				<span class="fieldmaster-icon fieldmaster-sortable-handle" title="<?php _e('Drag to reorder','fieldmaster'); ?>"><?php echo ($i + 1); ?></span>
 				<pre class="pre-field-key"><?php echo $field['key']; ?></pre>
 			</li>
 			<li class="li-field-label">
 				<strong>
-					<a class="edit-field" title="<?php _e("Edit field",'fields'); ?>" href="#"><?php echo $field['label']; ?></a>
-					<?php if( $field['required'] ): ?><span class="fields-required">*</span><?php endif; ?>
+					<a class="edit-field" title="<?php _e("Edit field",'fieldmaster'); ?>" href="#"><?php echo fieldmaster_get_field_label($field); ?></a>
 				</strong>
 				<div class="row-options">
-					<a class="edit-field" title="<?php _e("Edit field",'fields'); ?>" href="#"><?php _e("Edit",'fields'); ?></a>
-					<a class="duplicate-field" title="<?php _e("Duplicate field",'fields'); ?>" href="#"><?php _e("Duplicate",'fields'); ?></a>
-					<a class="move-field" title="<?php _e("Move field to another group",'fields'); ?>" href="#"><?php _e("Move",'fields'); ?></a>
-					<a class="delete-field" title="<?php _e("Delete field",'fields'); ?>" href="#"><?php _e("Delete",'fields'); ?></a>
+					<a class="edit-field" title="<?php _e("Edit field",'fieldmaster'); ?>" href="#"><?php _e("Edit",'fieldmaster'); ?></a>
+					<a class="duplicate-field" title="<?php _e("Duplicate field",'fieldmaster'); ?>" href="#"><?php _e("Duplicate",'fieldmaster'); ?></a>
+					<a class="move-field" title="<?php _e("Move field to another group",'fieldmaster'); ?>" href="#"><?php _e("Move",'fieldmaster'); ?></a>
+					<a class="delete-field" title="<?php _e("Delete field",'fieldmaster'); ?>" href="#"><?php _e("Delete",'fieldmaster'); ?></a>
 				</div>
 			</li>
 			<li class="li-field-name"><?php echo $field['name']; ?></li>
 			<li class="li-field-type">
 				<?php if( fieldmaster_field_type_exists($field['type']) ): ?>
-					<?php echo fields_get_field_type_label($field['type']); ?>
+					<?php echo fieldmaster_get_field_type_label($field['type']); ?>
 				<?php else: ?>
-					<b><?php _e('Error', 'fields'); ?></b> <?php _e('Field type does not exist', 'fields'); ?>
+					<b><?php _e('Error', 'fieldmaster'); ?></b> <?php _e('Field type does not exist', 'fieldmaster'); ?>
 				<?php endif; ?>
 			</li>	
 		</ul>
 	</div>
 	
 	<div class="settings">			
-		<table class="fields-table">
+		<table class="fieldmaster-table">
 			<tbody>
 				<?php 
-		
+				
 				// label
-				fields_render_field_wrap(array(
-					'label'			=> __('Field Label','fields'),
-					'instructions'	=> __('This is the name which will appear on the EDIT page','fields'),
-					'required'		=> 1,
-					'type'			=> 'text',
+				fieldmaster_render_field_setting($field, array(
+					'label'			=> __('Field Label','fieldmaster'),
+					'instructions'	=> __('This is the name which will appear on the EDIT page','fieldmaster'),
 					'name'			=> 'label',
-					'prefix'		=> $field['prefix'],
-					'value'			=> $field['label'],
+					'type'			=> 'text',
+					'required'		=> 1,
 					'class'			=> 'field-label'
-				), 'tr');
+				), true);
 				
 				
 				// name
-				fields_render_field_wrap(array(
-					'label'			=> __('Field Name','fields'),
-					'instructions'	=> __('Single word, no spaces. Underscores and dashes allowed','fields'),
-					'required'		=> 1,
-					'type'			=> 'text',
+				fieldmaster_render_field_setting($field, array(
+					'label'			=> __('Field Name','fieldmaster'),
+					'instructions'	=> __('Single word, no spaces. Underscores and dashes allowed','fieldmaster'),
 					'name'			=> 'name',
-					'prefix'		=> $field['prefix'],
-					'value'			=> $field['name'],
+					'type'			=> 'text',
+					'required'		=> 1,
 					'class'			=> 'field-name'
-				), 'tr');
+				), true);
 				
 				
 				// type
-				fields_render_field_wrap(array(
-					'label'			=> __('Field Type','fields'),
+				fieldmaster_render_field_setting($field, array(
+					'label'			=> __('Field Type','fieldmaster'),
 					'instructions'	=> '',
 					'required'		=> 1,
 					'type'			=> 'select',
 					'name'			=> 'type',
-					'prefix'		=> $field['prefix'],
-					'value'			=> $field['type'],
-					'choices' 		=> fields_get_field_types(),
+					'choices' 		=> fieldmaster_get_grouped_field_types(),
 					'class'			=> 'field-type'
-				), 'tr');
+				), true);
 				
 				
 				// instructions
-				fields_render_field_wrap(array(
-					'label'			=> __('Instructions','fields'),
-					'instructions'	=> __('Instructions for authors. Shown when submitting data','fields'),
+				fieldmaster_render_field_setting($field, array(
+					'label'			=> __('Instructions','fieldmaster'),
+					'instructions'	=> __('Instructions for authors. Shown when submitting data','fieldmaster'),
 					'type'			=> 'textarea',
 					'name'			=> 'instructions',
-					'prefix'		=> $field['prefix'],
-					'value'			=> $field['instructions'],
 					'rows'			=> 5
-				), 'tr');
+				), true);
 				
 				
 				// required
-				fields_render_field_wrap(array(
-					'label'			=> __('Required?','fields'),
+				fieldmaster_render_field_setting($field, array(
+					'label'			=> __('Required?','fieldmaster'),
 					'instructions'	=> '',
-					'type'			=> 'radio',
+					'type'			=> 'true_false',
 					'name'			=> 'required',
-					'prefix'		=> $field['prefix'],
-					'value'			=> $field['required'],
-					'choices'		=> array(
-						1				=> __("Yes",'fields'),
-						0				=> __("No",'fields'),
-					),
-					'layout'		=> 'horizontal',
+					'ui'			=> 1,
 					'class'			=> 'field-required'
-				), 'tr');
-				
-				
-				// type specific settings
-				do_action("fields/render_field_settings/type={$field['type']}", $field);
+				), true);
 				
 				
 				// 3rd party settings
-				do_action('fields/render_field_settings', $field);
+				do_action('fieldmaster/render_field_settings', $field);
+				
+				
+				// type specific settings
+				do_action("fieldmaster/render_field_settings/type={$field['type']}", $field);
 				
 				
 				// conditional logic
-				fields_get_view('field-group-field-conditional-logic', array( 'field' => $field ));
+				fieldmaster_get_view('field-group-field-conditional-logic', array( 'field' => $field ));
 				
 				
 				// wrapper
-				fields_render_field_wrap(array(
-					'label'			=> __('Wrapper Attributes','fields'),
+				fieldmaster_render_field_wrap(array(
+					'label'			=> __('Wrapper Attributes','fieldmaster'),
 					'instructions'	=> '',
 					'type'			=> 'text',
 					'name'			=> 'width',
 					'prefix'		=> $field['prefix'] . '[wrapper]',
 					'value'			=> $field['wrapper']['width'],
-					'prepend'		=> __('width', 'fields'),
+					'prepend'		=> __('width', 'fieldmaster'),
 					'append'		=> '%',
 					'wrapper'		=> array(
-						'data-name' => 'wrapper'
+						'data-name' => 'wrapper',
+						'class' => 'fm-field-setting-wrapper'
 					)
 				), 'tr');
 				
-				fields_render_field_wrap(array(
+				fieldmaster_render_field_wrap(array(
 					'label'			=> '',
 					'instructions'	=> '',
 					'type'			=> 'text',
 					'name'			=> 'class',
 					'prefix'		=> $field['prefix'] . '[wrapper]',
 					'value'			=> $field['wrapper']['class'],
-					'prepend'		=> __('class', 'fields'),
+					'prepend'		=> __('class', 'fieldmaster'),
 					'wrapper'		=> array(
 						'data-append' => 'wrapper'
 					)
 				), 'tr');
 				
-				fields_render_field_wrap(array(
+				fieldmaster_render_field_wrap(array(
 					'label'			=> '',
 					'instructions'	=> '',
 					'type'			=> 'text',
 					'name'			=> 'id',
 					'prefix'		=> $field['prefix'] . '[wrapper]',
 					'value'			=> $field['wrapper']['id'],
-					'prepend'		=> __('id', 'fields'),
+					'prepend'		=> __('id', 'fieldmaster'),
 					'wrapper'		=> array(
 						'data-append' => 'wrapper'
 					)
 				), 'tr');
 				
 				?>
-				<tr class="fields-field fields-field-save">
-					<td class="fields-label"></td>
-					<td class="fields-input">
-						<ul class="fields-hl">
+				<tr class="fm-field fm-field-save">
+					<td class="fieldmaster-label"></td>
+					<td class="fieldmaster-input">
+						<ul class="fieldmaster-hl">
 							<li>
-								<a class="edit-field fields-button grey" title="<?php _e("Close Field",'fields'); ?>" href="#"><?php _e("Close Field",'fields'); ?></a>
+								<a class="button edit-field" title="<?php _e("Close Field",'fieldmaster'); ?>" href="#"><?php _e("Close Field",'fieldmaster'); ?></a>
 							</li>
 						</ul>
 					</td>

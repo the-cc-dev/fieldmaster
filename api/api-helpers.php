@@ -1,40 +1,146 @@
 <?php
 
 /*
-*  fields_get_setting
+*  fieldmaster_is_array
 *
-*  This function will return a value from the settings array found in the fields object
+*  This function will return true for a non empty array
 *
 *  @type	function
-*  @date	28/09/13
-*  @since	5.0.0
+*  @date	6/07/2016
+*  @since	5.4.0
 *
-*  @param	$name (string) the setting name to return
-*  @return	(mixed)
+*  @param	$array (array)
+*  @return	(boolean)
 */
 
-function fields_get_setting( $name, $default = null ) {
+function fieldmaster_is_array( $array ) {
 
-	// vars
-	$settings = fieldsAPI()->settings;
-
-
-	// find setting
-	$setting = fields_maybe_get( $settings, $name, $default );
-
-
-	// filter for 3rd party customization
-	$setting = apply_filters( "fields/settings/{$name}", $setting );
-
-
-	// return
-	return $setting;
+	return ( is_array($array) && !empty($array) );
 
 }
 
 
 /*
-*  fields_get_compatibility
+*  fieldmaster_is_empty
+*
+*  This function will return true for an empty var (allows 0 as true)
+*
+*  @type	function
+*  @date	6/07/2016
+*  @since	5.4.0
+*
+*  @param	$value (mixed)
+*  @return	(boolean)
+*/
+
+function fieldmaster_is_empty( $value ) {
+
+	return ( empty($value) && !is_numeric($value) );
+
+}
+
+
+/*
+*  fieldmaster_get_setting
+*
+*  alias of fieldmaster()->get_setting()
+*
+*  @type	function
+*  @date	28/09/13
+*  @since	5.0.0
+*
+*  @param	n/a
+*  @return	n/a
+*/
+
+function fieldmaster_get_setting( $name, $value = null ) {
+
+	return fieldmaster()->get_setting( $name, $value );
+
+}
+
+
+/*
+*  fieldmaster_update_setting
+*
+*  alias of fieldmaster()->update_setting()
+*
+*  @type	function
+*  @date	28/09/13
+*  @since	5.0.0
+*
+*  @param	$name (string)
+*  @param	$value (mixed)
+*  @return	n/a
+*/
+
+function fieldmaster_update_setting( $name, $value ) {
+
+	return fieldmaster()->update_setting( $name, $value );
+
+}
+
+
+/*
+*  fieldmaster_init
+*
+*  alias of fieldmaster()->init()
+*
+*  @type	function
+*  @date	28/09/13
+*  @since	5.0.0
+*
+*  @param	n/a
+*  @return	n/a
+*/
+
+function fieldmaster_init() {
+
+	fieldmaster()->init();
+
+}
+
+
+/*
+*  fieldmaster_append_setting
+*
+*  This function will add a value into the settings array found in the fieldmaster object
+*
+*  @type	function
+*  @date	28/09/13
+*  @since	5.0.0
+*
+*  @param	$name (string)
+*  @param	$value (mixed)
+*  @return	n/a
+*/
+
+function fieldmaster_append_setting( $name, $value ) {
+
+	// vars
+	$setting = fieldmaster_get_setting( $name, array() );
+
+
+	// bail ealry if not array
+	if( !is_array($setting) ) return false;
+
+
+	// append
+	$setting[] = $value;
+
+
+	// update
+	fieldmaster_update_setting( $name, $setting );
+
+
+	// return
+	return true;
+
+}
+
+
+/*
+*  fieldmaster_get_compatibility
 *
 *  This function will return true or false for a given compatibility setting
 *
@@ -46,65 +152,48 @@ function fields_get_setting( $name, $default = null ) {
 *  @return	(boolean)
 */
 
-function fields_get_compatibility( $name ) {
+function fieldmaster_get_compatibility( $name ) {
 
-	return apply_filters( "fields/compatibility/{$name}", false );
+	return apply_filters( "fieldmaster/compatibility/{$name}", false );
 
 }
 
 
 /*
-*  fields_update_setting
+*  fieldmaster_has_done
 *
-*  This function will update a value into the settings array found in the fields object
+*  This function will return true if this action has already been done
 *
 *  @type	function
-*  @date	28/09/13
-*  @since	5.0.0
+*  @date	16/12/2015
+*  @since	5.3.2
 *
 *  @param	$name (string)
-*  @param	$value (mixed)
-*  @return	n/a
+*  @return	(boolean)
 */
 
-function fields_update_setting( $name, $value ) {
+function fieldmaster_has_done( $name ) {
 
-	fieldsAPI()->settings[ $name ] = $value;
+	// vars
+	$setting = "_has_done_{$name}";
+
+
+	// return true if already done
+	if( fieldmaster_get_setting($setting) ) return true;
+
+
+	// update setting
+	fieldmaster_update_setting($setting, true);
+
+
+	// return
+	return false;
 
 }
 
 
 /*
-*  fields_append_setting
-*
-*  This function will add a value into the settings array found in the fields object
-*
-*  @type	function
-*  @date	28/09/13
-*  @since	5.0.0
-*
-*  @param	$name (string)
-*  @param	$value (mixed)
-*  @return	n/a
-*/
-
-function fields_append_setting( $name, $value ) {
-
-	// createa array if needed
-	if( !isset(fieldsAPI()->settings[ $name ]) ) {
-
-		fieldsAPI()->settings[ $name ] = array();
-
-	}
-
-
-	// append to array
-	fieldsAPI()->settings[ $name ][] = $value;
-}
-
-
-/*
-*  fields_get_path
+*  fieldmaster_get_path
 *
 *  This function will return the path to a file within the FieldMaster plugin folder
 *
@@ -116,15 +205,15 @@ function fields_append_setting( $name, $value ) {
 *  @return	(string)
 */
 
-function fields_get_path( $path ) {
+function fieldmaster_get_path( $path ) {
 
-	return fields_get_setting('path') . $path;
+	return fieldmaster_get_setting('path') . $path;
 
 }
 
 
 /*
-*  fields_get_dir
+*  fieldmaster_get_dir
 *
 *  This function will return the url to a file within the FieldMaster plugin folder
 *
@@ -136,15 +225,15 @@ function fields_get_path( $path ) {
 *  @return	(string)
 */
 
-function fields_get_dir( $path ) {
+function fieldmaster_get_dir( $path ) {
 
-	return fields_get_setting('dir') . $path;
+	return fieldmaster_get_setting('dir') . $path;
 
 }
 
 
 /*
-*  fields_include
+*  fieldmaster_include
 *
 *  This function will include a file
 *
@@ -156,9 +245,9 @@ function fields_get_dir( $path ) {
 *  @return	$post_id (int)
 */
 
-function fields_include( $file ) {
+function fieldmaster_include( $file ) {
 
-	$path = fields_get_path( $file );
+	$path = fieldmaster_get_path( $file );
 
 	if( file_exists($path) ) {
 
@@ -170,7 +259,74 @@ function fields_include( $file ) {
 
 
 /*
-*  fields_parse_args
+*  fieldmaster_get_external_path
+*
+*  This function will return the path to a file within an external folder
+*
+*  @type	function
+*  @date	22/2/17
+*  @since	5.5.8
+*
+*  @param	$file (string)
+*  @param	$path (string)
+*  @return	(string)
+*/
+
+function fieldmaster_get_external_path( $file, $path = '' ) {
+
+    return trailingslashit( dirname( $file ) ) . $path;
+
+}
+
+
+/*
+*  fieldmaster_get_external_dir
+*
+*  This function will return the url to a file within an external folder
+*
+*  @type	function
+*  @date	22/2/17
+*  @since	5.5.8
+*
+*  @param	$file (string)
+*  @param	$path (string)
+*  @return	(string)
+*/
+
+function fieldmaster_get_external_dir( $file, $path = '' ) {
+
+    // vars
+    $external_url = '';
+    $external_path = fieldmaster_get_external_path( $file, $path );
+    $wp_plugin_path = wp_normalize_path(WP_PLUGIN_DIR);
+    $wp_content_path = wp_normalize_path(WP_CONTENT_DIR);
+    $wp_path = wp_normalize_path(ABSPATH);
+
+
+    // wp-content/plugins
+    if( strpos($external_path, $wp_plugin_path) === 0 ) {
+
+	    return str_replace($wp_plugin_path, plugins_url(), $external_path);
+
+    }
+
+
+    // wp-content
+    if( strpos($external_path, $wp_content_path) === 0 ) {
+
+	    return str_replace($wp_content_path, content_url(), $external_path);
+
+	}
+
+
+	// return
+	return str_replace($wp_path, home_url(), $external_path);
+
+}
+
+
+/*
+*  fieldmaster_parse_args
 *
 *  This function will merge together 2 arrays and also convert any numeric values to ints
 *
@@ -183,22 +339,14 @@ function fields_include( $file ) {
 *  @return	$args (array)
 */
 
-function fields_parse_args( $args, $defaults = array() ) {
-
-	// $args may not be na array!
-	if( !is_array($args) ) {
-
-		$args = array();
-
-	}
-
+function fieldmaster_parse_args( $args, $defaults = array() ) {
 
 	// parse args
 	$args = wp_parse_args( $args, $defaults );
 
 
 	// parse types
-	$args = fields_parse_types( $args );
+	$args = fieldmaster_parse_types( $args );
 
 
 	// return
@@ -208,7 +356,7 @@ function fields_parse_args( $args, $defaults = array() ) {
 
 
 /*
-*  fields_parse_types
+*  fieldmaster_parse_types
 *
 *  This function will convert any numeric values to int and trim strings
 *
@@ -220,37 +368,16 @@ function fields_parse_args( $args, $defaults = array() ) {
 *  @return	$var (mixed)
 */
 
-function fields_parse_types( $array ) {
-
-	// some keys are restricted
-	$restricted = array(
-		'label',
-		'name',
-		'value',
-		'instructions',
-		'nonce'
-	);
-
-
-	// loop
-	foreach( array_keys($array) as $k ) {
-
-		// parse type if not restricted
-		if( !in_array($k, $restricted, true) ) {
-
-			$array[ $k ] = fields_parse_type( $array[ $k ] );
-
-		}
-
-	}
+function fieldmaster_parse_types( $array ) {
 
 	// return
-	return $array;
+	return array_map( 'fieldmaster_parse_type', $array );
+
 }
 
 
 /*
-*  fields_parse_type
+*  fieldmaster_parse_type
 *
 *  description
 *
@@ -262,28 +389,17 @@ function fields_parse_types( $array ) {
 *  @return	$post_id (int)
 */
 
-function fields_parse_type( $v ) {
-
-	// test for array
-	if( is_array($v) ) {
-
-		return fields_parse_types($v);
-	}
-
+function fieldmaster_parse_type( $v ) {
 
 	// bail early if not string
-	if( !is_string($v) ) {
-
-		return $v;
-
-	}
+	if( !is_string($v) ) return $v;
 
 
 	// trim
 	$v = trim($v);
 
 
-	// numbers
+	// convert int (string) to int
 	if( is_numeric($v) && strval((int)$v) === $v ) {
 
 		$v = intval( $v );
@@ -298,7 +414,7 @@ function fields_parse_type( $v ) {
 
 
 /*
-*  fields_get_view
+*  fieldmaster_get_view
 *
 *  This function will load in a file from the 'admin/views' folder and allow variables to be passed through
 *
@@ -311,11 +427,17 @@ function fields_parse_type( $v ) {
 *  @return	n/a
 */
 
-function fields_get_view( $view_name = '', $args = array() ) {
+function fieldmaster_get_view( $path = '', $args = array() ) {
 
-	// vars
-	$path = fields_get_path("admin/views/{$view_name}.php");
+	// allow view file name shortcut
+	if( substr($path, -4) !== '.php' ) {
 
+		$path = fieldmaster_get_path("admin/views/{$path}.php");
+
+	}
+
+
+	// include
 	if( file_exists($path) ) {
 
 		include( $path );
@@ -326,7 +448,7 @@ function fields_get_view( $view_name = '', $args = array() ) {
 
 
 /*
-*  fields_merge_atts
+*  fieldmaster_merge_atts
 *
 *  description
 *
@@ -338,32 +460,31 @@ function fields_get_view( $view_name = '', $args = array() ) {
 *  @return	$post_id (int)
 */
 
-function fields_merge_atts( $atts, $extra = array() ) {
+function fieldmaster_merge_atts( $atts, $extra = array() ) {
 
 	// bail ealry if no $extra
-	if( empty($extra) ) {
+	if( empty($extra) ) return $atts;
 
-		return $atts;
 
-	}
+	// trim
+	$extra = array_map('trim', $extra);
+	$extra = array_filter($extra);
 
 
 	// merge in new atts
 	foreach( $extra as $k => $v ) {
 
+		// append
 		if( $k == 'class' || $k == 'style' ) {
 
-			if( $v === '' ) {
+			$atts[ $k ] .= ' ' . $v;
 
-				continue;
+		// merge
+		} else {
 
-			}
-
-			$v = $atts[ $k ] . ' ' . $v;
+			$atts[ $k ] = $v;
 
 		}
-
-		$atts[ $k ] = $v;
 
 	}
 
@@ -375,7 +496,7 @@ function fields_merge_atts( $atts, $extra = array() ) {
 
 
 /*
-*  fields_esc_attr
+*  fieldmaster_esc_attr
 *
 *  This function will return a render of an array of attributes to be used in markup
 *
@@ -387,7 +508,7 @@ function fields_merge_atts( $atts, $extra = array() ) {
 *  @return	n/a
 */
 
-function fields_esc_attr( $atts ) {
+function fieldmaster_esc_attr( $atts ) {
 
 	// is string?
 	if( is_string($atts) ) {
@@ -441,15 +562,15 @@ function fields_esc_attr( $atts ) {
 
 }
 
-function fields_esc_attr_e( $atts ) {
+function fieldmaster_esc_attr_e( $atts ) {
 
-	echo fields_esc_attr( $atts );
+	echo fieldmaster_esc_attr( $atts );
 
 }
 
 
 /*
-*  fields_hidden_input
+*  fieldmaster_hidden_input
 *
 *  description
 *
@@ -461,23 +582,23 @@ function fields_esc_attr_e( $atts ) {
 *  @return	$post_id (int)
 */
 
-function fields_get_hidden_input( $atts ) {
+function fieldmaster_get_hidden_input( $atts ) {
 
 	$atts['type'] = 'hidden';
 
-	return '<input ' . fields_esc_attr( $atts ) . ' />';
+	return '<input ' . fieldmaster_esc_attr( $atts ) . ' />';
 
 }
 
-function fields_hidden_input( $atts ) {
+function fieldmaster_hidden_input( $atts ) {
 
-	echo fields_get_hidden_input( $atts );
+	echo fieldmaster_get_hidden_input( $atts );
 
 }
 
 
 /*
-*  fields_extract_var
+*  fieldmaster_extract_var
 *
 *  This function will remove the var from the array, and return the var
 *
@@ -490,7 +611,7 @@ function fields_hidden_input( $atts ) {
 *  @return	(mixed)
 */
 
-function fields_extract_var( &$array, $key ) {
+function fieldmaster_extract_var( &$array, $key, $default = null ) {
 
 	// check if exists
 	if( is_array($array) && array_key_exists($key, $array) ) {
@@ -510,12 +631,12 @@ function fields_extract_var( &$array, $key ) {
 
 
 	// return
-	return null;
+	return $default;
 }
 
 
 /*
-*  fields_extract_vars
+*  fieldmaster_extract_vars
 *
 *  This function will remove the vars from the array, and return the vars
 *
@@ -527,13 +648,13 @@ function fields_extract_var( &$array, $key ) {
 *  @return	$post_id (int)
 */
 
-function fields_extract_vars( &$array, $keys ) {
+function fieldmaster_extract_vars( &$array, $keys ) {
 
 	$r = array();
 
 	foreach( $keys as $key ) {
 
-		$r[ $key ] = fields_extract_var( $array, $key );
+		$r[ $key ] = fieldmaster_extract_var( $array, $key );
 
 	}
 
@@ -542,7 +663,35 @@ function fields_extract_vars( &$array, $keys ) {
 
 
 /*
-*  fields_get_post_types
+*  fieldmaster_get_sub_array
+*
+*  This function will return a sub array of data
+*
+*  @type	function
+*  @date	15/03/2016
+*  @since	5.3.2
+*
+*  @param	$post_id (int)
+*  @return	$post_id (int)
+*/
+
+function fieldmaster_get_sub_array( $array, $keys ) {
+
+	$r = array();
+
+	foreach( $keys as $key ) {
+
+		$r[ $key ] = $array[ $key ];
+
+	}
+
+	return $r;
+
+}
+
+
+/*
+*  fieldmaster_get_post_types
 *
 *  This function will return an array of available post types
 *
@@ -555,59 +704,53 @@ function fields_extract_vars( &$array, $keys ) {
 *  @return	(array)
 */
 
-function fields_get_post_types( $exclude = array(), $include = array() ) {
+function fieldmaster_get_post_types( $args = array() ) {
 
-	// get all custom post types
-	$post_types = get_post_types();
-
-
-	// core exclude
-	$exclude = wp_parse_args( $exclude, array('fields-field', 'fields-field-group', 'revision', 'nav_menu_item') );
+	// vars
+	$exclude = fieldmaster_extract_var( $args, 'exclude', array() );
+	$return = array();
 
 
-	// include
-	if( !empty($include) ) {
-
-		foreach( array_keys($include) as $i ) {
-
-			$post_type = $include[ $i ];
-
-			if( post_type_exists($post_type) ) {
-
-				$post_types[ $post_type ] = $post_type;
-
-			}
-
-		}
-
-	}
+	// get post types
+	$post_types = get_post_types( $args, 'objects' );
 
 
-	// exclude
-	foreach( array_values($exclude) as $i ) {
+	// remove FieldMaster post types
+	$exclude[] = 'fm-field';
+	$exclude[] = 'fm-field-group';
 
-		unset( $post_types[ $i ] );
+
+	// loop
+	foreach( $post_types as $i => $post_type ) {
+
+		// bail early if is exclude
+		if( in_array($i, $exclude) ) continue;
+
+
+		// bail early if is builtin (WP) private post type
+		// - nav_menu_item, revision, customize_changeset, etc
+		if( $post_type->_builtin && !$post_type->public ) continue;
+
+
+		// append
+		$return[] = $i;
 
 	}
-
-
-	// simplify keys
-	$post_types = array_values($post_types);
 
 
 	// return
-	return $post_types;
+	return $return;
 
 }
 
 
-function fields_get_pretty_post_types( $post_types = array() ) {
+function fieldmaster_get_pretty_post_types( $post_types = array() ) {
 
 	// get post types
 	if( empty($post_types) ) {
 
 		// get all custom post types
-		$post_types = fields_get_post_types();
+		$post_types = fieldmaster_get_post_types();
 
 	}
 
@@ -619,16 +762,7 @@ function fields_get_pretty_post_types( $post_types = array() ) {
 	foreach( $post_types as $post_type ) {
 
 		// vars
-		$label = $post_type;
-
-
-		// check that object exists (case exists when importing field group from another install and post type does not exist)
-		if( post_type_exists($post_type) ) {
-
-			$obj = get_post_type_object($post_type);
-			$label = $obj->labels->singular_name;
-
-		}
+		$label = fieldmaster_get_post_type_label($post_type);
 
 
 		// append to r
@@ -667,10 +801,46 @@ function fields_get_pretty_post_types( $post_types = array() ) {
 }
 
 
+
 /*
-*  fields_verify_nonce
+*  fieldmaster_get_post_type_label
 *
-*  This function will look at the $_POST['_fieldsnonce'] value and return true or false
+*  This function will return a pretty label for a specific post_type
+*
+*  @type	function
+*  @date	5/07/2016
+*  @since	5.4.0
+*
+*  @param	$post_type (string)
+*  @return	(string)
+*/
+
+function fieldmaster_get_post_type_label( $post_type ) {
+
+	// vars
+	$label = $post_type;
+
+
+	// check that object exists
+	// - case exists when importing field group from another install and post type does not exist
+	if( post_type_exists($post_type) ) {
+
+		$obj = get_post_type_object($post_type);
+		$label = $obj->labels->singular_name;
+
+	}
+
+
+	// return
+	return $label;
+
+}
+
+
+/*
+*  fieldmaster_verify_nonce
+*
+*  This function will look at the $_POST['_fieldmasternonce'] value and return true or false
 *
 *  @type	function
 *  @date	15/10/13
@@ -680,25 +850,21 @@ function fields_get_pretty_post_types( $post_types = array() ) {
 *  @return	(boolean)
 */
 
-function fields_verify_nonce( $value, $post_id = 0 ) {
+function fieldmaster_verify_nonce( $value, $post_id = 0 ) {
 
 	// vars
-	$nonce = fields_maybe_get( $_POST, '_fieldsnonce' );
+	$nonce = fieldmaster_maybe_get( $_POST, '_fieldmasternonce' );
 
 
-	// bail early if no nonce or if nonce does not match (post|user|comment|term)
-	if( !$nonce || !wp_verify_nonce($nonce, $value) ) {
-
-		return false;
-
-	}
+	// bail early nonce does not match (post|user|comment|term)
+	if( !$nonce || !wp_verify_nonce($nonce, $value) ) return false;
 
 
 	// if saving specific post
 	if( $post_id ) {
 
 		// vars
-		$form_post_id = (int) fields_maybe_get( $_POST, 'post_ID' );
+		$form_post_id = (int) fieldmaster_maybe_get( $_POST, 'post_ID' );
 		$post_parent = wp_is_post_revision( $post_id );
 
 
@@ -712,17 +878,15 @@ function fields_verify_nonce( $value, $post_id = 0 ) {
 
 			// do nothing (don't remove this if statement!)
 
-		// 3. revision (this post is a revision of the post we were editing)
+		// 3. revision (this is an preview autosave)
 		} elseif( $post_parent === $form_post_id ) {
 
-			// return true early and prevent $_POST['_fieldsnonce'] from being reset
-			// this will allow another save_post to save the real post
-			return true;
+			// do nothing (don't remove this if statement!)
 
 		// 4. no match (this post is a custom created one during the save proccess via either WP or 3rd party)
 		} else {
 
-			// return false early and prevent $_POST['_fieldsnonce'] from being reset
+			// return false early and prevent $_POST['_fieldmasternonce'] from being reset
 			// this will allow another save_post to save the real post
 			return false;
 
@@ -732,7 +896,7 @@ function fields_verify_nonce( $value, $post_id = 0 ) {
 
 
 	// reset nonce (only allow 1 save)
-	$_POST['_fieldsnonce'] = false;
+	$_POST['_fieldmasternonce'] = false;
 
 
 	// return
@@ -742,7 +906,7 @@ function fields_verify_nonce( $value, $post_id = 0 ) {
 
 
 /*
-*  fields_verify_ajax
+*  fieldmaster_verify_ajax
 *
 *  This function will return true if the current AJAX request is valid
 *  It's action will also allow WPML to set the lang and avoid AJAX get_posts issues
@@ -755,26 +919,26 @@ function fields_verify_nonce( $value, $post_id = 0 ) {
 *  @return	(boolean)
 */
 
-function fields_verify_ajax() {
+function fieldmaster_verify_ajax() {
 
-	// bail early if not fields action
-	if( empty($_POST['action']) || substr($_POST['action'], 0, 6) !== 'fields' ) {
-		var_dump(222);
+	// bail early if not fieldmaster action
+	if( empty($_POST['action']) || substr($_POST['action'], 0, 11) !== 'fieldmaster' ) {
+
 		return false;
 
 	}
 
 
-	// bail early if not fields nonce
-	if( empty($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'fields_nonce') ) {
-var_dump(333);
+	// bail early if not fieldmaster nonce
+	if( empty($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'fieldmaster_nonce') ) {
+
 		return false;
 
 	}
 
 
 	// action for 3rd party customization
-	do_action('fields/verify_ajax');
+	do_action('fieldmaster/verify_ajax');
 
 
 	// return
@@ -784,76 +948,7 @@ var_dump(333);
 
 
 /*
-*  fields_add_admin_notice
-*
-*  This function will add the notice data to a setting in the fields object for the admin_notices action to use
-*
-*  @type	function
-*  @date	17/10/13
-*  @since	5.0.0
-*
-*  @param	$text (string)
-*  @param	$class (string)
-*  @return	(int) message ID (array position)
-*/
-
-function fields_add_admin_notice( $text, $class = '', $wrap = 'p' )
-{
-	// vars
-	$admin_notices = fields_get_admin_notices();
-
-
-	// add to array
-	$admin_notices[] = array(
-		'text'	=> $text,
-		'class'	=> "updated {$class}",
-		'wrap'	=> $wrap
-	);
-
-
-	// update
-	fields_update_setting( 'admin_notices', $admin_notices );
-
-
-	// return
-	return ( count( $admin_notices ) - 1 );
-
-}
-
-
-/*
-*  fields_get_admin_notices
-*
-*  This function will return an array containing any admin notices
-*
-*  @type	function
-*  @date	17/10/13
-*  @since	5.0.0
-*
-*  @param	n/a
-*  @return	(array)
-*/
-
-function fields_get_admin_notices()
-{
-	// vars
-	$admin_notices = fields_get_setting( 'admin_notices' );
-
-
-	// validate
-	if( !$admin_notices )
-	{
-		$admin_notices = array();
-	}
-
-
-	// return
-	return $admin_notices;
-}
-
-
-/*
-*  fields_get_image_sizes
+*  fieldmaster_get_image_sizes
 *
 *  This function will return an array of available image sizes
 *
@@ -865,17 +960,13 @@ function fields_get_admin_notices()
 *  @return	(array)
 */
 
-function fields_get_image_sizes() {
-
-	// global
-	global $_wp_additional_image_sizes;
-
+function fieldmaster_get_image_sizes() {
 
 	// vars
 	$sizes = array(
-		'thumbnail'	=>	__("Thumbnail",'fields'),
-		'medium'	=>	__("Medium",'fields'),
-		'large'		=>	__("Large",'fields')
+		'thumbnail'	=>	__("Thumbnail",'fieldmaster'),
+		'medium'	=>	__("Medium",'fieldmaster'),
+		'large'		=>	__("Large",'fieldmaster')
 	);
 
 
@@ -910,12 +1001,13 @@ function fields_get_image_sizes() {
 	foreach( array_keys($sizes) as $s ) {
 
 		// vars
-		$w = isset($_wp_additional_image_sizes[$s]['width']) ? $_wp_additional_image_sizes[$s]['width'] : get_option( "{$s}_size_w" );
-		$h = isset($_wp_additional_image_sizes[$s]['height']) ? $_wp_additional_image_sizes[$s]['height'] : get_option( "{$s}_size_h" );
+		$data = fieldmaster_get_image_size($s);
 
-		if( $w && $h ) {
 
-			$sizes[ $s ] .= " ({$w} x {$h})";
+		// append
+		if( $data['width'] && $data['height'] ) {
+
+			$sizes[ $s ] .= ' (' . $data['width'] . ' x ' . $data['height'] . ')';
 
 		}
 
@@ -923,11 +1015,11 @@ function fields_get_image_sizes() {
 
 
 	// add full end
-	$sizes['full'] = __("Full Size",'fields');
+	$sizes['full'] = __("Full Size",'fieldmaster');
 
 
 	// filter for 3rd party customization
-	$sizes = apply_filters( 'fields/get_image_sizes', $sizes );
+	$sizes = apply_filters( 'fieldmaster/get_image_sizes', $sizes );
 
 
 	// return
@@ -935,9 +1027,157 @@ function fields_get_image_sizes() {
 
 }
 
+function fieldmaster_get_image_size( $s = '' ) {
+
+	// global
+	global $_wp_additional_image_sizes;
+
+
+	// rename for nicer code
+	$_sizes = $_wp_additional_image_sizes;
+
+
+	// vars
+	$data = array(
+		'width' 	=> isset($_sizes[$s]['width']) ? $_sizes[$s]['width'] : get_option("{$s}_size_w"),
+		'height'	=> isset($_sizes[$s]['height']) ? $_sizes[$s]['height'] : get_option("{$s}_size_h")
+	);
+
+
+	// return
+	return $data;
+
+}
+
 
 /*
-*  fields_get_taxonomies
+*  fieldmaster_version_compare
+*
+*  This function will compare version left v right
+*
+*  @type	function
+*  @date	21/11/16
+*  @since	5.5.0
+*
+*  @param	$compare (string)
+*  @param	$version (string)
+*  @return	(boolean)
+*/
+
+function fieldmaster_version_compare( $left = 'wp', $compare = '>', $right = '1' ) {
+
+	// global
+	global $wp_version;
+
+
+	// wp
+	if( $left === 'wp' ) $left = $wp_version;
+
+
+	// remove '-beta1' or '-RC1'
+	$left = fieldmaster_get_full_version($left);
+	$right = fieldmaster_get_full_version($right);
+
+
+	// return
+	return version_compare( $left, $right, $compare );
+
+}
+
+
+/*
+*  fieldmaster_get_full_version
+*
+*  This function will remove any '-beta1' or '-RC1' strings from a version
+*
+*  @type	function
+*  @date	24/11/16
+*  @since	5.5.0
+*
+*  @param	$version (string)
+*  @return	(string)
+*/
+
+function fieldmaster_get_full_version( $version = '1' ) {
+
+	// remove '-beta1' or '-RC1'
+	if( $pos = strpos($version, '-') ) {
+
+		$version = substr($version, 0, $pos);
+
+	}
+
+
+	// return
+	return $version;
+
+}
+
+
+/*
+*  fieldmaster_get_locale
+*
+*  This function is a wrapper for the get_locale() function
+*
+*  @type	function
+*  @date	16/12/16
+*  @since	5.5.0
+*
+*  @param	n/a
+*  @return	(string)
+*/
+
+function fieldmaster_get_locale() {
+
+	return is_admin() && function_exists('get_user_locale') ? get_user_locale() : get_locale();
+
+}
+
+
+/*
+*  fieldmaster_get_terms
+*
+*  This function is a wrapper for the get_terms() function
+*
+*  @type	function
+*  @date	28/09/2016
+*  @since	5.4.0
+*
+*  @param	$args (array)
+*  @return	(array)
+*/
+
+function fieldmaster_get_terms( $args ) {
+
+	// global
+	global $wp_version;
+
+
+	// vars
+	$terms = array();
+
+
+	// WP 4.5+
+	if( version_compare($wp_version, '4.5', '>=' ) ) {
+
+		$terms = get_terms( $args );
+
+	// WP < 4.5
+	} else {
+
+		$terms = get_terms( $args['taxonomy'], $args );
+
+	}
+
+
+	// return
+	return $terms;
+
+}
+
+
+/*
+*  fieldmaster_get_taxonomies
 *
 *  This function will return an array of available taxonomies
 *
@@ -949,7 +1189,7 @@ function fields_get_image_sizes() {
 *  @return	(array)
 */
 
-function fields_get_taxonomies() {
+function fieldmaster_get_taxonomies() {
 
 	// get all taxonomies
 	$taxonomies = get_taxonomies( false, 'objects' );
@@ -976,13 +1216,13 @@ function fields_get_taxonomies() {
 }
 
 
-function fields_get_pretty_taxonomies( $taxonomies = array() ) {
+function fieldmaster_get_pretty_taxonomies( $taxonomies = array() ) {
 
 	// get post types
 	if( empty($taxonomies) ) {
 
 		// get all custom post types
-		$taxonomies = fields_get_taxonomies();
+		$taxonomies = fieldmaster_get_taxonomies();
 
 	}
 
@@ -994,7 +1234,7 @@ function fields_get_pretty_taxonomies( $taxonomies = array() ) {
 	foreach( array_keys($taxonomies) as $i ) {
 
 		// vars
-		$taxonomy = fields_extract_var( $taxonomies, $i);
+		$taxonomy = fieldmaster_extract_var( $taxonomies, $i);
 		$obj = get_taxonomy( $taxonomy );
 		$name = $obj->labels->singular_name;
 
@@ -1036,7 +1276,7 @@ function fields_get_pretty_taxonomies( $taxonomies = array() ) {
 
 
 /*
-*  fields_get_taxonomy_terms
+*  fieldmaster_get_taxonomy_terms
 *
 *  This function will return an array of available taxonomy terms
 *
@@ -1048,14 +1288,14 @@ function fields_get_pretty_taxonomies( $taxonomies = array() ) {
 *  @return	(array)
 */
 
-function fields_get_taxonomy_terms( $taxonomies = array() ) {
+function fieldmaster_get_taxonomy_terms( $taxonomies = array() ) {
 
 	// force array
-	$taxonomies = fields_get_array( $taxonomies );
+	$taxonomies = fieldmaster_get_array( $taxonomies );
 
 
 	// get pretty taxonomy names
-	$taxonomies = fields_get_pretty_taxonomies( $taxonomies );
+	$taxonomies = fieldmaster_get_pretty_taxonomies( $taxonomies );
 
 
 	// vars
@@ -1067,19 +1307,34 @@ function fields_get_taxonomy_terms( $taxonomies = array() ) {
 
 		// vars
 		$label = $taxonomies[ $taxonomy ];
-		$terms = get_terms( $taxonomy, array( 'hide_empty' => false ) );
+		$is_hierarchical = is_taxonomy_hierarchical( $taxonomy );
+		$terms = fieldmaster_get_terms(array(
+			'taxonomy'		=> $taxonomy,
+			'hide_empty' 	=> false
+		));
 
 
-		if( !empty($terms) ) {
+		// bail early i no terms
+		if( empty($terms) ) continue;
 
-			$r[ $label ] = array();
 
-			foreach( $terms as $term ) {
+		// sort into hierachial order!
+		if( $is_hierarchical ) {
 
-				$k = "{$taxonomy}:{$term->slug}";
-				$r[ $label ][ $k ] = $term->name;
+			$terms = _get_term_children( 0, $terms, $taxonomy );
 
-			}
+		}
+
+
+		// add placeholder
+		$r[ $label ] = array();
+
+
+		// add choices
+		foreach( $terms as $term ) {
+
+			$k = "{$taxonomy}:{$term->slug}";
+			$r[ $label ][ $k ] = fieldmaster_get_term_title( $term );
 
 		}
 
@@ -1092,8 +1347,38 @@ function fields_get_taxonomy_terms( $taxonomies = array() ) {
 }
 
 
+function fieldmaster_get_term_title( $term ) {
+
+	// title
+	$title = $term->name;
+
+
+	// empty
+	if( $title === '' ) {
+
+		$title = __('(no title)', 'fieldmaster');
+
+	}
+
+
+	// ancestors
+	if( is_taxonomy_hierarchical($term->taxonomy) ) {
+
+		$ancestors = get_ancestors( $term->term_id, $term->taxonomy );
+
+		$title = str_repeat('- ', count($ancestors)) . $title;
+
+	}
+
+
+	// return
+	return $title;
+
+}
+
+
 /*
-*  fields_decode_taxonomy_terms
+*  fieldmaster_decode_taxonomy_terms
 *
 *  This function decodes the $taxonomy:$term strings into a nested array
 *
@@ -1105,49 +1390,49 @@ function fields_get_taxonomy_terms( $taxonomies = array() ) {
 *  @return	(array)
 */
 
-function fields_decode_taxonomy_terms( $terms = false ) {
+function fieldmaster_decode_taxonomy_terms( $strings = false ) {
 
-	// load all taxonomies if not specified in args
-	if( !$terms ) {
-
-		$terms = fields_get_taxonomy_terms();
-
-	}
+	// bail early if no terms
+	if( empty($strings) ) return false;
 
 
 	// vars
-	$r = array();
+	$terms = array();
 
 
-	foreach( $terms as $term ) {
+	// loop
+	foreach( $strings as $string ) {
 
 		// vars
-		$data = fields_decode_taxonomy_term( $term );
+		$data = fieldmaster_decode_taxonomy_term( $string );
+		$taxonomy = $data['taxonomy'];
+		$term = $data['term'];
 
 
 		// create empty array
-		if( !array_key_exists($data['taxonomy'], $r) )
-		{
-			$r[ $data['taxonomy'] ] = array();
+		if( !isset($terms[ $taxonomy ]) ) {
+
+			$terms[ $taxonomy ] = array();
+
 		}
 
 
-		// append to taxonomy
-		$r[ $data['taxonomy'] ][] = $data['term'];
+		// append
+		$terms[ $taxonomy ][] = $term;
 
 	}
 
 
 	// return
-	return $r;
+	return $terms;
 
 }
 
 
 /*
-*  fields_decode_taxonomy_term
+*  fieldmaster_decode_taxonomy_term
 *
-*  This function will convert a term string into an array of term data
+*  This function will return the taxonomy and term slug for a given value
 *
 *  @type	function
 *  @date	31/03/2014
@@ -1157,85 +1442,77 @@ function fields_decode_taxonomy_terms( $terms = false ) {
 *  @return	(array)
 */
 
-function fields_decode_taxonomy_term( $string ) {
+function fieldmaster_decode_taxonomy_term( $value ) {
 
 	// vars
-	$r = array();
+	$data = array(
+		'taxonomy'	=> '',
+		'term'		=> ''
+	);
 
 
-	// vars
-	$data = explode(':', $string);
-	$taxonomy = 'category';
-	$term = '';
+	// int
+	if( is_numeric($value) ) {
 
+		$data['term'] = $value;
 
-	// check data
-	if( isset($data[1]) ) {
+	// string
+	} elseif( is_string($value) ) {
 
-		$taxonomy = $data[0];
-		$term = $data[1];
+		$value = explode(':', $value);
+		$data['taxonomy'] = isset($value[0]) ? $value[0] : '';
+		$data['term'] = isset($value[1]) ? $value[1] : '';
+
+	// error
+	} else {
+
+		return false;
 
 	}
 
 
-	// add data to $r
-	$r['taxonomy'] = $taxonomy;
-	$r['term'] = $term;
+	// allow for term_id (Used by FieldMaster v4)
+	if( is_numeric($data['term']) ) {
+
+		// global
+		global $wpdb;
 
 
-	// return
-	return $r;
+		// find taxonomy
+		if( !$data['taxonomy'] ) {
 
-}
+			$data['taxonomy'] = $wpdb->get_var( $wpdb->prepare("SELECT taxonomy FROM $wpdb->term_taxonomy WHERE term_id = %d LIMIT 1", $data['term']) );
 
-
-/*
-*  fields_cache_get
-*
-*  This function is a wrapper for the wp_cache_get to allow for 3rd party customization
-*
-*  @type	function
-*  @date	4/12/2013
-*  @since	5.0.0
-*
-*  @param	$post_id (int)
-*  @return	$post_id (int)
-*/
-
-/*
-function fields_cache_get( $key, &$found ) {
-
-	// vars
-	$group = 'fields';
-	$force = false;
-
-
-	// load from cache
-	$cache = wp_cache_get( $key, $group, $force, $found );
-
-
-	// allow 3rd party customization if cache was not found
-	if( !$found )
-	{
-		$custom = apply_filters("fields/get_cache/{$key}", $cache);
-
-		if( $custom !== $cache )
-		{
-			$cache = $custom;
-			$found = true;
 		}
+
+
+		// find term (may have numeric slug '123')
+		$term = get_term_by( 'slug', $data['term'], $data['taxonomy'] );
+
+
+		// attempt get term via ID (FieldMaster4 uses ID)
+		if( !$term ) $term = get_term( $data['term'], $data['taxonomy'] );
+
+
+		// bail early if no term
+		if( !$term ) return false;
+
+
+		// update
+		$data['taxonomy'] = $term->taxonomy;
+		$data['term'] = $term->slug;
+
 	}
 
 
 	// return
-	return $cache;
+	return $data;
 
 }
-*/
 
 
 /*
-*  fields_get_array
+*  fieldmaster_get_array
 *
 *  This function will force a variable to become an array
 *
@@ -1247,7 +1524,7 @@ function fields_cache_get( $key, &$found ) {
 *  @return	(array)
 */
 
-function fields_get_array( $var = false, $delimiter = ',' ) {
+function fieldmaster_get_array( $var = false, $delimiter = ',' ) {
 
 	// is array?
 	if( is_array($var) ) {
@@ -1280,7 +1557,49 @@ function fields_get_array( $var = false, $delimiter = ',' ) {
 
 
 /*
-*  fields_get_posts
+*  fieldmaster_get_numeric
+*
+*  This function will return numeric values
+*
+*  @type	function
+*  @date	15/07/2016
+*  @since	5.4.0
+*
+*  @param	$value (mixed)
+*  @return	(mixed)
+*/
+
+function fieldmaster_get_numeric( $value = '' ) {
+
+	// vars
+	$numbers = array();
+	$is_array = is_array($value);
+
+
+	// loop
+	foreach( (array) $value as $v ) {
+
+		if( is_numeric($v) ) $numbers[] = (int) $v;
+
+	}
+
+
+	// bail early if is empty
+	if( empty($numbers) ) return false;
+
+
+	// convert array
+	if( !$is_array ) $numbers = $numbers[0];
+
+
+	// return
+	return $numbers;
+
+}
+
+
+/*
+*  fieldmaster_get_posts
 *
 *  This function will return an array of posts making sure the order is correct
 *
@@ -1292,7 +1611,7 @@ function fields_get_array( $var = false, $delimiter = ',' ) {
 *  @return	(array)
 */
 
-function fields_get_posts( $args = array() ) {
+function fieldmaster_get_posts( $args = array() ) {
 
 	// vars
 	$posts = array();
@@ -1300,17 +1619,19 @@ function fields_get_posts( $args = array() ) {
 
 	// defaults
 	// leave suppress_filters as true becuase we don't want any plugins to modify the query as we know exactly what
-	$args = fields_parse_args( $args, array(
-		'posts_per_page'	=> -1,
-		'post_type'			=> '',
-		'post_status'		=> 'any'
+	$args = wp_parse_args( $args, array(
+		'posts_per_page'			=> -1,
+		'post_type'					=> '',
+		'post_status'				=> 'any',
+		'update_post_meta_cache'	=> false,
+		'update_post_term_cache' 	=> false
 	));
 
 
 	// post type
 	if( empty($args['post_type']) ) {
 
-		$args['post_type'] = fields_get_post_types();
+		$args['post_type'] = fieldmaster_get_post_types();
 
 	}
 
@@ -1319,7 +1640,7 @@ function fields_get_posts( $args = array() ) {
 	if( $args['post__in'] ) {
 
 		// force value to array
-		$args['post__in'] = fields_get_array( $args['post__in'] );
+		$args['post__in'] = fieldmaster_get_array( $args['post__in'] );
 
 
 		// convert to int
@@ -1328,7 +1649,7 @@ function fields_get_posts( $args = array() ) {
 
 		// add filter to remove post_type
 		// use 'query' filter so that 'suppress_filters' can remain true
-		//add_filter('query', '_fields_query_remove_post_type');
+		//add_filter('query', '_fieldmaster_query_remove_post_type');
 
 
 		// order by post__in
@@ -1342,7 +1663,7 @@ function fields_get_posts( $args = array() ) {
 
 
 	// remove this filter (only once)
-	//remove_filter('query', '_fields_query_remove_post_type');
+	//remove_filter('query', '_fieldmaster_query_remove_post_type');
 
 
 	// validate order
@@ -1373,7 +1694,7 @@ function fields_get_posts( $args = array() ) {
 
 
 /*
-*  _fields_query_remove_post_type
+*  _fieldmaster_query_remove_post_type
 *
 *  This function will remove the 'wp_posts.post_type' WHERE clause completely
 *  When using 'post__in', this clause is unneccessary and slow.
@@ -1386,7 +1707,7 @@ function fields_get_posts( $args = array() ) {
 *  @return	$sql
 */
 
-function _fields_query_remove_post_type( $sql ) {
+function _fieldmaster_query_remove_post_type( $sql ) {
 
 	// global
 	global $wpdb;
@@ -1428,7 +1749,7 @@ function _fields_query_remove_post_type( $sql ) {
 
 
 /*
-*  fields_get_grouped_posts
+*  fieldmaster_get_grouped_posts
 *
 *  This function will return all posts grouped by post_type
 *  This is handy for select settings
@@ -1441,14 +1762,14 @@ function _fields_query_remove_post_type( $sql ) {
 *  @return	(array)
 */
 
-function fields_get_grouped_posts( $args ) {
+function fieldmaster_get_grouped_posts( $args ) {
 
 	// vars
 	$r = array();
 
 
 	// defaults
-	$args = fields_parse_args( $args, array(
+	$args = wp_parse_args( $args, array(
 		'posts_per_page'			=> -1,
 		'paged'						=> 0,
 		'post_type'					=> 'post',
@@ -1461,8 +1782,8 @@ function fields_get_grouped_posts( $args ) {
 
 
 	// find array of post_type
-	$post_types = fields_get_array( $args['post_type'] );
-	$post_types_labels = fields_get_pretty_post_types($post_types);
+	$post_types = fieldmaster_get_array( $args['post_type'] );
+	$post_types_labels = fieldmaster_get_pretty_post_types($post_types);
 
 
 	// attachment doesn't work if it is the only item in an array
@@ -1474,7 +1795,7 @@ function fields_get_grouped_posts( $args ) {
 
 
 	// add filter to orderby post type
-	add_filter('posts_orderby', '_fields_orderby_post_type', 10, 2);
+	add_filter('posts_orderby', '_fieldmaster_orderby_post_type', 10, 2);
 
 
 	// get posts
@@ -1482,7 +1803,7 @@ function fields_get_grouped_posts( $args ) {
 
 
 	// remove this filter (only once)
-	remove_filter('posts_orderby', '_fields_orderby_post_type');
+	remove_filter('posts_orderby', '_fieldmaster_orderby_post_type');
 
 
 	// loop
@@ -1498,7 +1819,7 @@ function fields_get_grouped_posts( $args ) {
 
 			if( $posts[ $key ]->post_type == $post_type ) {
 
-				$this_posts[] = fields_extract_var( $posts, $key );
+				$this_posts[] = fieldmaster_extract_var( $posts, $key );
 
 			}
 
@@ -1506,11 +1827,7 @@ function fields_get_grouped_posts( $args ) {
 
 
 		// bail early if no posts for this post type
-		if( empty($this_posts) ) {
-
-			continue;
-
-		}
+		if( empty($this_posts) ) continue;
 
 
 		// sort into hierachial order!
@@ -1521,11 +1838,7 @@ function fields_get_grouped_posts( $args ) {
 			$match_id = $this_posts[ 0 ]->ID;
 			$offset = 0;
 			$length = count($this_posts);
-			$parent = fields_maybe_get( $args, 'post_parent', 0 );
-
-
-			// reset $this_posts
-			$this_posts = array();
+			$parent = fieldmaster_maybe_get( $args, 'post_parent', 0 );
 
 
 			// get all posts
@@ -1541,23 +1854,19 @@ function fields_get_grouped_posts( $args ) {
 			// loop over posts and update $offset
 			foreach( $all_posts as $offset => $p ) {
 
-				if( $p->ID == $match_id ) {
-
-					break;
-
-				}
+				if( $p->ID == $match_id ) break;
 
 			}
 
 
 			// order posts
-			$all_posts = get_page_children( $parent, $all_posts );
+			$ordered_posts = get_page_children( $parent, $all_posts );
 
 
-			// append
-			for( $i = $offset; $i < ($offset + $length); $i++ ) {
+			// check for empty array (possible if parent did not exist within original data)
+			if( !empty($ordered_posts) ) {
 
-				$this_posts[] = fields_extract_var( $all_posts, $i);
+				$this_posts = array_slice($ordered_posts, $offset, $length);
 
 			}
 
@@ -1568,7 +1877,7 @@ function fields_get_grouped_posts( $args ) {
 		foreach( array_keys($this_posts) as $key ) {
 
 			// extract post
-			$post = fields_extract_var( $this_posts, $key );
+			$post = fieldmaster_extract_var( $this_posts, $key );
 
 
 
@@ -1591,7 +1900,7 @@ function fields_get_grouped_posts( $args ) {
 
 }
 
-function _fields_orderby_post_type( $ordeby, $wp_query ) {
+function _fieldmaster_orderby_post_type( $ordeby, $wp_query ) {
 
 	// global
 	global $wpdb;
@@ -1616,14 +1925,17 @@ function _fields_orderby_post_type( $ordeby, $wp_query ) {
 }
 
 
-function fields_get_post_title( $post = 0 ) {
+function fieldmaster_get_post_title( $post = 0, $is_search = false ) {
 
-	// load post if given an ID
-	if( is_numeric($post) ) {
+	// vars
+	$post = get_post($post);
+	$title = '';
+	$prepend = '';
+	$append = '';
 
-		$post = get_post($post);
 
-	}
+	// bail early if no post
+	if( !$post ) return '';
 
 
 	// title
@@ -1633,17 +1945,7 @@ function fields_get_post_title( $post = 0 ) {
 	// empty
 	if( $title === '' ) {
 
-		$title = __('(no title)', 'fields');
-
-	}
-
-
-	// ancestors
-	if( $post->post_type != 'attachment' ) {
-
-		$ancestors = get_ancestors( $post->ID, $post->post_type );
-
-		$title = str_repeat('- ', count($ancestors)) . $title;
+		$title = __('(no title)', 'fieldmaster');
 
 	}
 
@@ -1651,9 +1953,44 @@ function fields_get_post_title( $post = 0 ) {
 	// status
 	if( get_post_status( $post->ID ) != "publish" ) {
 
-		$title .= ' (' . get_post_status( $post->ID ) . ')';
+		$append .= ' (' . get_post_status( $post->ID ) . ')';
 
 	}
+
+
+	// ancestors
+	if( $post->post_type !== 'attachment' ) {
+
+		// get ancestors
+		$ancestors = get_ancestors( $post->ID, $post->post_type );
+		$prepend .= str_repeat('- ', count($ancestors));
+
+
+		// add parent
+		if( $is_search && !empty($ancestors) ) {
+
+			// reverse
+			$ancestors = array_reverse($ancestors);
+
+
+			// convert id's into titles
+			foreach( $ancestors as $i => $id ) {
+
+				$ancestors[ $i ] = get_the_title( $id );
+
+			}
+
+
+			// append
+			$append .= ' | ' . __('Parent', 'fieldmaster') . ': ' . implode(' / ', $ancestors);
+
+		}
+
+	}
+
+
+	// merge
+	$title = $prepend . $title . $append;
 
 
 	// return
@@ -1662,7 +1999,7 @@ function fields_get_post_title( $post = 0 ) {
 }
 
 
-function fields_order_by_search( $array, $search ) {
+function fieldmaster_order_by_search( $array, $search ) {
 
 	// vars
 	$weights = array();
@@ -1672,7 +2009,7 @@ function fields_order_by_search( $array, $search ) {
 	// add key prefix
 	foreach( array_keys($array) as $k ) {
 
-		$array[ '_' . $k ] = fields_extract_var( $array, $k );
+		$array[ '_' . $k ] = fieldmaster_extract_var( $array, $k );
 
 	}
 
@@ -1716,7 +2053,7 @@ function fields_order_by_search( $array, $search ) {
 	// remove key prefix
 	foreach( array_keys($array) as $k ) {
 
-		$array[ substr($k,1) ] = fields_extract_var( $array, $k );
+		$array[ substr($k,1) ] = fieldmaster_extract_var( $array, $k );
 
 	}
 
@@ -1726,9 +2063,204 @@ function fields_order_by_search( $array, $search ) {
 }
 
 
+/*
+*  fieldmaster_get_pretty_user_roles
+*
+*  description
+*
+*  @type	function
+*  @date	23/02/2016
+*  @since	5.3.2
+*
+*  @param	$post_id (int)
+*  @return	$post_id (int)
+*/
+
+function fieldmaster_get_pretty_user_roles( $allowed = false ) {
+
+	// vars
+	$editable_roles = get_editable_roles();
+	$allowed = fieldmaster_get_array($allowed);
+	$roles = array();
+
+
+	// loop
+	foreach( $editable_roles as $role_name => $role_details ) {
+
+		// bail early if not allowed
+		if( !empty($allowed) && !in_array($role_name, $allowed) ) continue;
+
+
+		// append
+		$roles[ $role_name ] = translate_user_role( $role_details['name'] );
+
+	}
+
+
+	// return
+	return $roles;
+
+}
+
 
 /*
-*  fields_json_encode
+*  fieldmaster_get_grouped_users
+*
+*  This function will return all users grouped by role
+*  This is handy for select settings
+*
+*  @type	function
+*  @date	27/02/2014
+*  @since	5.0.0
+*
+*  @param	$args (array)
+*  @return	(array)
+*/
+
+function fieldmaster_get_grouped_users( $args = array() ) {
+
+	// vars
+	$r = array();
+
+
+	// defaults
+	$args = wp_parse_args( $args, array(
+		'users_per_page'			=> -1,
+		'paged'						=> 0,
+		'role'         				=> '',
+		'orderby'					=> 'login',
+		'order'						=> 'ASC',
+	));
+
+
+	// offset
+	$i = 0;
+	$min = 0;
+	$max = 0;
+	$users_per_page = fieldmaster_extract_var($args, 'users_per_page');
+	$paged = fieldmaster_extract_var($args, 'paged');
+
+	if( $users_per_page > 0 ) {
+
+		// prevent paged from being -1
+		$paged = max(0, $paged);
+
+
+		// set min / max
+		$min = (($paged-1) * $users_per_page) + 1; // 	1, 	11
+		$max = ($paged * $users_per_page); // 			10,	20
+
+	}
+
+
+	// find array of post_type
+	$user_roles = fieldmaster_get_pretty_user_roles($args['role']);
+
+
+	// fix role
+	if( is_array($args['role']) ) {
+
+		// global
+   		global $wp_version, $wpdb;
+
+
+		// vars
+		$roles = fieldmaster_extract_var($args, 'role');
+
+
+		// new WP has role__in
+		if( version_compare($wp_version, '4.4', '>=' ) ) {
+
+			$args['role__in'] = $roles;
+
+		// old WP doesn't have role__in
+		} else {
+
+			// vars
+			$blog_id = get_current_blog_id();
+			$meta_query = array( 'relation' => 'OR' );
+
+
+			// loop
+			foreach( $roles as $role ) {
+
+				$meta_query[] = array(
+					'key'     => $wpdb->get_blog_prefix( $blog_id ) . 'capabilities',
+					'value'   => '"' . $role . '"',
+					'compare' => 'LIKE',
+				);
+
+			}
+
+
+			// append
+			$args['meta_query'] = $meta_query;
+
+		}
+
+	}
+
+
+	// get posts
+	$users = get_users( $args );
+
+
+	// loop
+	foreach( $user_roles as $user_role_name => $user_role_label ) {
+
+		// vars
+		$this_users = array();
+		$this_group = array();
+
+
+		// populate $this_posts
+		foreach( array_keys($users) as $key ) {
+
+			// bail ealry if not correct role
+			if( !in_array($user_role_name, $users[ $key ]->roles) ) continue;
+
+
+			// extract user
+			$user = fieldmaster_extract_var( $users, $key );
+
+
+			// increase
+			$i++;
+
+
+			// bail ealry if too low
+			if( $min && $i < $min ) continue;
+
+
+			// bail early if too high (don't bother looking at any more users)
+			if( $max && $i > $max ) break;
+
+
+			// group by post type
+			$this_users[ $user->ID ] = $user;
+
+
+		}
+
+
+		// bail early if no posts for this post type
+		if( empty($this_users) ) continue;
+
+
+		// append
+		$r[ $user_role_label ] = $this_users;
+
+	}
+
+
+	// return
+	return $r;
+
+}
+
+
+/*
+*  fieldmaster_json_encode
 *
 *  This function will return pretty JSON for all PHP versions
 *
@@ -1740,12 +2272,12 @@ function fields_order_by_search( $array, $search ) {
 *  @return	(string)
 */
 
-function fields_json_encode( $json ) {
+function fieldmaster_json_encode( $json ) {
 
 	// PHP at least 5.4
 	if( version_compare(PHP_VERSION, '5.4.0', '>=') ) {
 
-		return json_encode($json, JSON_PRETTY_PRINT);
+		return json_encode($json, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 
 	}
 
@@ -1815,7 +2347,7 @@ function fields_json_encode( $json ) {
 
 
 /*
-*  fields_str_exists
+*  fieldmaster_str_exists
 *
 *  This function will return true if a sub string is found
 *
@@ -1828,7 +2360,7 @@ function fields_json_encode( $json ) {
 *  @return	(boolean)
 */
 
-function fields_str_exists( $needle, $haystack ) {
+function fieldmaster_str_exists( $needle, $haystack ) {
 
 	// return true if $haystack contains the $needle
 	if( is_string($haystack) && strpos($haystack, $needle) !== false ) {
@@ -1844,7 +2376,7 @@ function fields_str_exists( $needle, $haystack ) {
 
 
 /*
-*  fields_debug
+*  fieldmaster_debug
 *
 *  description
 *
@@ -1856,7 +2388,7 @@ function fields_str_exists( $needle, $haystack ) {
 *  @return	$post_id (int)
 */
 
-function fields_debug() {
+function fieldmaster_debug() {
 
 	// vars
 	$args = func_get_args();
@@ -1904,15 +2436,15 @@ function fields_debug() {
 	echo $o;
 }
 
-function fields_debug_start() {
+function fieldmaster_debug_start() {
 
-	fields_update_setting( 'debug_start', memory_get_usage());
+	fieldmaster_update_setting( 'debug_start', memory_get_usage());
 
 }
 
-function fields_debug_end() {
+function fieldmaster_debug_end() {
 
-	$start = fields_get_setting( 'debug_start' );
+	$start = fieldmaster_get_setting( 'debug_start' );
 	$end = memory_get_usage();
 
 	return $end - $start;
@@ -1921,88 +2453,7 @@ function fields_debug_end() {
 
 
 /*
-*  fields_get_updates
-*
-*  This function will reutrn all or relevant updates for FieldMaster
-*
-*  @type	function
-*  @date	12/05/2014
-*  @since	5.0.0
-*
-*  @param	$post_id (int)
-*  @return	$post_id (int)
-*/
-
-function fields_get_updates() {
-
-	// vars
-	$updates = array();
-	$plugin_version = fields_get_setting('version');
-	$fields_version = get_option('fields_version');
-	$path = fields_get_path('admin/updates');
-
-
-	// bail early if no version (not activated)
-	if( !$fields_version ) {
-
-		return false;
-
-	}
-
-
-	// check that path exists
-	if( !file_exists( $path ) ) {
-
-		return false;
-
-	}
-
-
-	$dir = opendir( $path );
-
-    while(false !== ( $file = readdir($dir)) ) {
-
-    	// only php files
-    	if( substr($file, -4) !== '.php' ) {
-
-	    	continue;
-
-    	}
-
-
-    	// get version number
-    	$update_version = substr($file, 0, -4);
-
-
-    	// ignore if update is for a future version. May exist for testing
-		if( version_compare( $update_version, $plugin_version, '>') ) {
-
-			continue;
-
-		}
-
-		// ignore if update has already been run
-		if( version_compare( $update_version, $fields_version, '<=') ) {
-
-			continue;
-
-		}
-
-
-    	// append
-        $updates[] = $update_version;
-
-    }
-
-
-    // return
-    return $updates;
-
-}
-
-
-/*
-*  fields_encode_choices
+*  fieldmaster_encode_choices
 *
 *  description
 *
@@ -2014,35 +2465,40 @@ function fields_get_updates() {
 *  @return	$post_id (int)
 */
 
-function fields_encode_choices( $array = array() ) {
+function fieldmaster_encode_choices( $array = array(), $show_keys = true ) {
 
-	// bail early if not array
-	if( !is_array($array) ) {
+	// bail early if not array (maybe a single string)
+	if( !is_array($array) ) return $array;
 
-		return $array;
 
-	}
+	// bail early if empty array
+	if( empty($array) ) return '';
 
 
 	// vars
 	$string = '';
 
 
-	if( !empty($array) ) {
+	// if allowed to show keys (good for choices, not for default values)
+	if( $show_keys ) {
 
+		// loop
 		foreach( $array as $k => $v ) {
 
-			if( $k !== $v ) {
+			// ignore if key and value are the same
+			if( strval($k) == strval($v) )  continue;
 
-				$array[ $k ] = $k . ' : ' . $v;
 
-			}
+			// show key in the value
+			$array[ $k ] = $k . ' : ' . $v;
 
 		}
 
-		$string = implode("\n", $array);
-
 	}
+
+
+	// implode
+	$string = implode("\n", $array);
 
 
 	// return
@@ -2050,22 +2506,27 @@ function fields_encode_choices( $array = array() ) {
 
 }
 
-function fields_decode_choices( $string = '' ) {
+function fieldmaster_decode_choices( $string = '', $array_keys = false ) {
 
-	// validate
-	if( $string === '') {
+	// bail early if already array
+	if( is_array($string) ) {
+
+		return $string;
+
+	// allow numeric values (same as string)
+	} elseif( is_numeric($string) ) {
+
+		// do nothing
+
+	// bail early if not a string
+	} elseif( !is_string($string) ) {
 
 		return array();
 
-	// force array on single numeric values
-	} elseif( is_numeric($string) ) {
+	// bail early if is empty string
+	} elseif( $string === '' ) {
 
-		// allow
-
-	// bail early if not a a string
-	} elseif( !is_string($string) ) {
-
-		return $string;
+		return array();
 
 	}
 
@@ -2087,7 +2548,7 @@ function fields_decode_choices( $string = '' ) {
 
 
 		// look for ' : '
-		if( fields_str_exists(' : ', $line) ) {
+		if( fieldmaster_str_exists(' : ', $line) ) {
 
 			$line = explode(' : ', $line);
 
@@ -2103,27 +2564,86 @@ function fields_decode_choices( $string = '' ) {
 	}
 
 
+	// return only array keys? (good for checkbox default_value)
+	if( $array_keys ) {
+
+		return array_keys($array);
+
+	}
+
+
 	// return
 	return $array;
 
 }
 
 
-
 /*
-*  fields_convert_date_to_php
+*  fieldmaster_str_replace
 *
-*  This fucntion converts a date format string from JS to PHP
+*  This function will replace an array of strings much like str_replace
+*  The difference is the extra logic to avoid replacing a string that has alread been replaced
+*  This is very useful for replacing date characters as they overlap with eachother
 *
 *  @type	function
-*  @date	20/06/2014
-*  @since	5.0.0
+*  @date	21/06/2016
+*  @since	5.3.8
 *
-*  @param	$date (string)
-*  @return	$date (string)
+*  @param	$post_id (int)
+*  @return	$post_id (int)
 */
 
-fields_update_setting('php_to_js_date_formats', array(
+function fieldmaster_str_replace( $string, $search_replace ) {
+
+	// vars
+	$ignore = array();
+
+
+	// remove potential empty search to avoid PHP error
+	unset($search_replace['']);
+
+
+	// loop over conversions
+	foreach( $search_replace as $search => $replace ) {
+
+		// ignore this search, it was a previous replace
+		if( in_array($search, $ignore) ) continue;
+
+
+		// bail early if subsctring not found
+		if( strpos($string, $search) === false ) continue;
+
+
+		// replace
+		$string = str_replace($search, $replace, $string);
+
+
+		// append to ignore
+		$ignore[] = $replace;
+
+	}
+
+
+	// return
+	return $string;
+
+}
+
+
+/*
+*  date & time formats
+*
+*  These settings contain an association of format strings from PHP => JS
+*
+*  @type	function
+*  @date	21/06/2016
+*  @since	5.3.8
+*
+*  @param	n/a
+*  @return	n/a
+*/
+
+fieldmaster_update_setting('php_to_js_date_formats', array(
 
 	// Year
 	'Y'	=> 'yy',	// Numeric, 4 digits 								1999, 2003
@@ -2149,43 +2669,109 @@ fields_update_setting('php_to_js_date_formats', array(
 
 ));
 
-function fields_convert_date_to_php( $date ) {
+fieldmaster_update_setting('php_to_js_time_formats', array(
+
+	'a' => 'tt',	// Lowercase Ante meridiem and Post meridiem 		am or pm
+	'A' => 'TT',	// Uppercase Ante meridiem and Post meridiem 		AM or PM
+	'h' => 'hh',	// 12-hour format of an hour with leading zeros 	01 through 12
+	'g' => 'h',		// 12-hour format of an hour without leading zeros 	1 through 12
+	'H' => 'HH',	// 24-hour format of an hour with leading zeros 	00 through 23
+	'G' => 'H',		// 24-hour format of an hour without leading zeros 	0 through 23
+	'i' => 'mm',	// Minutes with leading zeros 						00 to 59
+	's' => 'ss',	// Seconds, with leading zeros 						00 through 59
+
+));
+
+
+/*
+*  fieldmaster_split_date_time
+*
+*  This function will split a format string into seperate date and time
+*
+*  @type	function
+*  @date	26/05/2016
+*  @since	5.3.8
+*
+*  @param	$date_time (string)
+*  @return	$formats (array)
+*/
+
+function fieldmaster_split_date_time( $date_time = '' ) {
 
 	// vars
-	$ignore = array();
+	$php_date = fieldmaster_get_setting('php_to_js_date_formats');
+	$php_time = fieldmaster_get_setting('php_to_js_time_formats');
+	$chars = str_split($date_time);
+	$type = 'date';
 
 
-	// conversion
-	$php_to_js = fields_get_setting('php_to_js_date_formats');
+	// default
+	$data = array(
+		'date' => '',
+		'time' => ''
+	);
 
 
-	// loop over conversions
-	foreach( $php_to_js as $replace => $search ) {
+	// loop
+	foreach( $chars as $i => $c ) {
 
-		// ignore this replace?
-		if( in_array($search, $ignore) ) {
+		// find type
+		// - allow misc characters to append to previous type
+		if( isset($php_date[ $c ]) ) {
 
-			continue;
+			$type = 'date';
+
+		} elseif( isset($php_time[ $c ]) ) {
+
+			$type = 'time';
 
 		}
 
 
-		// replace
-		$date = str_replace($search, $replace, $date);
+		// append char
+		$data[ $type ] .= $c;
 
-
-		// append to ignore
-		$ignore[] = $replace;
 	}
 
 
+	// trim
+	$data['date'] = trim($data['date']);
+	$data['time'] = trim($data['time']);
+
+
 	// return
-	return $date;
+	return $data;
+
+}
+
+
+/*
+*  fieldmaster_convert_date_to_php
+*
+*  This fucntion converts a date format string from JS to PHP
+*
+*  @type	function
+*  @date	20/06/2014
+*  @since	5.0.0
+*
+*  @param	$date (string)
+*  @return	(string)
+*/
+
+function fieldmaster_convert_date_to_php( $date = '' ) {
+
+	// vars
+	$php_to_js = fieldmaster_get_setting('php_to_js_date_formats');
+	$js_to_php = array_flip($php_to_js);
+
+
+	// return
+	return fieldmaster_str_replace( $date, $js_to_php );
 
 }
 
 /*
-*  fields_convert_date_to_js
+*  fieldmaster_convert_date_to_js
 *
 *  This fucntion converts a date format string from PHP to JS
 *
@@ -2193,48 +2779,75 @@ function fields_convert_date_to_php( $date ) {
 *  @date	20/06/2014
 *  @since	5.0.0
 *
-*  @param	$post_id (int)
-*  @return	$post_id (int)
+*  @param	$date (string)
+*  @return	(string)
 */
 
-function fields_convert_date_to_js( $date ) {
+function fieldmaster_convert_date_to_js( $date = '' ) {
 
 	// vars
-	$ignore = array();
-
-
-	// conversion
-	$php_to_js = fields_get_setting('php_to_js_date_formats');
-
-
-	// loop over conversions
-	foreach( $php_to_js as $search => $replace ) {
-
-		// ignore this replace?
-		if( in_array($search, $ignore) ) {
-
-			continue;
-
-		}
-
-
-		// replace
-		$date = str_replace($search, $replace, $date);
-
-
-		// append to ignore
-		$ignore[] = $replace;
-	}
+	$php_to_js = fieldmaster_get_setting('php_to_js_date_formats');
 
 
 	// return
-	return $date;
+	return fieldmaster_str_replace( $date, $php_to_js );
 
 }
 
 
 /*
-*  fields_update_user_setting
+*  fieldmaster_convert_time_to_php
+*
+*  This fucntion converts a time format string from JS to PHP
+*
+*  @type	function
+*  @date	20/06/2014
+*  @since	5.0.0
+*
+*  @param	$time (string)
+*  @return	(string)
+*/
+
+function fieldmaster_convert_time_to_php( $time = '' ) {
+
+	// vars
+	$php_to_js = fieldmaster_get_setting('php_to_js_time_formats');
+	$js_to_php = array_flip($php_to_js);
+
+
+	// return
+	return fieldmaster_str_replace( $time, $js_to_php );
+
+}
+
+
+/*
+*  fieldmaster_convert_time_to_js
+*
+*  This fucntion converts a date format string from PHP to JS
+*
+*  @type	function
+*  @date	20/06/2014
+*  @since	5.0.0
+*
+*  @param	$time (string)
+*  @return	(string)
+*/
+
+function fieldmaster_convert_time_to_js( $time = '' ) {
+
+	// vars
+	$php_to_js = fieldmaster_get_setting('php_to_js_time_formats');
+
+
+	// return
+	return fieldmaster_str_replace( $time, $php_to_js );
+
+}
+
+
+/*
+*  fieldmaster_update_user_setting
 *
 *  description
 *
@@ -2246,41 +2859,41 @@ function fields_convert_date_to_js( $date ) {
 *  @return	$post_id (int)
 */
 
-function fields_update_user_setting( $name, $value ) {
+function fieldmaster_update_user_setting( $name, $value ) {
 
 	// get current user id
 	$user_id = get_current_user_id();
 
 
 	// get user settings
-	$settings = get_user_meta( $user_id, 'fields_user_settings', false );
+	$settings = get_user_meta( $user_id, 'fieldmaster_user_settings', true );
 
 
-	// find settings
-	if( isset($settings[0]) ) {
+	// ensure array
+	$settings = fieldmaster_get_array($settings);
 
-		$settings = $settings[0];
 
-	} else {
+	// delete setting (allow 0 to save)
+	if( fieldmaster_is_empty($value) ) {
 
-		$settings = array();
-
-	}
-
+		unset($settings[ $name ]);
 
 	// append setting
-	$settings[ $name ] = $value;
+	} else {
+
+		$settings[ $name ] = $value;
+
+	}
 
 
 	// update user data
-	return update_metadata('user', $user_id, 'fields_user_settings', $settings);
-
+	return update_metadata('user', $user_id, 'fieldmaster_user_settings', $settings);
 
 }
 
 
 /*
-*  fields_get_user_setting
+*  fieldmaster_get_user_setting
 *
 *  description
 *
@@ -2292,32 +2905,32 @@ function fields_update_user_setting( $name, $value ) {
 *  @return	$post_id (int)
 */
 
-function fields_get_user_setting( $name = '', $default = false ) {
+function fieldmaster_get_user_setting( $name = '', $default = false ) {
 
 	// get current user id
 	$user_id = get_current_user_id();
 
 
 	// get user settings
-	$settings = get_user_meta( $user_id, 'fields_user_settings', false );
+	$settings = get_user_meta( $user_id, 'fieldmaster_user_settings', true );
+
+
+	// ensure array
+	$settings = fieldmaster_get_array($settings);
 
 
 	// bail arly if no settings
-	if( empty($settings[0][$name]) ) {
-
-		return $default;
-
-	}
+	if( !isset($settings[$name]) ) return $default;
 
 
 	// return
-	return $settings[0][$name];
+	return $settings[$name];
 
 }
 
 
 /*
-*  fields_in_array
+*  fieldmaster_in_array
 *
 *  description
 *
@@ -2329,14 +2942,10 @@ function fields_get_user_setting( $name = '', $default = false ) {
 *  @return	$post_id (int)
 */
 
-function fields_in_array( $value, $array ) {
+function fieldmaster_in_array( $value = '', $array = false ) {
 
 	// bail early if not array
-	if( !is_array($array) ) {
-
-		return false;
-
-	}
+	if( !is_array($array) ) return false;
 
 
 	// find value in array
@@ -2346,7 +2955,7 @@ function fields_in_array( $value, $array ) {
 
 
 /*
-*  fields_get_valid_post_id
+*  fieldmaster_get_valid_post_id
 *
 *  This function will return a valid post_id based on the current screen / parameter
 *
@@ -2358,20 +2967,25 @@ function fields_in_array( $value, $array ) {
 *  @return	$post_id (mixed)
 */
 
-function fields_get_valid_post_id( $post_id = 0 ) {
+function fieldmaster_get_valid_post_id( $post_id = 0 ) {
 
-	// set post_id to global
+	// vars
+	$_post_id = $post_id;
+
+
+	// if not $post_id, load queried object
 	if( !$post_id ) {
 
+		// try for global post (needed for setup_postdata)
 		$post_id = (int) get_the_ID();
 
-	}
 
+		// try for current screen
+		if( !$post_id ) {
 
-	// allow for option == options
-	if( $post_id == 'option' ) {
+			$post_id = get_queried_object();
 
-		$post_id = 'options';
+		}
 
 	}
 
@@ -2379,23 +2993,40 @@ function fields_get_valid_post_id( $post_id = 0 ) {
 	// $post_id may be an object
 	if( is_object($post_id) ) {
 
-		if( isset($post_id->roles, $post_id->ID) ) {
+		// post
+		if( isset($post_id->post_type, $post_id->ID) ) {
+
+			$post_id = $post_id->ID;
+
+		// user
+		} elseif( isset($post_id->roles, $post_id->ID) ) {
 
 			$post_id = 'user_' . $post_id->ID;
 
+		// term
 		} elseif( isset($post_id->taxonomy, $post_id->term_id) ) {
 
-			$post_id = $post_id->taxonomy . '_' . $post_id->term_id;
+			$post_id = fieldmaster_get_term_post_id( $post_id->taxonomy, $post_id->term_id );
 
+		// comment
 		} elseif( isset($post_id->comment_ID) ) {
 
 			$post_id = 'comment_' . $post_id->comment_ID;
 
-		} elseif( isset($post_id->ID) ) {
+		// default
+		} else {
 
-			$post_id = $post_id->ID;
+			$post_id = 0;
 
 		}
+
+	}
+
+
+	// allow for option == options
+	if( $post_id === 'option' ) {
+
+		$post_id = 'options';
 
 	}
 
@@ -2403,8 +3034,8 @@ function fields_get_valid_post_id( $post_id = 0 ) {
 	// append language code
 	if( $post_id == 'options' ) {
 
-		$dl = fields_get_setting('default_language');
-		$cl = fields_get_setting('current_language');
+		$dl = fieldmaster_get_setting('default_language');
+		$cl = fieldmaster_get_setting('current_language');
 
 		if( $cl && $cl !== $dl ) {
 
@@ -2415,28 +3046,9 @@ function fields_get_valid_post_id( $post_id = 0 ) {
 	}
 
 
-	/*
-	*  Override for preview
-	*
-	*  If the $_GET['preview_id'] is set, then the user wants to see the preview data.
-	*  There is also the case of previewing a page with post_id = 1, but using get_field
-	*  to load data from another post_id.
-	*  In this case, we need to make sure that the autosave revision is actually related
-	*  to the $post_id variable. If they match, then the autosave data will be used, otherwise,
-	*  the user wants to load data from a completely different post_id
-	*/
 
-	if( isset($_GET['preview_id']) ) {
-
-		$autosave = wp_get_post_autosave( $_GET['preview_id'] );
-
-		if( $autosave && $autosave->post_parent == $post_id ) {
-
-			$post_id = (int) $autosave->ID;
-
-		}
-
-	}
+	// filter for 3rd party
+	$post_id = apply_filters('fieldmaster/validate_post_id', $post_id, $_post_id);
 
 
 	// return
@@ -2445,8 +3057,172 @@ function fields_get_valid_post_id( $post_id = 0 ) {
 }
 
 
+
 /*
-*  fields_upload_files
+*  fieldmaster_get_post_id_info
+*
+*  This function will return the type and id for a given $post_id string
+*
+*  @type	function
+*  @date	2/07/2016
+*  @since	5.4.0
+*
+*  @param	$post_id (mixed)
+*  @return	$info (array)
+*/
+
+function fieldmaster_get_post_id_info( $post_id = 0 ) {
+
+	// vars
+	$info = array(
+		'type'	=> 'post',
+		'id'	=> 0
+	);
+
+	// bail early if no $post_id
+	if( !$post_id ) return $info;
+
+
+	// check cache
+	// - this function will most likely be called multiple times (saving loading fields from post)
+	//$cache_key = "get_post_id_info/post_id={$post_id}";
+
+	//if( fieldmaster_isset_cache($cache_key) ) return fieldmaster_get_cache($cache_key);
+
+
+	// numeric
+	if( is_numeric($post_id) ) {
+
+		$info['id'] = (int) $post_id;
+
+	// string
+	} elseif( is_string($post_id) ) {
+
+		// vars
+		$glue = '_';
+		$type = explode($glue, $post_id);
+		$id = array_pop($type);
+		$type = implode($glue, $type);
+		$meta = array('post', 'user', 'comment', 'term');
+
+
+		// check if is taxonomy (FieldMaster < 5.5)
+		// - avoid scenario where taxonomy exists with name of meta type
+		if( !in_array($type, $meta) && fieldmaster_isset_termmeta($type) ) $type = 'term';
+
+
+		// meta
+		if( is_numeric($id) && in_array($type, $meta) ) {
+
+			$info['type'] = $type;
+			$info['id'] = (int) $id;
+
+		// option
+		} else {
+
+			$info['type'] = 'option';
+			$info['id'] = $post_id;
+
+		}
+
+	}
+
+
+	// update cache
+	//fieldmaster_set_cache($cache_key, $info);
+
+
+	// return
+	return $info;
+
+}
+
+
+/*
+
+fieldmaster_log( fieldmaster_get_post_id_info(4) );
+
+fieldmaster_log( fieldmaster_get_post_id_info('post_4') );
+
+fieldmaster_log( fieldmaster_get_post_id_info('user_123') );
+
+fieldmaster_log( fieldmaster_get_post_id_info('term_567') );
+
+fieldmaster_log( fieldmaster_get_post_id_info('category_204') );
+
+fieldmaster_log( fieldmaster_get_post_id_info('comment_6') );
+
+fieldmaster_log( fieldmaster_get_post_id_info('options_lol!') );
+
+fieldmaster_log( fieldmaster_get_post_id_info('option') );
+
+fieldmaster_log( fieldmaster_get_post_id_info('options') );
+
+*/
+
+
+/*
+*  fieldmaster_isset_termmeta
+*
+*  This function will return true if the termmeta table exists
+*  https://developer.wordpress.org/reference/functions/get_term_meta/
+*
+*  @type	function
+*  @date	3/09/2016
+*  @since	5.4.0
+*
+*  @param	$post_id (int)
+*  @return	$post_id (int)
+*/
+
+function fieldmaster_isset_termmeta( $taxonomy = '' ) {
+
+	// bail ealry if no table
+	if( get_option('db_version') < 34370 ) return false;
+
+
+	// check taxonomy
+	if( $taxonomy && !taxonomy_exists($taxonomy) ) return false;
+
+
+	// return
+	return true;
+
+}
+
+
+/*
+*  fieldmaster_get_term_post_id
+*
+*  This function will return a valid post_id string for a given term and taxonomy
+*
+*  @type	function
+*  @date	6/2/17
+*  @since	5.5.6
+*
+*  @param	$taxonomy (string)
+*  @param	$term_id (int)
+*  @return	(string)
+*/
+
+function fieldmaster_get_term_post_id( $taxonomy, $term_id ) {
+
+	// WP < 4.4
+	if( !fieldmaster_isset_termmeta() ) {
+
+		return $taxonomy . '_' . $term_id;
+
+	}
+
+
+	// return
+	return 'term_' . $term_id;
+
+}
+
+
+/*
+*  fieldmaster_upload_files
 *
 *  This function will walk througfh the $_FILES data and upload each found
 *
@@ -2458,7 +3234,7 @@ function fields_get_valid_post_id( $post_id = 0 ) {
 *  @return	n/a
 */
 
-function fields_upload_files( $ancestors = array() ) {
+function fieldmaster_upload_files( $ancestors = array() ) {
 
 	// vars
 	$file = array(
@@ -2473,7 +3249,7 @@ function fields_upload_files( $ancestors = array() ) {
 	// populate with $_FILES data
 	foreach( array_keys($file) as $k ) {
 
-		$file[ $k ] = $_FILES['fields'][ $k ];
+		$file[ $k ] = $_FILES['fieldmaster'][ $k ];
 
 	}
 
@@ -2501,7 +3277,7 @@ function fields_upload_files( $ancestors = array() ) {
 
 			$_ancestors = array_merge($ancestors, array($k));
 
-			fields_upload_files( $_ancestors );
+			fieldmaster_upload_files( $_ancestors );
 
 		}
 
@@ -2518,23 +3294,23 @@ function fields_upload_files( $ancestors = array() ) {
 	}
 
 
-	// assign global _fieldsuploader for media validation
-	$_POST['_fieldsuploader'] = end($ancestors);
+	// assign global _fieldmasteruploader for media validation
+	$_POST['_fieldmasteruploader'] = end($ancestors);
 
 
 	// file found!
-	$attachment_id = fields_upload_file( $file );
+	$attachment_id = fieldmaster_upload_file( $file );
 
 
 	// update $_POST
-	array_unshift($ancestors, 'fields');
-	fields_update_nested_array( $_POST, $ancestors, $attachment_id );
+	array_unshift($ancestors, 'fieldmaster');
+	fieldmaster_update_nested_array( $_POST, $ancestors, $attachment_id );
 
 }
 
 
 /*
-*  fields_upload_file
+*  fieldmaster_upload_file
 *
 *  This function will uploade a $_FILE
 *
@@ -2546,10 +3322,11 @@ function fields_upload_files( $ancestors = array() ) {
 *  @return	$id (int) new attachment ID
 */
 
-function fields_upload_file( $uploaded_file ) {
+function fieldmaster_upload_file( $uploaded_file ) {
 
 	// required
-	require_once( ABSPATH . "/wp-load.php" );
+	//require_once( ABSPATH . "/wp-load.php" ); // WP should already be loaded
+	require_once( ABSPATH . "/wp-admin/includes/media.php" ); // video functions
 	require_once( ABSPATH . "/wp-admin/includes/file.php" );
 	require_once( ABSPATH . "/wp-admin/includes/image.php" );
 
@@ -2582,7 +3359,7 @@ function fields_upload_file( $uploaded_file ) {
 		'post_title' => $filename,
 		'post_mime_type' => $type,
 		'guid' => $url,
-		'context' => 'fields-upload'
+		'context' => 'fieldmaster-upload'
 	);
 
 	// Save the data
@@ -2601,7 +3378,7 @@ function fields_upload_file( $uploaded_file ) {
 
 
 /*
-*  fields_update_nested_array
+*  fieldmaster_update_nested_array
 *
 *  This function will update a nested array value. Useful for modifying the $_POST array
 *
@@ -2615,7 +3392,7 @@ function fields_upload_file( $uploaded_file ) {
 *  @return	(boolean)
 */
 
-function fields_update_nested_array( &$array, $ancestors, $value ) {
+function fieldmaster_update_nested_array( &$array, $ancestors, $value ) {
 
 	// if no more ancestors, update the current var
 	if( empty($ancestors) ) {
@@ -2635,7 +3412,7 @@ function fields_update_nested_array( &$array, $ancestors, $value ) {
 	// if exists
 	if( isset($array[ $k ]) ) {
 
-		return fields_update_nested_array( $array[ $k ], $ancestors, $value );
+		return fieldmaster_update_nested_array( $array[ $k ], $ancestors, $value );
 
 	}
 
@@ -2646,7 +3423,7 @@ function fields_update_nested_array( &$array, $ancestors, $value ) {
 
 
 /*
-*  fields_is_screen
+*  fieldmaster_is_screen
 *
 *  This function will return true if all args are matched for the current screen
 *
@@ -2658,10 +3435,18 @@ function fields_update_nested_array( &$array, $ancestors, $value ) {
 *  @return	$post_id (int)
 */
 
-function fields_is_screen( $id = '' ) {
+function fieldmaster_is_screen( $id = '' ) {
+
+	// bail early if not defined
+	if( !function_exists('get_current_screen') ) return false;
+
 
 	// vars
 	$current_screen = get_current_screen();
+
+
+	// bail early if no screen
+	if( !$current_screen ) return false;
 
 
 	// return
@@ -2671,7 +3456,7 @@ function fields_is_screen( $id = '' ) {
 
 
 /*
-*  fields_maybe_get
+*  fieldmaster_maybe_get
 *
 *  This function will return a var if it exists in an array
 *
@@ -2685,37 +3470,24 @@ function fields_is_screen( $id = '' ) {
 *  @return	$post_id (int)
 */
 
-function fields_maybe_get( $array, $key, $default = null ) {
+function fieldmaster_maybe_get( $array, $key = 0, $default = null ) {
 
-	// vars
-	$keys = explode('/', $key);
+	// if exists
+	if( isset($array[ $key ]) ) {
 
-
-	// loop through keys
-	foreach( $keys as $k ) {
-
-		// return default if does not exist
-		if( !isset($array[ $k ]) ) {
-
-			return $default;
-
-		}
-
-
-		// update $array
-		$array = $array[ $k ];
+		return $array[ $key ];
 
 	}
 
 
 	// return
-	return $array;
+	return $default;
 
 }
 
 
 /*
-*  fields_get_attachment
+*  fieldmaster_get_attachment
 *
 *  This function will return an array of attachment data
 *
@@ -2727,14 +3499,14 @@ function fields_maybe_get( $array, $key, $default = null ) {
 *  @return	(array)
 */
 
-function fields_get_attachment( $post ) {
+function fieldmaster_get_attachment( $post ) {
 
-	// get post
-	if ( !$post = get_post( $post ) ) {
+	// post
+	$post = get_post($post);
 
-		return false;
 
-	}
+	// bail early if no post
+	if( !$post ) return false;
 
 
 	// vars
@@ -2754,7 +3526,7 @@ function fields_get_attachment( $post ) {
 		'date'			=> $post->post_date_gmt,
 		'modified'		=> $post->post_modified_gmt,
 		'mime_type'		=> $post->post_mime_type,
-		'type'			=> fields_maybe_get( explode('/', $post->post_mime_type), 0, '' ),
+		'type'			=> fieldmaster_maybe_get( explode('/', $post->post_mime_type), 0, '' ),
 		'icon'			=> wp_mime_type_icon( $id )
 	);
 
@@ -2776,8 +3548,8 @@ function fields_get_attachment( $post ) {
 		if( $a['type'] == 'video' ) {
 
 			$meta = wp_get_attachment_metadata( $id );
-			$a['width'] = fields_maybe_get($meta, 'width', 0);
-			$a['height'] = fields_maybe_get($meta, 'height', 0);
+			$a['width'] = fieldmaster_maybe_get($meta, 'width', 0);
+			$a['height'] = fieldmaster_maybe_get($meta, 'height', 0);
 
 		}
 
@@ -2824,7 +3596,7 @@ function fields_get_attachment( $post ) {
 
 
 /*
-*  fields_get_truncated
+*  fieldmaster_get_truncated
 *
 *  This function will truncate and return a string
 *
@@ -2837,7 +3609,7 @@ function fields_get_attachment( $post ) {
 *  @return	(string)
 */
 
-function fields_get_truncated( $text, $length = 64 ) {
+function fieldmaster_get_truncated( $text, $length = 64 ) {
 
 	// vars
 	$text = trim($text);
@@ -2863,7 +3635,7 @@ function fields_get_truncated( $text, $length = 64 ) {
 
 
 /*
-*  fields_get_current_url
+*  fieldmaster_get_current_url
 *
 *  This function will return the current URL
 *
@@ -2875,7 +3647,7 @@ function fields_get_truncated( $text, $length = 64 ) {
 *  @return	(string)
 */
 
-function fields_get_current_url() {
+function fieldmaster_get_current_url() {
 
 	// vars
 	$home = home_url();
@@ -2883,8 +3655,8 @@ function fields_get_current_url() {
 
 
 	// test
-	//$home = 'http://fields5/dev/wp-admin';
-	//$url = $home . '/dev/wp-admin/api-template/fields_form';
+	//$home = 'http://fieldmaster5/dev/wp-admin';
+	//$url = $home . '/dev/wp-admin/api-template/fieldmaster_form';
 
 
 	// explode url (4th bit is the sub folder)
@@ -2895,7 +3667,7 @@ function fields_get_current_url() {
 	Array (
 	    [0] => http:
 	    [1] =>
-	    [2] => fields5
+	    [2] => fieldmaster5
 	    [3] => dev
 	)
 	*/
@@ -2924,7 +3696,7 @@ function fields_get_current_url() {
 
 
 /*
-*  fields_current_user_can_admin
+*  fieldmaster_current_user_can_admin
 *
 *  This function will return true if the current user can administrate the FieldMaster field groups
 *
@@ -2936,9 +3708,9 @@ function fields_get_current_url() {
 *  @return	$post_id (int)
 */
 
-function fields_current_user_can_admin() {
+function fieldmaster_current_user_can_admin() {
 
-	if( fields_get_setting('show_admin') && current_user_can(fields_get_setting('capability')) ) {
+	if( fieldmaster_get_setting('show_admin') && current_user_can(fieldmaster_get_setting('capability')) ) {
 
 		return true;
 
@@ -2952,7 +3724,7 @@ function fields_current_user_can_admin() {
 
 
 /*
-*  fields_get_filesize
+*  fieldmaster_get_filesize
 *
 *  This function will return a numeric value of bytes for a given filesize string
 *
@@ -2964,7 +3736,7 @@ function fields_current_user_can_admin() {
 *  @return	(int)
 */
 
-function fields_get_filesize( $size = 1 ) {
+function fieldmaster_get_filesize( $size = 1 ) {
 
 	// vars
 	$unit = 'MB';
@@ -3007,7 +3779,7 @@ function fields_get_filesize( $size = 1 ) {
 
 
 /*
-*  fields_format_filesize
+*  fieldmaster_format_filesize
 *
 *  This function will return a formatted string containing the filesize and unit
 *
@@ -3019,10 +3791,10 @@ function fields_get_filesize( $size = 1 ) {
 *  @return	(int)
 */
 
-function fields_format_filesize( $size = 1 ) {
+function fieldmaster_format_filesize( $size = 1 ) {
 
 	// convert
-	$bytes = fields_get_filesize( $size );
+	$bytes = fieldmaster_get_filesize( $size );
 
 
 	// vars
@@ -3055,7 +3827,7 @@ function fields_format_filesize( $size = 1 ) {
 
 
 /*
-*  fields_get_valid_terms
+*  fieldmaster_get_valid_terms
 *
 *  This function will replace old terms with new split term ids
 *
@@ -3068,7 +3840,15 @@ function fields_format_filesize( $size = 1 ) {
 *  @return	$terms
 */
 
-function fields_get_valid_terms( $terms = false, $taxonomy = 'category' ) {
+function fieldmaster_get_valid_terms( $terms = false, $taxonomy = 'category' ) {
+
+	// force into array
+	$terms = fieldmaster_get_array($terms);
+
+
+	// force ints
+	$terms = array_map('intval', $terms);
+
 
 	// bail early if function does not yet exist or
 	if( !function_exists('wp_get_split_term') || empty($terms) ) {
@@ -3076,18 +3856,6 @@ function fields_get_valid_terms( $terms = false, $taxonomy = 'category' ) {
 		return $terms;
 
 	}
-
-
-	// vars
-	$is_array = is_array($terms);
-
-
-	// force into array
-	$terms = fields_get_array( $terms );
-
-
-	// force ints
-	$terms = array_map('intval', $terms);
 
 
 	// attempt to find new terms
@@ -3104,14 +3872,6 @@ function fields_get_valid_terms( $terms = false, $taxonomy = 'category' ) {
 	}
 
 
-	// revert array if needed
-	if( !$is_array ) {
-
-		$terms = $terms[0];
-
-	}
-
-
 	// return
 	return $terms;
 
@@ -3119,7 +3879,7 @@ function fields_get_valid_terms( $terms = false, $taxonomy = 'category' ) {
 
 
 /*
-*  fields_esc_html_deep
+*  fieldmaster_esc_html_deep
 *
 *  Navigates through an array and escapes html from the values.
 *
@@ -3132,12 +3892,12 @@ function fields_get_valid_terms( $terms = false, $taxonomy = 'category' ) {
 */
 
 /*
-function fields_esc_html_deep( $value ) {
+function fieldmaster_esc_html_deep( $value ) {
 
 	// array
 	if( is_array($value) ) {
 
-		$value = array_map('fields_esc_html_deep', $value);
+		$value = array_map('fieldmaster_esc_html_deep', $value);
 
 	// object
 	} elseif( is_object($value) ) {
@@ -3146,7 +3906,7 @@ function fields_esc_html_deep( $value ) {
 
 		foreach( $vars as $k => $v ) {
 
-			$value->{$k} = fields_esc_html_deep( $v );
+			$value->{$k} = fieldmaster_esc_html_deep( $v );
 
 		}
 
@@ -3166,7 +3926,7 @@ function fields_esc_html_deep( $value ) {
 
 
 /*
-*  fields_validate_attachment
+*  fieldmaster_validate_attachment
 *
 *  This function will validate an attachment based on a field's resrictions and return an array of errors
 *
@@ -3180,7 +3940,7 @@ function fields_esc_html_deep( $value ) {
 *  @return	$errors (array)
 */
 
-function fields_validate_attachment( $attachment, $field, $context = 'prepare' ) {
+function fieldmaster_validate_attachment( $attachment, $field, $context = 'prepare' ) {
 
 	// vars
 	$errors = array();
@@ -3202,8 +3962,8 @@ function fields_validate_attachment( $attachment, $field, $context = 'prepare' )
 		if( strpos($attachment['type'], 'image') !== false ) {
 
 			$size = getimagesize($attachment['tmp_name']);
-			$file['width'] = fields_maybe_get($size, 0);
-			$file['height'] = fields_maybe_get($size, 1);
+			$file['width'] = fieldmaster_maybe_get($size, 0);
+			$file['height'] = fieldmaster_maybe_get($size, 1);
 
 		}
 
@@ -3211,14 +3971,15 @@ function fields_validate_attachment( $attachment, $field, $context = 'prepare' )
 	} elseif( $context == 'prepare' ) {
 
 		$file['type'] = pathinfo($attachment['url'], PATHINFO_EXTENSION);
-		$file['size'] = fields_maybe_get($attachment, 'filesizeInBytes', 0);
-		$file['width'] = fields_maybe_get($attachment, 'width', 0);
-		$file['height'] = fields_maybe_get($attachment, 'height', 0);
+		$file['size'] = fieldmaster_maybe_get($attachment, 'filesizeInBytes', 0);
+		$file['width'] = fieldmaster_maybe_get($attachment, 'width', 0);
+		$file['height'] = fieldmaster_maybe_get($attachment, 'height', 0);
 
 	// custom
 	} else {
 
-		$file = wp_parse_args($file, $attachment);
+		$file = array_merge($file, $attachment);
+		$file['type'] = pathinfo($attachment['url'], PATHINFO_EXTENSION);
 
 	}
 
@@ -3227,20 +3988,20 @@ function fields_validate_attachment( $attachment, $field, $context = 'prepare' )
 	if( $file['width'] || $file['height'] ) {
 
 		// width
-		$min_width = (int) fields_maybe_get($field, 'min_width', 0);
-		$max_width = (int) fields_maybe_get($field, 'max_width', 0);
+		$min_width = (int) fieldmaster_maybe_get($field, 'min_width', 0);
+		$max_width = (int) fieldmaster_maybe_get($field, 'max_width', 0);
 
 		if( $file['width'] ) {
 
 			if( $min_width && $file['width'] < $min_width ) {
 
 				// min width
-				$errors['min_width'] = sprintf(__('Image width must be at least %dpx.', 'fields'), $min_width );
+				$errors['min_width'] = sprintf(__('Image width must be at least %dpx.', 'fieldmaster'), $min_width );
 
 			} elseif( $max_width && $file['width'] > $max_width ) {
 
 				// min width
-				$errors['max_width'] = sprintf(__('Image width must not exceed %dpx.', 'fields'), $max_width );
+				$errors['max_width'] = sprintf(__('Image width must not exceed %dpx.', 'fieldmaster'), $max_width );
 
 			}
 
@@ -3248,20 +4009,20 @@ function fields_validate_attachment( $attachment, $field, $context = 'prepare' )
 
 
 		// height
-		$min_height = (int) fields_maybe_get($field, 'min_height', 0);
-		$max_height = (int) fields_maybe_get($field, 'max_height', 0);
+		$min_height = (int) fieldmaster_maybe_get($field, 'min_height', 0);
+		$max_height = (int) fieldmaster_maybe_get($field, 'max_height', 0);
 
 		if( $file['height'] ) {
 
 			if( $min_height && $file['height'] < $min_height ) {
 
 				// min height
-				$errors['min_height'] = sprintf(__('Image height must be at least %dpx.', 'fields'), $min_height );
+				$errors['min_height'] = sprintf(__('Image height must be at least %dpx.', 'fieldmaster'), $min_height );
 
 			}  elseif( $max_height && $file['height'] > $max_height ) {
 
 				// min height
-				$errors['max_height'] = sprintf(__('Image height must not exceed %dpx.', 'fields'), $max_height );
+				$errors['max_height'] = sprintf(__('Image height must not exceed %dpx.', 'fieldmaster'), $max_height );
 
 			}
 
@@ -3273,18 +4034,18 @@ function fields_validate_attachment( $attachment, $field, $context = 'prepare' )
 	// file size
 	if( $file['size'] ) {
 
-		$min_size = fields_maybe_get($field, 'min_size', 0);
-		$max_size = fields_maybe_get($field, 'max_size', 0);
+		$min_size = fieldmaster_maybe_get($field, 'min_size', 0);
+		$max_size = fieldmaster_maybe_get($field, 'max_size', 0);
 
-		if( $min_size && $file['size'] < fields_get_filesize($min_size) ) {
-
-			// min width
-			$errors['min_size'] = sprintf(__('File size must be at least %s.', 'fields'), fields_format_filesize($min_size) );
-
-		} elseif( $max_size && $file['size'] > fields_get_filesize($max_size) ) {
+		if( $min_size && $file['size'] < fieldmaster_get_filesize($min_size) ) {
 
 			// min width
-			$errors['max_size'] = sprintf(__('File size must must not exceed %s.', 'fields'), fields_format_filesize($max_size) );
+			$errors['min_size'] = sprintf(__('File size must be at least %s.', 'fieldmaster'), fieldmaster_format_filesize($min_size) );
+
+		} elseif( $max_size && $file['size'] > fieldmaster_get_filesize($max_size) ) {
+
+			// min width
+			$errors['max_size'] = sprintf(__('File size must must not exceed %s.', 'fieldmaster'), fieldmaster_format_filesize($max_size) );
 
 		}
 
@@ -3294,7 +4055,7 @@ function fields_validate_attachment( $attachment, $field, $context = 'prepare' )
 	// file type
 	if( $file['type'] ) {
 
-		$mime_types = fields_maybe_get($field, 'mime_types', '');
+		$mime_types = fieldmaster_maybe_get($field, 'mime_types', '');
 
 		// lower case
 		$file['type'] = strtolower($file['type']);
@@ -3314,11 +4075,11 @@ function fields_validate_attachment( $attachment, $field, $context = 'prepare' )
 				$last1 = array_pop($mime_types);
 				$last2 = array_pop($mime_types);
 
-				$mime_types[] = $last2 . ' ' . __('or', 'fields') . ' ' . $last1;
+				$mime_types[] = $last2 . ' ' . __('or', 'fieldmaster') . ' ' . $last1;
 
 			}
 
-			$errors['mime_types'] = sprintf(__('File type must be %s.', 'fields'), implode(', ', $mime_types) );
+			$errors['mime_types'] = sprintf(__('File type must be %s.', 'fieldmaster'), implode(', ', $mime_types) );
 
 		}
 
@@ -3326,10 +4087,10 @@ function fields_validate_attachment( $attachment, $field, $context = 'prepare' )
 
 
 	// filter for 3rd party customization
-	$errors = apply_filters("fields/validate_attachment", $errors, $file, $attachment, $field);
-	$errors = apply_filters("fields/validate_attachment/type={$field['type']}", $errors, $file, $attachment, $field );
-	$errors = apply_filters("fields/validate_attachment/name={$field['name']}", $errors, $file, $attachment, $field );
-	$errors = apply_filters("fields/validate_attachment/key={$field['key']}", $errors, $file, $attachment, $field );
+	$errors = apply_filters("fieldmaster/validate_attachment", $errors, $file, $attachment, $field);
+	$errors = apply_filters("fieldmaster/validate_attachment/type={$field['type']}", $errors, $file, $attachment, $field );
+	$errors = apply_filters("fieldmaster/validate_attachment/name={$field['name']}", $errors, $file, $attachment, $field );
+	$errors = apply_filters("fieldmaster/validate_attachment/key={$field['key']}", $errors, $file, $attachment, $field );
 
 
 	// return
@@ -3339,7 +4100,7 @@ function fields_validate_attachment( $attachment, $field, $context = 'prepare' )
 
 
 /*
-*  _fields_settings_uploader
+*  _fieldmaster_settings_uploader
 *
 *  Dynamic logic for uploader setting
 *
@@ -3351,9 +4112,9 @@ function fields_validate_attachment( $attachment, $field, $context = 'prepare' )
 *  @return	$uploader
 */
 
-add_filter('fields/settings/uploader', '_fields_settings_uploader');
+add_filter('fieldmaster/settings/uploader', '_fieldmaster_settings_uploader');
 
-function _fields_settings_uploader( $uploader ) {
+function _fieldmaster_settings_uploader( $uploader ) {
 
 	// if can't upload files
 	if( !current_user_can('upload_files') ) {
@@ -3368,29 +4129,1080 @@ function _fields_settings_uploader( $uploader ) {
 }
 
 
-
 /*
-*  Hacks
+*  fieldmaster_translate_keys
 *
 *  description
 *
 *  @type	function
-*  @date	17/01/2014
-*  @since	5.0.0
+*  @date	7/12/2015
+*  @since	5.3.2
 *
 *  @param	$post_id (int)
 *  @return	$post_id (int)
 */
 
-add_filter("fields/settings/slug", '_fields_settings_slug');
+/*
+function fieldmaster_translate_keys( $array, $keys ) {
 
-function _fields_settings_slug( $v ) {
+	// bail early if no keys
+	if( empty($keys) ) return $array;
 
-	$basename = fields_get_setting('basename');
+
+	// translate
+	foreach( $keys as $k ) {
+
+		// bail ealry if not exists
+		if( !isset($array[ $k ]) ) continue;
+
+
+		// translate
+		$array[ $k ] = fieldmaster_translate( $array[ $k ] );
+
+	}
+
+
+	// return
+	return $array;
+
+}
+*/
+
+
+/*
+*  fieldmaster_translate
+*
+*  This function will translate a string using the new 'l10n_textdomain' setting
+*  Also works for arrays which is great for fields - select -> choices
+*
+*  @type	function
+*  @date	4/12/2015
+*  @since	5.3.2
+*
+*  @param	$string (mixed) string or array containins strings to be translated
+*  @return	$string
+*/
+
+function fieldmaster_translate( $string ) {
+
+	// vars
+	$l10n = fieldmaster_get_setting('l10n');
+	$textdomain = fieldmaster_get_setting('l10n_textdomain');
+
+
+	// bail early if not enabled
+	if( !$l10n ) return $string;
+
+
+	// bail early if no textdomain
+	if( !$textdomain ) return $string;
+
+
+	// is array
+	if( is_array($string) ) {
+
+		return array_map('fieldmaster_translate', $string);
+
+	}
+
+
+	// bail early if not string
+	if( !is_string($string) ) return $string;
+
+
+	// bail early if empty
+	if( $string === '' ) return $string;
+
+
+	// allow for var_export export
+	if( fieldmaster_get_setting('l10n_var_export') ){
+
+		// bail early if already translated
+		if( substr($string, 0, 7) === '!!__(!!' ) return $string;
+
+
+		// return
+		return "!!__(!!'" .  $string . "!!', !!'" . $textdomain . "!!')!!";
+
+	}
+
+
+	// vars
+	return __( $string, $textdomain );
+
+}
+
+
+/*
+*  fieldmaster_maybe_add_action
+*
+*  This function will determine if the action has already run before adding / calling the function
+*
+*  @type	function
+*  @date	13/01/2016
+*  @since	5.3.2
+*
+*  @param	$post_id (int)
+*  @return	$post_id (int)
+*/
+
+function fieldmaster_maybe_add_action( $tag, $function_to_add, $priority = 10, $accepted_args = 1 ) {
+
+	// if action has already run, execute it
+	// - if currently doing action, allow $tag to be added as per usual to allow $priority ordering needed for 3rd party asset compatibility
+	if( did_action($tag) && !doing_action($tag) ) {
+
+		call_user_func( $function_to_add );
+
+	// if action has not yet run, add it
+	} else {
+
+		add_action( $tag, $function_to_add, $priority, $accepted_args );
+
+	}
+
+}
+
+
+/*
+*  fieldmaster_is_row_collapsed
+*
+*  This function will return true if the field's row is collapsed
+*
+*  @type	function
+*  @date	2/03/2016
+*  @since	5.3.2
+*
+*  @param	$post_id (int)
+*  @return	$post_id (int)
+*/
+
+function fieldmaster_is_row_collapsed( $field_key = '', $row_index = 0 ) {
+
+	// collapsed
+	$collapsed = fieldmaster_get_user_setting('collapsed_' . $field_key, '');
+
+
+	// cookie fallback ( version < 5.3.2 )
+	if( $collapsed === '' ) {
+
+		$collapsed = fieldmaster_extract_var($_COOKIE, "fieldmaster_collapsed_{$field_key}", '');
+		$collapsed = str_replace('|', ',', $collapsed);
+
+
+		// update
+		fieldmaster_update_user_setting( 'collapsed_' . $field_key, $collapsed );
+
+	}
+
+
+	// explode
+	$collapsed = explode(',', $collapsed);
+	$collapsed = array_filter($collapsed, 'is_numeric');
+
+
+	// collapsed class
+	return in_array($row_index, $collapsed);
+
+}
+
+
+/*
+*  fieldmaster_get_attachment_image
+*
+*  description
+*
+*  @type	function
+*  @date	24/10/16
+*  @since	5.5.0
+*
+*  @param	$post_id (int)
+*  @return	$post_id (int)
+*/
+
+function fieldmaster_get_attachment_image( $attachment_id = 0, $size = 'thumbnail' ) {
+
+	// vars
+	$url = wp_get_attachment_image_src($attachment_id, 'thumbnail');
+	$alt = get_post_meta($attachment_id, '_wp_attachment_image_alt', true);
+
+
+	// bail early if no url
+	if( !$url ) return '';
+
+
+	// return
+	$value = '<img src="' . $url . '" alt="' . $alt . '" />';
+
+}
+
+
+/*
+*  fieldmaster_get_post_thumbnail
+*
+*  This function will return a thumbail image url for a given post
+*
+*  @type	function
+*  @date	3/05/2016
+*  @since	5.3.8
+*
+*  @param	$post (obj)
+*  @param	$size (mixed)
+*  @return	(string)
+*/
+
+function fieldmaster_get_post_thumbnail( $post = null, $size = 'thumbnail' ) {
+
+	// vars
+	$data = array(
+		'url'	=> '',
+		'type'	=> '',
+		'html'	=> ''
+	);
+
+
+	// post
+	$post = get_post($post);
+
+
+	// bail early if no post
+	if( !$post ) return $data;
+
+
+	// vars
+	$thumb_id = $post->ID;
+	$mime_type = fieldmaster_maybe_get(explode('/', $post->post_mime_type), 0);
+
+
+	// attachment
+	if( $post->post_type === 'attachment' ) {
+
+		// change $thumb_id
+		if( $mime_type === 'audio' || $mime_type === 'video' ) {
+
+			$thumb_id = get_post_thumbnail_id($post->ID);
+
+		}
+
+	// post
+	} else {
+
+		$thumb_id = get_post_thumbnail_id($post->ID);
+
+	}
+
+
+	// try url
+	$data['url'] = wp_get_attachment_image_src($thumb_id, $size);
+	$data['url'] = fieldmaster_maybe_get($data['url'], 0);
+
+
+	// default icon
+	if( !$data['url'] && $post->post_type === 'attachment' ) {
+
+		$data['url'] = wp_mime_type_icon($post->ID);
+		$data['type'] = 'icon';
+
+	}
+
+
+	// html
+	$data['html'] = '<img src="' . $data['url'] . '" alt="" />';
+
+
+	// return
+	return $data;
+
+}
+
+
+/*
+*  fieldmaster_get_browser
+*
+*  This functino will return the browser string for major browsers
+*
+*  @type	function
+*  @date	17/01/2014
+*  @since	5.0.0
+*
+*  @param	n/a
+*  @return	(string)
+*/
+
+function fieldmaster_get_browser() {
+
+	// vars
+	$agent = $_SERVER['HTTP_USER_AGENT'];
+
+
+	// browsers
+	$browsers = array(
+		'Firefox'	=> 'firefox',
+		'Trident'	=> 'msie',
+		'MSIE'		=> 'msie',
+		'Edge'		=> 'edge',
+		'Chrome'	=> 'chrome',
+		'Safari'	=> 'safari',
+	);
+
+
+	// loop
+	foreach( $browsers as $k => $v ) {
+
+		if( strpos($agent, $k) !== false ) return $v;
+
+	}
+
+
+	// return
+	return '';
+
+}
+
+
+/*
+*  fieldmaster_is_ajax
+*
+*  This function will reutrn true if performing a wp ajax call
+*
+*  @type	function
+*  @date	7/06/2016
+*  @since	5.3.8
+*
+*  @param	n/a
+*  @return	(boolean)
+*/
+
+function fieldmaster_is_ajax( $action = '' ) {
+
+	// vars
+	$is_ajax = false;
+
+
+	// check if is doing ajax
+	if( defined('DOING_AJAX') && DOING_AJAX ) {
+
+		$is_ajax = true;
+
+	}
+
+
+	// check $action
+	if( $action && fieldmaster_maybe_get($_POST, 'action') !== $action ) {
+
+		$is_ajax = false;
+
+	}
+
+
+	// return
+	return $is_ajax;
+
+}
+
+
+
+
+/*
+*  fieldmaster_format_date
+*
+*  This function will accept a date value and return it in a formatted string
+*
+*  @type	function
+*  @date	16/06/2016
+*  @since	5.3.8
+*
+*  @param	$value (string)
+*  @return	$format (string)
+*/
+
+function fieldmaster_format_date( $value, $format ) {
+
+	// bail early if no value
+	if( !$value ) return $value;
+
+
+	// vars
+	$unixtimestamp = 0;
+
+
+	// numeric (either unix or YYYYMMDD)
+	if( is_numeric($value) && strlen($value) !== 8 ) {
+
+		$unixtimestamp = $value;
+
+	} else {
+
+		$unixtimestamp = strtotime($value);
+
+	}
+
+
+	// return
+	return date_i18n($format, $unixtimestamp);
+
+}
+
+
+/*
+*  fieldmaster_log
+*
+*  description
+*
+*  @type	function
+*  @date	24/06/2016
+*  @since	5.3.8
+*
+*  @param	$post_id (int)
+*  @return	$post_id (int)
+*/
+
+function fieldmaster_log() {
+
+	// vars
+	$log = '';
+	$args = func_get_args();
+
+
+	// loop
+	foreach( $args as $i => $arg ) {
+
+		if( is_array($arg) || is_object($arg) ) {
+
+			$arg = print_r($arg, true);
+
+		} elseif( is_bool($arg) ) {
+
+			$arg = ( $arg ? 'true' : 'false' ) . ' (bool)';
+
+		}
+
+
+		// update
+		$args[ $i ] = $arg;
+
+	}
+
+
+	// log
+	error_log( implode(' ', $args) );
+
+}
+
+
+/*
+*  fieldmaster_doing
+*
+*  This function will tell FieldMaster what task it is doing
+*
+*  @type	function
+*  @date	28/06/2016
+*  @since	5.3.8
+*
+*  @param	$event (string)
+*  @param	context (string)
+*  @return	n/a
+*/
+
+function fieldmaster_doing( $event = '', $context = '' ) {
+
+	fieldmaster_update_setting( 'doing', $event );
+	fieldmaster_update_setting( 'doing_context', $context );
+
+}
+
+
+/*
+*  fieldmaster_is_doing
+*
+*  This function can be used to state what FieldMaster is doing, or to check
+*
+*  @type	function
+*  @date	28/06/2016
+*  @since	5.3.8
+*
+*  @param	$event (string)
+*  @param	context (string)
+*  @return	(boolean)
+*/
+
+function fieldmaster_is_doing( $event = '', $context = '' ) {
+
+	// vars
+	$doing = false;
+
+
+	// task
+	if( fieldmaster_get_setting('doing') === $event ) {
+
+		$doing = true;
+
+	}
+
+
+	// context
+	if( $context && fieldmaster_get_setting('doing_context') !== $context ) {
+
+		$doing = false;
+
+	}
+
+
+	// return
+	return $doing;
+
+}
+
+
+/*
+*  fieldmaster_is_plugin_active
+*
+*  This function will return true if the FieldMaster plugin is active
+*  - May be included within a theme or other plugin
+*
+*  @type	function
+*  @date	13/07/2016
+*  @since	5.4.0
+*
+*  @param	$basename (int)
+*  @return	$post_id (int)
+*/
+
+
+function fieldmaster_is_plugin_active() {
+
+	// vars
+	$basename = fieldmaster_get_setting('basename');
+
+
+	// ensure is_plugin_active() exists (not on frontend)
+	if( !function_exists('is_plugin_active') ) {
+
+		include_once( ABSPATH . 'wp-admin/includes/plugin.php' );
+
+	}
+
+
+	// return
+	return is_plugin_active($basename);
+
+}
+
+
+/*
+*  fieldmaster_enable_filter
+*
+*  This function will enable a filter
+*
+*  @type	function
+*  @date	15/07/2016
+*  @since	5.4.0
+*
+*  @param	$post_id (int)
+*  @return	$post_id (int)
+*/
+
+function fieldmaster_enable_filter( $filter = '' ) {
+
+	// get filters
+	$filters = fieldmaster_get_setting('_filters', array());
+
+
+	// append
+	$filters[ $filter ] = true;
+
+
+	// update
+	fieldmaster_update_setting('_filters', $filters);
+
+}
+
+
+/*
+*  fieldmaster_disable_filter
+*
+*  This function will disable a filter
+*
+*  @type	function
+*  @date	15/07/2016
+*  @since	5.4.0
+*
+*  @param	$post_id (int)
+*  @return	$post_id (int)
+*/
+
+function fieldmaster_disable_filter( $filter = '' ) {
+
+	// get filters
+	$filters = fieldmaster_get_setting('_filters', array());
+
+
+	// append
+	$filters[ $filter ] = false;
+
+
+	// update
+	fieldmaster_update_setting('_filters', $filters);
+
+}
+
+
+/*
+*  fieldmaster_enable_filters
+*
+*  FieldMaster uses filters to modify field group and field data
+*  This function will enable them allowing FieldMaster to interact with all data
+*
+*  @type	function
+*  @date	14/07/2016
+*  @since	5.4.0
+*
+*  @param	$post_id (int)
+*  @return	$post_id (int)
+*/
+
+function fieldmaster_enable_filters() {
+
+	// get filters
+	$filters = fieldmaster_get_setting('_filters', array());
+
+
+	// loop
+	foreach( array_keys($filters) as $k ) {
+
+		$filters[ $k ] = true;
+
+	}
+
+
+	// update
+	fieldmaster_update_setting('_filters', $filters);
+
+}
+
+
+/*
+*  fieldmaster_disable_filters
+*
+*  FieldMaster uses filters to modify field group and field data
+*  This function will disable them allowing FieldMaster to interact only with raw DB data
+*
+*  @type	function
+*  @date	14/07/2016
+*  @since	5.4.0
+*
+*  @param	$post_id (int)
+*  @return	$post_id (int)
+*/
+
+function fieldmaster_disable_filters() {
+
+	// get filters
+	$filters = fieldmaster_get_setting('_filters', array());
+
+
+	// loop
+	foreach( array_keys($filters) as $k ) {
+
+		$filters[ $k ] = false;
+
+	}
+
+
+	// update
+	fieldmaster_update_setting('_filters', $filters);
+
+}
+
+
+/*
+*  fieldmaster_is_filter_enabled
+*
+*  FieldMaster uses filters to modify field group and field data
+*  This function will return true if they are enabled
+*
+*  @type	function
+*  @date	14/07/2016
+*  @since	5.4.0
+*
+*  @param	$post_id (int)
+*  @return	$post_id (int)
+*/
+
+function fieldmaster_is_filter_enabled( $filter = '' ) {
+
+	// get filters
+	$filters = fieldmaster_get_setting('_filters', array());
+
+
+	// bail early if not set
+	return empty( $filters[ $filter ] ) ? false : true;
+
+}
+
+
+/*
+*  fieldmaster_send_ajax_results
+*
+*  This function will print JSON data for a Select2 AJAX query
+*
+*  @type	function
+*  @date	19/07/2016
+*  @since	5.4.0
+*
+*  @param	$response (array)
+*  @return	n/a
+*/
+
+function fieldmaster_send_ajax_results( $response ) {
+
+	// validate
+	$response = wp_parse_args($response, array(
+		'results'	=> false,
+		'more'		=> false,
+		'limit'		=> 0
+	));
+
+
+	// limit
+	if( $response['limit'] && $response['results']) {
+
+		// vars
+		$total = 0;
+
+		foreach( $response['results'] as $result ) {
+
+			// parent
+			$total++;
+
+
+			// children
+			if( !empty($result['children']) ) {
+
+				$total += count( $result['children'] );
+
+			}
+
+		}
+
+
+		// calc
+		if( $total >= $response['limit'] ) {
+
+			$response['more'] = true;
+
+		}
+
+	}
+
+
+	// return
+	wp_send_json( $response );
+
+}
+
+
+/*
+*  fieldmaster_is_sequential_array
+*
+*  This function will return true if the array contains only numeric keys
+*
+*  @source	http://stackoverflow.com/questions/173400/how-to-check-if-php-array-is-associative-or-sequential
+*  @type	function
+*  @date	9/09/2016
+*  @since	5.4.0
+*
+*  @param	$array (array)
+*  @return	(boolean)
+*/
+
+function fieldmaster_is_sequential_array( $array ) {
+
+	// bail ealry if not array
+	if( !is_array($array) ) return false;
+
+
+	// loop
+	foreach( $array as $key => $value ) {
+
+		// bail ealry if is string
+		if( is_string($key) ) return false;
+
+	}
+
+
+	// return
+	return true;
+
+}
+
+
+/*
+*  fieldmaster_is_associative_array
+*
+*  This function will return true if the array contains one or more string keys
+*
+*  @source	http://stackoverflow.com/questions/173400/how-to-check-if-php-array-is-associative-or-sequential
+*  @type	function
+*  @date	9/09/2016
+*  @since	5.4.0
+*
+*  @param	$array (array)
+*  @return	(boolean)
+*/
+
+function fieldmaster_is_associative_array( $array ) {
+
+	// bail ealry if not array
+	if( !is_array($array) ) return false;
+
+
+	// loop
+	foreach( $array as $key => $value ) {
+
+		// bail ealry if is string
+		if( is_string($key) ) return true;
+
+	}
+
+
+	// return
+	return false;
+
+}
+
+
+/*
+*  fieldmaster_add_array_key_prefix
+*
+*  This function will add a prefix to all array keys
+*  Useful to preserve numeric keys when performing array_multisort
+*
+*  @type	function
+*  @date	15/09/2016
+*  @since	5.4.0
+*
+*  @param	$array (array)
+*  @param	$prefix (string)
+*  @return	(array)
+*/
+
+function fieldmaster_add_array_key_prefix( $array, $prefix ) {
+
+	// vars
+	$array2 = array();
+
+
+	// loop
+	foreach( $array as $k => $v ) {
+
+		$k2 = $prefix . $k;
+	    $array2[ $k2 ] = $v;
+
+	}
+
+
+	// return
+	return $array2;
+
+}
+
+
+/*
+*  fieldmaster_remove_array_key_prefix
+*
+*  This function will remove a prefix to all array keys
+*  Useful to preserve numeric keys when performing array_multisort
+*
+*  @type	function
+*  @date	15/09/2016
+*  @since	5.4.0
+*
+*  @param	$array (array)
+*  @param	$prefix (string)
+*  @return	(array)
+*/
+
+function fieldmaster_remove_array_key_prefix( $array, $prefix ) {
+
+	// vars
+	$array2 = array();
+	$l = strlen($prefix);
+
+
+	// loop
+	foreach( $array as $k => $v ) {
+
+		$k2 = (substr($k, 0, $l) === $prefix) ? substr($k, $l) : $k;
+	    $array2[ $k2 ] = $v;
+
+	}
+
+
+	// return
+	return $array2;
+
+}
+
+
+
+
+add_filter("fieldmaster/settings/slug", '_fieldmaster_settings_slug');
+
+function _fieldmaster_settings_slug( $v ) {
+
+	$basename = fieldmaster_get_setting('basename');
     $slug = explode('/', $basename);
     $slug = current($slug);
 
 	return $slug;
 }
+
+
+
+
+/*
+*  fieldmaster_strip_protocol
+*
+*  This function will remove the proticol from a url
+*  Used to allow licences to remain active if a site is switched to https
+*
+*  @type	function
+*  @date	10/01/2017
+*  @since	5.5.4
+*  @author	Aaron
+*
+*  @param	$url (string)
+*  @return	(string)
+*/
+
+function fieldmaster_strip_protocol( $url ) {
+
+	// strip the protical
+	return str_replace(array('http://','https://'), '', $url);
+
+}
+
+
+/*
+*  fieldmaster_connect_attachment_to_post
+*
+*  This function will connect an attacment (image etc) to the post
+*  Used to connect attachements uploaded directly to media that have not been attaced to a post
+*
+*  @type	function
+*  @date	11/01/2017
+*  @since	5.5.4
+*
+*  @param	$attachment_id (int)
+*  @param	$post_id (int)
+*  @return	(boolean)
+*/
+
+function fieldmaster_connect_attachment_to_post( $attachment_id = 0, $post_id = 0 ) {
+
+	// bail ealry if $attachment_id is not valid
+	if( !$attachment_id || !is_numeric($attachment_id) ) return false;
+
+
+	// bail ealry if $post_id is not valid
+	if( !$post_id || !is_numeric($post_id) ) return false;
+
+
+	// vars
+	$post = get_post( $attachment_id );
+
+
+	// check if valid post
+	if( $post && $post->post_type == 'attachment' && $post->post_parent == 0 ) {
+
+		// update
+		wp_update_post( array('ID' => $post->ID, 'post_parent' => $post_id) );
+
+
+		// return
+		return true;
+
+	}
+
+
+	// return
+	return true;
+
+}
+
+
+/*
+*  fieldmaster_encrypt
+*
+*  This function will encrypt a string using PHP
+*  https://bhoover.com/using-php-openssl_encrypt-openssl_decrypt-encrypt-decrypt-data/
+*
+*  @type	function
+*  @date	27/2/17
+*  @since	5.5.8
+*
+*  @param	$data (string)
+*  @return	(string)
+*/
+
+
+function fieldmaster_encrypt( $data = '' ) {
+
+	// bail ealry if no encrypt function
+	if( !function_exists('openssl_encrypt') ) return base64_encode($data);
+
+
+	// generate a key
+	$key = wp_hash('fieldmaster_encrypt');
+
+
+    // Generate an initialization vector
+    $iv = openssl_random_pseudo_bytes(openssl_cipher_iv_length('aes-256-cbc'));
+
+
+    // Encrypt the data using AES 256 encryption in CBC mode using our encryption key and initialization vector.
+    $encrypted_data = openssl_encrypt($data, 'aes-256-cbc', $key, 0, $iv);
+
+
+    // The $iv is just as important as the key for decrypting, so save it with our encrypted data using a unique separator (::)
+    return base64_encode($encrypted_data . '::' . $iv);
+
+}
+
+
+/*
+*  fieldmaster_decrypt
+*
+*  This function will decrypt an encrypted string using PHP
+*  https://bhoover.com/using-php-openssl_encrypt-openssl_decrypt-encrypt-decrypt-data/
+*
+*  @type	function
+*  @date	27/2/17
+*  @since	5.5.8
+*
+*  @param	$data (string)
+*  @return	(string)
+*/
+
+function fieldmaster_decrypt( $data = '' ) {
+
+	// bail ealry if no decrypt function
+	if( !function_exists('openssl_decrypt') ) return base64_decode($data);
+
+
+	// generate a key
+	$key = wp_hash('fieldmaster_encrypt');
+
+
+    // To decrypt, split the encrypted data from our IV - our unique separator used was "::"
+    list($encrypted_data, $iv) = explode('::', base64_decode($data), 2);
+
+
+    // decrypt
+    return openssl_decrypt($encrypted_data, 'aes-256-cbc', $key, 0, $iv);
+
+}
+
 
 ?>

@@ -1,6 +1,6 @@
 <?php
 
-class fields_settings_addons {
+class fieldmaster_settings_addons {
 
 	var $view;
 
@@ -41,14 +41,14 @@ class fields_settings_addons {
 	function admin_menu() {
 
 		// bail early if no show_admin
-		if( !fields_get_setting('show_admin') )
+		if( !fieldmaster_get_setting('show_admin') )
 		{
 			return;
 		}
 
 
 		// add page
-		$page = add_submenu_page('edit.php?post_type=fields-field-group', __('Add-ons','fields'), __('Add-ons','fields'), fields_get_setting('capability'),'fields-settings-addons', array($this,'html') );
+		$page = add_submenu_page('edit.php?post_type=fm-field-group', __('Add-ons','fieldmaster'), __('Add-ons','fieldmaster'), fieldmaster_get_setting('capability'),'fieldmaster-settings-addons', array($this,'html') );
 
 
 		// actions
@@ -79,12 +79,12 @@ class fields_settings_addons {
 
 
 		// load json
-        $request = wp_remote_post( 'http://assets.advancedcustomfields.com/add-ons/add-ons.json' );
+        $request = wp_remote_post( 'https://assets.goldhat.ca/fieldmaster/extensions/extensions.json' );
 
         // validate
         if( is_wp_error($request) || wp_remote_retrieve_response_code($request) != 200)
         {
-        	fields_add_admin_notice(__('<b>Error</b>. Could not load add-ons list', 'fields'), 'error');
+        	fieldmaster_add_admin_notice(__('<b>Error</b>. Could not load FieldMaster Extensions list', 'fieldmaster'), 'error');
         }
         else
         {
@@ -110,7 +110,7 @@ class fields_settings_addons {
 	function html() {
 
 		// load view
-		fields_get_view('settings-addons', $this->view);
+		fieldmaster_get_view('settings-addons', $this->view);
 
 	}
 
@@ -118,6 +118,6 @@ class fields_settings_addons {
 
 
 // initialize
-new fields_settings_addons();
+new fieldmaster_settings_addons();
 
 ?>

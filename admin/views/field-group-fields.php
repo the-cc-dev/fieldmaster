@@ -1,58 +1,62 @@
 <?php 
 
 // vars
-// Note: $args is always passed to this view from above
-$fields = array();
-$layout = false;
+$fields = false;
 $parent = 0;
 
 
 // use fields if passed in
 extract( $args );
 
-
-// add clone
-$fields[] = fields_get_valid_field(array(
-	'ID'		=> 'fieldscloneindex',
-	'key'		=> 'fieldscloneindex',
-	'label'		=> __('New Field','fields'),
-	'name'		=> 'new_field',
-	'type'		=> 'text',
-	'parent'	=> $parent
-));
-
-
 ?>
-<div class="fields-field-list-wrap">
+<div class="fm-field-list-wrap">
 	
-	<ul class="fields-hl fields-thead">
-		<li class="li-field-order"><?php _e('Order','fields'); ?></li>
-		<li class="li-field-label"><?php _e('Label','fields'); ?></li>
-		<li class="li-field-name"><?php _e('Name','fields'); ?></li>
-		<li class="li-field-type"><?php _e('Type','fields'); ?></li>
+	<ul class="fieldmaster-hl fieldmaster-thead">
+		<li class="li-field-order"><?php _e('Order','fieldmaster'); ?></li>
+		<li class="li-field-label"><?php _e('Label','fieldmaster'); ?></li>
+		<li class="li-field-name"><?php _e('Name','fieldmaster'); ?></li>
+		<li class="li-field-type"><?php _e('Type','fieldmaster'); ?></li>
 	</ul>
 	
-	<div class="fields-field-list<?php if( $layout ){ echo " layout-{$layout}"; } ?>">
+	<div class="fm-field-list">
 		
-		<?php foreach( $fields as $i => $field ): ?>
-			
-			<?php fields_get_view('field-group-field', array( 'field' => $field, 'i' => $i )); ?>
-			
-		<?php endforeach; ?>
-		
-		<div class="no-fields-message" <?php if(count($fields) > 1){ echo 'style="display:none;"'; } ?>>
-			<?php _e("No fields. Click the <strong>+ Add Field</strong> button to create your first field.",'fields'); ?>
+		<div class="no-fields-message" <?php if( $fields ){ echo 'style="display:none;"'; } ?>>
+			<?php _e("No fields. Click the <strong>+ Add Field</strong> button to create your first field.",'fieldmaster'); ?>
 		</div>
+		
+		<?php if( $fields ):
+			
+			foreach( $fields as $i => $field ):
+				
+				fieldmaster_get_view('field-group-field', array( 'field' => $field, 'i' => $i ));
+				
+			endforeach;
+		
+		endif; ?>
 		
 	</div>
 	
-	<ul class="fields-hl fields-tfoot">
-		<li class="comic-sans">
-			<i class="fields-icon fields-icon-arrow-combo"></i><?php _e('Drag and drop to reorder','fields'); ?>
-		</li>
-		<li class="fields-fr">
-			<a href="#" class="fields-button blue add-field"><?php _e('+ Add Field','fields'); ?></a>
+	<ul class="fieldmaster-hl fieldmaster-tfoot">
+		<li class="fieldmaster-fr">
+			<a href="#" class="button button-primary button-large add-field"><?php _e('+ Add Field','fieldmaster'); ?></a>
 		</li>
 	</ul>
-
+	
+<?php if( !$parent ):
+	
+	// get clone
+	$clone = fieldmaster_get_valid_field(array(
+		'ID'		=> 'fieldmastercloneindex',
+		'key'		=> 'fieldmastercloneindex',
+		'label'		=> __('New Field','fieldmaster'),
+		'name'		=> 'new_field',
+		'type'		=> 'text'
+	));
+	
+	?>
+	<script type="text/html" id="tmpl-fm-field">
+	<?php fieldmaster_get_view('field-group-field', array( 'field' => $clone )); ?>
+	</script>
+<?php endif;?>
+	
 </div>

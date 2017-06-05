@@ -1,8 +1,8 @@
 <?php 
 
 // vars
-$field = fields_extract_var( $args, 'field');
-$groups = fields_extract_var( $field, 'conditional_logic');
+$field = fieldmaster_extract_var( $args, 'field');
+$groups = fieldmaster_extract_var( $field, 'conditional_logic');
 $disabled = empty($groups) ? 1 : 0;
 
 
@@ -24,24 +24,20 @@ if( empty($groups) ) {
 }
 
 ?>
-<tr data-name="conditional_logic" class="fields-field">
-	<td class="fields-label">
-		<label><?php _e("Conditional Logic",'fields'); ?></label>
+<tr class="fm-field fm-field-true-false fm-field-setting-conditional_logic" data_type="true_false" data-name="conditional_logic">
+	<td class="fieldmaster-label">
+		<label><?php _e("Conditional Logic",'fieldmaster'); ?></label>
 	</td>
-	<td class="fields-input">
+	<td class="fieldmaster-input">
 		<?php 
 		
-		fields_render_field(array(
-			'type'			=> 'radio',
+		fieldmaster_render_field(array(
+			'type'			=> 'true_false',
 			'name'			=> 'conditional_logic',
 			'prefix'		=> $field['prefix'],
 			'value'			=> $disabled ? 0 : 1,
-			'choices'		=> array(
-								1	=> __("Yes",'fields'),
-								0	=> __("No",'fields'),
-			),
-			'layout'		=> 'horizontal',
-			'class'			=> 'conditional-toggle'
+			'ui'			=> 1,
+			'class'			=> 'conditional-toggle',
 		));
 		
 		?>
@@ -50,23 +46,20 @@ if( empty($groups) ) {
 			<?php foreach( $groups as $group_id => $group ): 
 				
 				// validate
-				if( empty($group) ) {
+				if( empty($group) ) continue;
 				
-					continue;
-					
-				}
 				
 				// vars
 				// $group_id must be completely different to $rule_id to avoid JS issues
 				$group_id = "group_{$group_id}";
-				$h4 = ($group_id == "group_0") ? __("Show this field if",'fields') : __("or",'fields');
+				$h4 = ($group_id == "group_0") ? __("Show this field if",'fieldmaster') : __("or",'fieldmaster');
 				
 				?>
 				<div class="rule-group" data-id="<?php echo $group_id; ?>">
 				
 					<h4><?php echo $h4; ?></h4>
 					
-					<table class="fields-table -clear">
+					<table class="fieldmaster-table -clear">
 						<tbody>
 						<?php foreach( $group as $rule_id => $rule ): 
 							
@@ -92,7 +85,7 @@ if( empty($groups) ) {
 									$choices[ $rule['field'] ] = $rule['field'];
 									
 									// create field
-									fields_render_field(array(
+									fieldmaster_render_field(array(
 										'type'		=> 'select',
 										'prefix'	=> $prefix,
 										'name'		=> 'field',
@@ -108,13 +101,13 @@ if( empty($groups) ) {
 									<?php 	
 									
 									$choices = array(
-										'=='	=>	__("is equal to",'fields'),
-										'!='	=>	__("is not equal to",'fields'),
+										'=='	=>	__("is equal to",'fieldmaster'),
+										'!='	=>	__("is not equal to",'fieldmaster'),
 									);
 									
 									
 									// create field
-									fields_render_field(array(
+									fieldmaster_render_field(array(
 										'type'		=> 'select',
 										'prefix'	=> $prefix,
 										'name'		=> 'operator',
@@ -133,7 +126,7 @@ if( empty($groups) ) {
 									$choices[ $rule['value'] ] = $rule['value'];
 									
 									// create field
-									fields_render_field(array(
+									fieldmaster_render_field(array(
 										'type'		=> 'select',
 										'prefix'	=> $prefix,
 										'name'		=> 'value',
@@ -146,10 +139,10 @@ if( empty($groups) ) {
 									?>
 								</td>
 								<td class="add">
-									<a href="#" class="fields-button add-conditional-rule"><?php _e("and",'fields'); ?></a>
+									<a href="#" class="button add-conditional-rule"><?php _e("and",'fieldmaster'); ?></a>
 								</td>
 								<td class="remove">
-									<a href="#" class="fields-icon fields-icon-minus remove-conditional-rule"></a>
+									<a href="#" class="fieldmaster-icon -minus remove-conditional-rule"></a>
 								</td>
 								</tr>
 							<?php endforeach; ?>
@@ -159,9 +152,9 @@ if( empty($groups) ) {
 				</div>
 			<?php endforeach; ?>
 			
-			<h4><?php _e("or",'fields'); ?></h4>
+			<h4><?php _e("or",'fieldmaster'); ?></h4>
 			
-			<a href="#" class="fields-button add-conditional-group"><?php _e("Add rule group",'fields'); ?></a>
+			<a href="#" class="button add-conditional-group"><?php _e("Add rule group",'fieldmaster'); ?></a>
 			
 		</div>
 		

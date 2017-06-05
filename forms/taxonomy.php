@@ -5,14 +5,14 @@
 *
 *  All the logic for adding fields to taxonomy terms
 *
-*  @class 		fields_form_taxonomy
+*  @class 		fieldmaster_form_taxonomy
 *  @package		FieldMaster
 *  @subpackage	Forms
 */
 
-if( ! class_exists('fields_form_taxonomy') ) :
+if( ! class_exists('fieldmaster_form_taxonomy') ) :
 
-class fields_form_taxonomy {
+class fieldmaster_form_taxonomy {
 	
 	var $form = '#addtag';
 	
@@ -67,7 +67,7 @@ class fields_form_taxonomy {
 		
 		
 		// validate page
-		if( $pagenow == 'edit-tags.php' ) {
+		if( $pagenow === 'edit-tags.php' || $pagenow === 'term.php' ) {
 			
 			return true;
 			
@@ -108,8 +108,8 @@ class fields_form_taxonomy {
 		$taxonomy = $screen->taxonomy;
 		
 		
-		// load fields scripts
-		fields_enqueue_scripts();
+		// load fieldmaster scripts
+		fieldmaster_enqueue_scripts();
 		
 		
 		// actions
@@ -136,10 +136,7 @@ class fields_form_taxonomy {
 	function add_term( $taxonomy ) {
 		
 		// vars
-		$post_id = "{$taxonomy}_0";
-		$args = array(
-			'taxonomy' => $taxonomy
-		);
+		$post_id = fieldmaster_get_term_post_id( $taxonomy, 0 );
 		
 		
 		// update vars
@@ -147,22 +144,27 @@ class fields_form_taxonomy {
 		
 		
 		// get field groups
-		$field_groups = fields_get_field_groups( $args );
+		$field_groups = fieldmaster_get_field_groups(array(
+			'taxonomy' => $taxonomy
+		));
 		
 		
 		// render
 		if( !empty($field_groups) ) {
 			
-			fields_form_data(array( 
+			// data
+			fieldmaster_form_data(array( 
 				'post_id'	=> $post_id, 
 				'nonce'		=> 'taxonomy',
 			));
 			
+			
+			// loop
 			foreach( $field_groups as $field_group ) {
 				
-				$fields = fields_get_fields( $field_group );
+				$fields = fieldmaster_get_fields( $field_group );
 
-				fields_render_fields( $post_id, $fields, 'div', 'field' );
+				fieldmaster_render_fields( $post_id, $fields, 'div', 'field' );
 				
 			}
 			
@@ -187,10 +189,7 @@ class fields_form_taxonomy {
 	function edit_term( $term, $taxonomy ) {
 		
 		// vars
-		$post_id = "{$taxonomy}_{$term->term_id}";
-		$args = array(
-			'taxonomy' => $taxonomy
-		);
+		$post_id = fieldmaster_get_term_post_id( $term->taxonomy, $term->term_id );
 		
 		
 		// update vars
@@ -198,28 +197,30 @@ class fields_form_taxonomy {
 		
 		
 		// get field groups
-		$field_groups = fields_get_field_groups( $args );
+		$field_groups = fieldmaster_get_field_groups(array(
+			'taxonomy' => $taxonomy
+		));
 		
 		
 		// render
 		if( !empty($field_groups) ) {
 			
-			fields_form_data(array( 
+			fieldmaster_form_data(array( 
 				'post_id'	=> $post_id, 
 				'nonce'		=> 'taxonomy' 
 			));
 			
 			foreach( $field_groups as $field_group ) {
 				
-				$fields = fields_get_fields( $field_group );
+				$fields = fieldmaster_get_fields( $field_group );
 				
 				?>
 				<?php if( $field_group['style'] == 'default' ): ?>
-					<h3><?php echo $field_group['title']; ?></h3>
+					<h2><?php echo $field_group['title']; ?></h2>
 				<?php endif; ?>
 				<table class="form-table">
 					<tbody>
-						<?php fields_render_fields( $post_id, $fields, 'tr', 'field' ); ?>
+						<?php fieldmaster_render_fields( $post_id, $fields, 'tr', 'field' ); ?>
 					</tbody>
 				</table>
 				<?php 
@@ -267,21 +268,21 @@ class fields_form_taxonomy {
 	}
 	
 	
-	// update fields validation class
-	fields.validation.error_class = 'form-invalid';
+	// update fieldmaster validation class
+	fieldmaster.validation.error_class = 'form-invalid';
 		
 		
 <?php if( $this->form == '#addtag' ): ?>
 
 	// store origional HTML
-	var $orig = $('#addtag').children('.fields-field').clone();
+	var $orig = $('#addtag').children('.fm-field').clone();
 	
 	
 	// events
 	$('#submit').on('click', function( e ){
 		
 		// bail early if not active
-		if( !fields.validation.active ) {
+		if( !fieldmaster.validation.active ) {
 		
 			return true;
 			
@@ -289,16 +290,16 @@ class fields_form_taxonomy {
 		
 		
 		// ignore validation (only ignore once)
-		if( fields.validation.ignore ) {
+		if( fieldmaster.validation.ignore ) {
 		
-			fields.validation.ignore = 0;
+			fieldmaster.validation.ignore = 0;
 			return true;
 			
 		}
 		
 		
 		// bail early if this form does not contain FieldMaster data
-		if( !$('#addtag').find('#fields-form-data').exists() ) {
+		if( !$('#addtag').find('#fieldmaster-form-data').exists() ) {
 			
 			return true;
 		
@@ -310,11 +311,11 @@ class fields_form_taxonomy {
 		
 		
 		// store submit trigger so it will be clicked if validation is passed
-		fields.validation.$trigger = $(this);
+		fieldmaster.validation.$trigger = $(this);
 		
 					
 		// run validation
-		fields.validation.fetch( $('#addtag') );
+		fieldmaster.validation.fetch( $('#addtag') );
 		
 		
 		// stop all other click events on this input
@@ -334,7 +335,7 @@ class fields_form_taxonomy {
 		
 		
 		// unlock form
-		fields.validation.toggle( $('#addtag'), 'unlock' );
+		fieldmaster.validation.toggle( $('#addtag'), 'unlock' );
 		
 		
 		// bail early if response contains error
@@ -346,19 +347,19 @@ class fields_form_taxonomy {
 		
 		
 		// action for 3rd party customization
-		fields.do_action('remove', $('#addtag'));
+		fieldmaster.do_action('remove', $('#addtag'));
 		
 		
 		// remove old fields
-		$('#addtag').find('.fields-field').remove();
+		$('#addtag').find('.fm-field').remove();
 		
 		
 		// add orig fields
-		$('#fields-form-data').after( $orig.clone() );
+		$('#fieldmaster-form-data').after( $orig.clone() );
 		
 		
 		// action for 3rd party customization
-		fields.do_action('append', $('#addtag'));
+		fieldmaster.do_action('append', $('#addtag'));
 		
 	});
 	
@@ -386,21 +387,20 @@ class fields_form_taxonomy {
 	
 	function save_term( $term_id, $tt_id, $taxonomy ) {
 		
+		// vars
+		$post_id = fieldmaster_get_term_post_id( $taxonomy, $term_id );
+		
+		
 		// verify and remove nonce
-		if( ! fields_verify_nonce('taxonomy') ) {
+		if( !fieldmaster_verify_nonce('taxonomy') ) return $term_id;
+		
+	    
+	    // valied and show errors
+		fieldmaster_validate_save_post( true );
 			
-			return $term_id;
-		
-		}
-		
-		
-	    
-	    // save data
-	    if( fields_validate_save_post(true) ) {
-	    
-			fields_save_post("{$taxonomy}_{$term_id}");
-		
-		}
+			
+	    // save
+		fieldmaster_save_post( $post_id );
 			
 	}
 	
@@ -420,19 +420,39 @@ class fields_form_taxonomy {
 	
 	function delete_term( $term, $tt_id, $taxonomy, $deleted_term ) {
 		
+		// bail early if termmeta table exists
+		if( fieldmaster_isset_termmeta() ) return $term;
+		
+		
+		// globals
 		global $wpdb;
 		
-		$values = $wpdb->query($wpdb->prepare(
-			"DELETE FROM $wpdb->options WHERE option_name LIKE %s",
-			'%' . $taxonomy . '_' . $term . '%'
+		
+		// vars
+		$search = $taxonomy . '_' . $term . '_%';
+		$_search = '_' . $search;
+		
+		
+		// escape '_'
+		// http://stackoverflow.com/questions/2300285/how-do-i-escape-in-sql-server
+		$search = str_replace('_', '\_', $search);
+		$_search = str_replace('_', '\_', $_search);
+		
+		
+		// delete
+		$result = $wpdb->query($wpdb->prepare(
+			"DELETE FROM $wpdb->options WHERE option_name LIKE %s OR option_name LIKE %s",
+			$search,
+			$_search 
 		));
 		
 	}
 			
 }
 
-new fields_form_taxonomy();
+new fieldmaster_form_taxonomy();
 
 endif;
+
 
 ?>

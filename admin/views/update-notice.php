@@ -22,7 +22,7 @@ extract($args);
 			
 			<h2><?php _e("Database Upgrade Required",'fields'); ?></h2>
 			
-			<p><?php printf(__("Thank you for updating to %s v%s!", 'fields'), fields_get_setting('name'), fields_get_setting('version') ); ?><br /><?php _e("Before you start using the new awesome features, please update your database to the newest version.", 'fields'); ?></p>
+			<p><?php printf(__("Thank you for updating to %s v%s!", 'fields'), fieldmaster_get_setting('name'), fieldmaster_get_setting('version') ); ?><br /><?php _e("Before you start using the new awesome features, please update your database to the newest version.", 'fields'); ?></p>
 			
 			<p><a id="fields-notice-action" href="<?php echo $button_url; ?>" class="fields-button blue"><?php echo $button_text; ?></a></p>
 			

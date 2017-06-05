@@ -33,7 +33,7 @@ class fieldmaster_field_relationship extends fieldmaster_field {
 		
 		// vars
 		$this->name = 'relationship';
-		$this->label = __("Relationship",'fields');
+		$this->label = __("Relationship",'fieldmaster');
 		$this->category = 'relational';
 		$this->defaults = array(
 			'post_type'			=> array(),
@@ -45,206 +45,21 @@ class fieldmaster_field_relationship extends fieldmaster_field {
 			'return_format'		=> 'object'
 		);
 		$this->l10n = array(
-			'min'		=> __("Minimum values reached ( {min} values )",'fields'),
-			'max'		=> __("Maximum values reached ( {max} values )",'fields'),
-			'loading'	=> __('Loading','fields'),
-			'empty'		=> __('No matches found','fields'),
+			'min'		=> __("Minimum values reached ( {min} values )",'fieldmaster'),
+			'max'		=> __("Maximum values reached ( {max} values )",'fieldmaster'),
+			'loading'	=> __('Loading','fieldmaster'),
+			'empty'		=> __('No matches found','fieldmaster'),
 		);
 		
 		
 		// extra
-		add_action('wp_ajax_fields/fields/relationship/query',			array($this, 'ajax_query'));
-		add_action('wp_ajax_nopriv_fields/fields/relationship/query',	array($this, 'ajax_query'));
+		add_action('wp_ajax_fieldmaster/fields/relationship/query',			array($this, 'ajax_query'));
+		add_action('wp_ajax_nopriv_fieldmaster/fields/relationship/query',	array($this, 'ajax_query'));
 		
 		
 		// do not delete!
     	parent::__construct();
     	
-	}
-	
-	
-	/*
-	*  get_choices
-	*
-	*  This function will return an array of data formatted for use in a select2 AJAX response
-	*
-	*  @type	function
-	*  @date	15/10/2014
-	*  @since	5.0.9
-	*
-	*  @param	$options (array)
-	*  @return	(array)
-	*/
-	
-	function get_choices( $options = array() ) {
-		
-   		// defaults
-   		$options = fields_parse_args($options, array(
-			'post_id'			=> 0,
-			's'					=> '',
-			'post_type'			=> '',
-			'taxonomy'			=> '',
-			'lang'				=> false,
-			'field_key'			=> '',
-			'paged'				=> 1
-		));
-		
-		
-		// vars
-   		$r = array();
-   		$args = array();
-   		
-   		
-   		// paged
-   		$args['posts_per_page'] = 20;
-   		$args['paged'] = $options['paged'];
-   		
-		
-		// load field
-		$field = fields_get_field( $options['field_key'] );
-		
-		if( !$field ) {
-		
-			return false;
-			
-		}
-		
-		
-		// update $args
-		if( !empty($options['post_type']) ) {
-			
-			$args['post_type'] = fields_get_array( $options['post_type'] );
-		
-		} elseif( !empty($field['post_type']) ) {
-		
-			$args['post_type'] = fields_get_array( $field['post_type'] );
-			
-		} else {
-			
-			$args['post_type'] = fields_get_post_types();
-		}
-		
-		
-		// update taxonomy
-		$taxonomies = array();
-		
-		if( !empty($options['taxonomy']) ) {
-			
-			$term = fields_decode_taxonomy_term($options['taxonomy']);
-			
-			// append to $args
-			$args['tax_query'] = array(
-				
-				array(
-					'taxonomy'	=> $term['taxonomy'],
-					'field'		=> 'slug',
-					'terms'		=> $term['term'],
-				)
-				
-			);
-			
-			
-		} elseif( !empty($field['taxonomy']) ) {
-			
-			$taxonomies = fields_decode_taxonomy_terms( $field['taxonomy'] );
-			
-			// append to $args
-			$args['tax_query'] = array();
-			
-			
-			// now create the tax queries
-			foreach( $taxonomies as $taxonomy => $terms ) {
-			
-				$args['tax_query'][] = array(
-					'taxonomy'	=> $taxonomy,
-					'field'		=> 'slug',
-					'terms'		=> $terms,
-				);
-				
-			}
-			
-		}	
-		
-		
-		// search
-		if( $options['s'] ) {
-		
-			$args['s'] = $options['s'];
-			
-		}
-		
-		
-		// filters
-		$args = apply_filters('fields/fields/relationship/query', $args, $field, $options['post_id']);
-		$args = apply_filters('fields/fields/relationship/query/name=' . $field['name'], $args, $field, $options['post_id'] );
-		$args = apply_filters('fields/fields/relationship/query/key=' . $field['key'], $args, $field, $options['post_id'] );
-		
-		
-		// get posts grouped by post type
-		$groups = fields_get_grouped_posts( $args );
-		
-		if( !empty($groups) ) {
-			
-			foreach( array_keys($groups) as $group_title ) {
-				
-				// vars
-				$posts = fields_extract_var( $groups, $group_title );
-				$titles = array();
-				
-				
-				// data
-				$data = array(
-					'text'		=> $group_title,
-					'children'	=> array()
-				);
-				
-				
-				foreach( array_keys($posts) as $post_id ) {
-					
-					// override data
-					$posts[ $post_id ] = $this->get_post_title( $posts[ $post_id ], $field, $options['post_id'] );
-					
-				};
-				
-				
-				// order by search
-				if( !empty($args['s']) ) {
-					
-					$posts = fields_order_by_search( $posts, $args['s'] );
-					
-				}
-				
-				
-				// append to $data
-				foreach( array_keys($posts) as $post_id ) {
-					
-					$data['children'][] = array(
-						'id'	=> $post_id,
-						'text'	=> $posts[ $post_id ]
-					);
-					
-				}
-				
-				
-				// append to $r
-				$r[] = $data;
-				
-			}
-			
-			
-			// add as optgroup or results
-			if( count($args['post_type']) == 1 ) {
-				
-				$r = $r[0]['children'];
-				
-			}
-			
-		}
-		
-		
-		// return
-		return $r;
-			
 	}
 	
 	
@@ -264,28 +79,239 @@ class fieldmaster_field_relationship extends fieldmaster_field {
 	function ajax_query() {
 		
 		// validate
-		if( !fields_verify_ajax() ) {
+		if( !fieldmaster_verify_ajax() ) die();
 		
-			die();
+		
+		// get choices
+		$response = $this->get_ajax_query( $_POST );
+		
+		
+		// return
+		fieldmaster_send_ajax_results($response);
+			
+	}
+	
+	
+	/*
+	*  get_ajax_query
+	*
+	*  This function will return an array of data formatted for use in a select2 AJAX response
+	*
+	*  @type	function
+	*  @date	15/10/2014
+	*  @since	5.0.9
+	*
+	*  @param	$options (array)
+	*  @return	(array)
+	*/
+	
+	function get_ajax_query( $options = array() ) {
+		
+   		// defaults
+   		$options = fieldmaster_parse_args($options, array(
+			'post_id'		=> 0,
+			's'				=> '',
+			'field_key'		=> '',
+			'paged'			=> 1,
+			'post_type'		=> '',
+			'taxonomy'		=> ''
+		));
+		
+		
+		// load field
+		$field = fieldmaster_get_field( $options['field_key'] );
+		if( !$field ) return false;
+		
+		
+		// vars
+   		$results = array();
+		$args = array();
+		$s = false;
+		$is_search = false;
+		
+		
+   		// paged
+   		$args['posts_per_page'] = 20;
+   		$args['paged'] = $options['paged'];
+   		
+   		
+   		// search
+		if( $options['s'] !== '' ) {
+			
+			// strip slashes (search may be integer)
+			$s = wp_unslash( strval($options['s']) );
+			
+			
+			// update vars
+			$args['s'] = $s;
+			$is_search = true;
 			
 		}
 		
 		
-		// get posts
-		$posts = $this->get_choices( $_POST );
-		
-		
-		// validate
-		if( !$posts ) {
+		// post_type
+		if( !empty($options['post_type']) ) {
 			
-			die();
+			$args['post_type'] = fieldmaster_get_array( $options['post_type'] );
+		
+		} elseif( !empty($field['post_type']) ) {
+		
+			$args['post_type'] = fieldmaster_get_array( $field['post_type'] );
+			
+		} else {
+			
+			$args['post_type'] = fieldmaster_get_post_types();
 			
 		}
 		
 		
-		// return JSON
-		echo json_encode( $posts );
-		die();
+		// taxonomy
+		if( !empty($options['taxonomy']) ) {
+			
+			// vars
+			$term = fieldmaster_decode_taxonomy_term($options['taxonomy']);
+			
+			
+			// tax query
+			$args['tax_query'] = array();
+			
+			
+			// append
+			$args['tax_query'][] = array(
+				'taxonomy'	=> $term['taxonomy'],
+				'field'		=> 'slug',
+				'terms'		=> $term['term'],
+			);
+			
+			
+		} elseif( !empty($field['taxonomy']) ) {
+			
+			// vars
+			$terms = fieldmaster_decode_taxonomy_terms( $field['taxonomy'] );
+			
+			
+			// append to $args
+			$args['tax_query'] = array();
+			
+			
+			// now create the tax queries
+			foreach( $terms as $k => $v ) {
+			
+				$args['tax_query'][] = array(
+					'taxonomy'	=> $k,
+					'field'		=> 'slug',
+					'terms'		=> $v,
+				);
+				
+			}
+			
+		}	
+		
+		
+		// filters
+		$args = apply_filters('fieldmaster/fields/relationship/query', $args, $field, $options['post_id']);
+		$args = apply_filters('fieldmaster/fields/relationship/query/name=' . $field['name'], $args, $field, $options['post_id'] );
+		$args = apply_filters('fieldmaster/fields/relationship/query/key=' . $field['key'], $args, $field, $options['post_id'] );
+		
+		
+		// get posts grouped by post type
+		$groups = fieldmaster_get_grouped_posts( $args );
+		
+		
+		// bail early if no posts
+		if( empty($groups) ) return false;
+		
+		
+		// loop
+		foreach( array_keys($groups) as $group_title ) {
+			
+			// vars
+			$posts = fieldmaster_extract_var( $groups, $group_title );
+			
+			
+			// data
+			$data = array(
+				'text'		=> $group_title,
+				'children'	=> array()
+			);
+			
+			
+			// convert post objects to post titles
+			foreach( array_keys($posts) as $post_id ) {
+				
+				$posts[ $post_id ] = $this->get_post_title( $posts[ $post_id ], $field, $options['post_id'] );
+				
+			}
+			
+			
+			// order posts by search
+			if( $is_search && empty($args['orderby']) ) {
+				
+				$posts = fieldmaster_order_by_search( $posts, $args['s'] );
+				
+			}
+			
+			
+			// append to $data
+			foreach( array_keys($posts) as $post_id ) {
+				
+				$data['children'][] = $this->get_post_result( $post_id, $posts[ $post_id ]);
+				
+			}
+			
+			
+			// append to $results
+			$results[] = $data;
+			
+		}
+		
+		
+		// add as optgroup or results
+		if( count($args['post_type']) == 1 ) {
+			
+			$results = $results[0]['children'];
+			
+		}
+		
+		
+		// vars
+		$response = array(
+			'results'	=> $results,
+			'limit'		=> $args['posts_per_page']
+		);
+		
+		
+		// return
+		return $response;
+			
+	}
+	
+	
+	/*
+	*  get_post_result
+	*
+	*  This function will return an array containing id, text and maybe description data
+	*
+	*  @type	function
+	*  @date	7/07/2016
+	*  @since	5.4.0
+	*
+	*  @param	$id (mixed)
+	*  @param	$text (string)
+	*  @return	(array)
+	*/
+	
+	function get_post_result( $id, $text ) {
+		
+		// vars
+		$result = array(
+			'id'	=> $id,
+			'text'	=> $text
+		);
+		
+		
+		// return
+		return $result;
 			
 	}
 	
@@ -305,48 +331,42 @@ class fieldmaster_field_relationship extends fieldmaster_field {
 	*  @return	(string)
 	*/
 	
-	function get_post_title( $post, $field, $post_id = 0 ) {
+	function get_post_title( $post, $field, $post_id = 0, $is_search = 0 ) {
 		
 		// get post_id
-		if( !$post_id ) {
-			
-			$post_id = fields_get_setting('form_data/post_id', get_the_ID());
-			
-		}
+		if( !$post_id ) $post_id = fieldmaster_get_form_data('post_id');
 		
 		
 		// vars
-		$title = fields_get_post_title( $post );
+		$title = fieldmaster_get_post_title( $post, $is_search );
 		
 		
-		// elements
-		if( !empty($field['elements']) ) {
+		// featured_image
+		if( fieldmaster_in_array('featured_image', $field['elements']) ) {
 			
-			if( in_array('featured_image', $field['elements']) ) {
+			// vars
+			$class = 'thumbnail';
+			$thumbnail = fieldmaster_get_post_thumbnail($post->ID, array(17, 17));
+			
+			
+			// icon
+			if( $thumbnail['type'] == 'icon' ) {
 				
-				$image = '';
+				$class .= ' -' . $thumbnail['type'];
 				
-				if( $post->post_type == 'attachment' ) {
-					
-					$image = wp_get_attachment_image( $post->ID, array(17, 17) );
-					
-				} else {
-					
-					$image = get_the_post_thumbnail( $post->ID, array(17, 17) );
-					
-				}
-				
-				
-				$title = '<div class="thumbnail">' . $image . '</div>' . $title;
 			}
+			
+			
+			// append
+			$title = '<div class="' . $class . '">' . $thumbnail['html'] . '</div>' . $title;
 			
 		}
 		
 		
 		// filters
-		$title = apply_filters('fields/fields/relationship/result', $title, $post, $field, $post_id);
-		$title = apply_filters('fields/fields/relationship/result/name=' . $field['_name'], $title, $post, $field, $post_id);
-		$title = apply_filters('fields/fields/relationship/result/key=' . $field['key'], $title, $post, $field, $post_id);
+		$title = apply_filters('fieldmaster/fields/relationship/result', $title, $post, $field, $post_id);
+		$title = apply_filters('fieldmaster/fields/relationship/result/name=' . $field['_name'], $title, $post, $field, $post_id);
+		$title = apply_filters('fieldmaster/fields/relationship/result/key=' . $field['key'], $title, $post, $field, $post_id);
 		
 		
 		// return
@@ -373,7 +393,7 @@ class fieldmaster_field_relationship extends fieldmaster_field {
 		$values = array();
 		$atts = array(
 			'id'				=> $field['id'],
-			'class'				=> "fields-relationship {$field['class']}",
+			'class'				=> "fieldmaster-relationship {$field['class']}",
 			'data-min'			=> $field['min'],
 			'data-max'			=> $field['max'],
 			'data-s'			=> '',
@@ -392,8 +412,8 @@ class fieldmaster_field_relationship extends fieldmaster_field {
 		
 		
 		// data types
-		$field['post_type'] = fields_get_array( $field['post_type'] );
-		$field['taxonomy'] = fields_get_array( $field['taxonomy'] );
+		$field['post_type'] = fieldmaster_get_array( $field['post_type'] );
+		$field['taxonomy'] = fieldmaster_get_array( $field['taxonomy'] );
 		
 		
 		// width for select filters
@@ -463,15 +483,10 @@ class fieldmaster_field_relationship extends fieldmaster_field {
 			if( !empty($field['post_type']) ) {
 			
 				$post_types = $field['post_type'];
-	
-	
-			} else {
-				
-				$post_types = fields_get_post_types();
 				
 			}
 			
-			$post_types = fields_get_pretty_post_types($post_types);
+			$post_types = fieldmaster_get_pretty_post_types($post_types);
 			
 		}
 		
@@ -486,8 +501,8 @@ class fieldmaster_field_relationship extends fieldmaster_field {
 			if( !empty($field['taxonomy']) ) {
 				
 				// get the field's terms
-				$term_groups = fields_get_array( $field['taxonomy'] );
-				$term_groups = fields_decode_taxonomy_terms( $term_groups );
+				$term_groups = fieldmaster_get_array( $field['taxonomy'] );
+				$term_groups = fieldmaster_decode_taxonomy_terms( $term_groups );
 				
 				
 				// update taxonomies
@@ -521,13 +536,13 @@ class fieldmaster_field_relationship extends fieldmaster_field {
 				
 			} else {
 				
-				$taxonomies = fields_get_taxonomies();
+				$taxonomies = fieldmaster_get_taxonomies();
 				
 			}
 			
 			
 			// terms
-			$term_groups = fields_get_taxonomy_terms( $taxonomies );
+			$term_groups = fieldmaster_get_taxonomy_terms( $taxonomies );
 			
 			
 			// update $term_groups with specific terms
@@ -553,21 +568,21 @@ class fieldmaster_field_relationship extends fieldmaster_field {
 		// end taxonomy filter
 			
 		?>
-<div <?php fields_esc_attr_e($atts); ?>>
+<div <?php fieldmaster_esc_attr_e($atts); ?>>
 	
-	<div class="fields-hidden">
+	<div class="fieldmaster-hidden">
 		<input type="hidden" name="<?php echo $field['name']; ?>" value="" />
 	</div>
 	
 	<?php if( $width['search'] || $width['post_type'] || $width['taxonomy'] ): ?>
 	<div class="filters">
 		
-		<ul class="fields-hl">
+		<ul class="fieldmaster-hl">
 		
 			<?php if( $width['search'] ): ?>
 			<li style="width:<?php echo $width['search']; ?>%;">
 				<div class="inner">
-				<input class="filter" data-filter="s" placeholder="<?php _e("Search...",'fields'); ?>" type="text" />
+				<input class="filter" data-filter="s" placeholder="<?php _e("Search...",'fieldmaster'); ?>" type="text" />
 				</div>
 			</li>
 			<?php endif; ?>
@@ -576,7 +591,7 @@ class fieldmaster_field_relationship extends fieldmaster_field {
 			<li style="width:<?php echo $width['post_type']; ?>%;">
 				<div class="inner">
 				<select class="filter" data-filter="post_type">
-					<option value=""><?php _e('Select post type','fields'); ?></option>
+					<option value=""><?php _e('Select post type','fieldmaster'); ?></option>
 					<?php foreach( $post_types as $k => $v ): ?>
 						<option value="<?php echo $k; ?>"><?php echo $v; ?></option>
 					<?php endforeach; ?>
@@ -589,7 +604,7 @@ class fieldmaster_field_relationship extends fieldmaster_field {
 			<li style="width:<?php echo $width['taxonomy']; ?>%;">
 				<div class="inner">
 				<select class="filter" data-filter="taxonomy">
-					<option value=""><?php _e('Select taxonomy','fields'); ?></option>
+					<option value=""><?php _e('Select taxonomy','fieldmaster'); ?></option>
 					<?php foreach( $term_groups as $k_opt => $v_opt ): ?>
 						<optgroup label="<?php echo $k_opt; ?>">
 							<?php foreach( $v_opt as $k => $v ): ?>
@@ -606,22 +621,22 @@ class fieldmaster_field_relationship extends fieldmaster_field {
 	</div>
 	<?php endif; ?>
 	
-	<div class="selection fields-cf">
+	<div class="selection fieldmaster-cf">
 	
 		<div class="choices">
 		
-			<ul class="fields-bl list"></ul>
+			<ul class="fieldmaster-bl list"></ul>
 			
 		</div>
 		
 		<div class="values">
 		
-			<ul class="fields-bl list">
+			<ul class="fieldmaster-bl list">
 			
 				<?php if( !empty($field['value']) ): 
 					
 					// get posts
-					$posts = fields_get_posts(array(
+					$posts = fieldmaster_get_posts(array(
 						'post__in' => $field['value'],
 						'post_type'	=> $field['post_type']
 					));
@@ -633,14 +648,14 @@ class fieldmaster_field_relationship extends fieldmaster_field {
 						foreach( array_keys($posts) as $i ):
 							
 							// vars
-							$post = fields_extract_var( $posts, $i );
+							$post = fieldmaster_extract_var( $posts, $i );
 							
 							
 							?><li>
 								<input type="hidden" name="<?php echo $field['name']; ?>[]" value="<?php echo $post->ID; ?>" />
-								<span data-id="<?php echo $post->ID; ?>" class="fields-rel-item">
+								<span data-id="<?php echo $post->ID; ?>" class="fieldmaster-rel-item">
 									<?php echo $this->get_post_title( $post, $field ); ?>
-									<a href="#" class="fields-icon fields-icon-minus small dark" data-name="remove_item"></a>
+									<a href="#" class="fieldmaster-icon -minus small dark" data-name="remove_item"></a>
 								</span>
 							</li><?php
 							
@@ -685,62 +700,62 @@ class fieldmaster_field_relationship extends fieldmaster_field {
 		
 		
 		// post_type
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Filter by Post Type','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Filter by Post Type','fieldmaster'),
 			'instructions'	=> '',
 			'type'			=> 'select',
 			'name'			=> 'post_type',
-			'choices'		=> fields_get_pretty_post_types(),
+			'choices'		=> fieldmaster_get_pretty_post_types(),
 			'multiple'		=> 1,
 			'ui'			=> 1,
 			'allow_null'	=> 1,
-			'placeholder'	=> __("All post types",'fields'),
+			'placeholder'	=> __("All post types",'fieldmaster'),
 		));
 		
 		
 		// taxonomy
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Filter by Taxonomy','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Filter by Taxonomy','fieldmaster'),
 			'instructions'	=> '',
 			'type'			=> 'select',
 			'name'			=> 'taxonomy',
-			'choices'		=> fields_get_taxonomy_terms(),
+			'choices'		=> fieldmaster_get_taxonomy_terms(),
 			'multiple'		=> 1,
 			'ui'			=> 1,
 			'allow_null'	=> 1,
-			'placeholder'	=> __("All taxonomies",'fields'),
+			'placeholder'	=> __("All taxonomies",'fieldmaster'),
 		));
 		
 		
 		// filters
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Filters','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Filters','fieldmaster'),
 			'instructions'	=> '',
 			'type'			=> 'checkbox',
 			'name'			=> 'filters',
 			'choices'		=> array(
-				'search'		=> __("Search",'fields'),
-				'post_type'		=> __("Post Type",'fields'),
-				'taxonomy'		=> __("Taxonomy",'fields'),
+				'search'		=> __("Search",'fieldmaster'),
+				'post_type'		=> __("Post Type",'fieldmaster'),
+				'taxonomy'		=> __("Taxonomy",'fieldmaster'),
 			),
 		));
 		
 		
 		// filters
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Elements','fields'),
-			'instructions'	=> __('Selected elements will be displayed in each result','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Elements','fieldmaster'),
+			'instructions'	=> __('Selected elements will be displayed in each result','fieldmaster'),
 			'type'			=> 'checkbox',
 			'name'			=> 'elements',
 			'choices'		=> array(
-				'featured_image'	=> __("Featured Image",'fields'),
+				'featured_image'	=> __("Featured Image",'fieldmaster'),
 			),
 		));
 		
 		
 		// min
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Minimum posts','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Minimum posts','fieldmaster'),
 			'instructions'	=> '',
 			'type'			=> 'number',
 			'name'			=> 'min',
@@ -748,8 +763,8 @@ class fieldmaster_field_relationship extends fieldmaster_field {
 		
 		
 		// max
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Maximum posts','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Maximum posts','fieldmaster'),
 			'instructions'	=> '',
 			'type'			=> 'number',
 			'name'			=> 'max',
@@ -759,14 +774,14 @@ class fieldmaster_field_relationship extends fieldmaster_field {
 		
 		
 		// return_format
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Return Format','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Return Format','fieldmaster'),
 			'instructions'	=> '',
 			'type'			=> 'radio',
 			'name'			=> 'return_format',
 			'choices'		=> array(
-				'object'		=> __("Post Object",'fields'),
-				'id'			=> __("Post ID",'fields'),
+				'object'		=> __("Post Object",'fieldmaster'),
+				'id'			=> __("Post ID",'fieldmaster'),
 			),
 			'layout'	=>	'horizontal',
 		));
@@ -802,7 +817,7 @@ class fieldmaster_field_relationship extends fieldmaster_field {
 		
 		
 		// force value to array
-		$value = fields_get_array( $value );
+		$value = fieldmaster_get_array( $value );
 		
 		
 		// convert to int
@@ -813,7 +828,7 @@ class fieldmaster_field_relationship extends fieldmaster_field {
 		if( $field['return_format'] == 'object' ) {
 			
 			// get posts
-			$value = fields_get_posts(array(
+			$value = fieldmaster_get_posts(array(
 				'post__in' => $value,
 				'post_type'	=> $field['post_type']
 			));
@@ -853,7 +868,7 @@ class fieldmaster_field_relationship extends fieldmaster_field {
 		// min
 		if( count($value) < $field['min'] ) {
 		
-			$valid = _n( '%s requires at least %s selection', '%s requires at least %s selections', $field['min'], 'fields' );
+			$valid = _n( '%s requires at least %s selection', '%s requires at least %s selections', $field['min'], 'fieldmaster' );
 			$valid = sprintf( $valid, $field['label'], $field['min'] );
 			
 		}
@@ -892,7 +907,7 @@ class fieldmaster_field_relationship extends fieldmaster_field {
 		
 		
 		// force value to array
-		$value = fields_get_array( $value );
+		$value = fieldmaster_get_array( $value );
 		
 					
 		// array
@@ -919,8 +934,10 @@ class fieldmaster_field_relationship extends fieldmaster_field {
 		
 }
 
-new fieldmaster_field_relationship();
 
-endif;
+// initialize
+fieldmaster_register_field_type( new fieldmaster_field_relationship() );
+
+endif; // class_exists check
 
 ?>

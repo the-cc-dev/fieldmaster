@@ -5,14 +5,14 @@
 *
 *  All the logic for adding fields to users
 *
-*  @class 		fields_form_user
+*  @class 		fieldmaster_form_user
 *  @package		FieldMaster
 *  @subpackage	Forms
 */
 
-if( ! class_exists('fields_form_user') ) :
+if( ! class_exists('fieldmaster_form_user') ) :
 
-class fields_form_user {
+class fieldmaster_form_user {
 	
 	var $form = '#createuser';
 	
@@ -105,14 +105,14 @@ class fields_form_user {
 			return;
 			
 		}
-
 		
-		// load fields scripts
-		fields_enqueue_scripts();
+		
+		// load fieldmaster scripts
+		fieldmaster_enqueue_scripts();
 		
 		
 		// actions
-		add_action('fields/input/admin_footer',					array($this, 'admin_footer'), 10, 1);
+		add_action('fieldmaster/input/admin_footer', array($this, 'admin_footer'), 10, 1);
 		
 	}
 	
@@ -215,11 +215,7 @@ class fields_form_user {
 		
 		
 		// show title
-		if( $user_form == 'register' ) {
-			
-			$show_title = false;
-		
-		}
+		//if( $user_form === 'register' ) $show_title = false;
 		
 		
 		// args
@@ -228,50 +224,52 @@ class fields_form_user {
 			'user_form'	=> $user_form
 		);
 		
-		if( $user_id ) {
-		
-			$args['user_id'] = $user_id;
-			
-		}
+		if( $user_id ) $args['user_id'] = $user_id;
 		
 		
 		// get field groups
-		$field_groups = fields_get_field_groups( $args );
+		$field_groups = fieldmaster_get_field_groups( $args );
 		
 		
-		// render
-		if( !empty($field_groups) ) {
+		// bail early if no field groups
+		if( empty($field_groups) ) return;
+		
+		
+		// form data
+		fieldmaster_form_data(array( 
+			'post_id'	=> $post_id, 
+			'nonce'		=> 'user' 
+		));
+		
+		
+		// loop
+		foreach( $field_groups as $field_group ) {
 			
-			fields_form_data(array( 
-				'post_id'	=> $post_id, 
-				'nonce'		=> 'user' 
-			));
+			// vars
+			$fields = fieldmaster_get_fields( $field_group );
 			
-			foreach( $field_groups as $field_group ) {
+			
+			// title
+			if( $show_title && $field_group['style'] === 'default' ) {
 				
-				$fields = fields_get_fields( $field_group );
-
-				?>
-				<?php if( $show_title && $field_group['style'] == 'default' ): ?>
-					<h3><?php echo $field_group['title']; ?></h3>
-				<?php endif; ?>
-				
-				<?php if( $el == 'tr' ): ?>
-					<table class="form-table">
-						<tbody>
-				<?php endif; ?>
-				
-					<?php fields_render_fields( $post_id, $fields, $el, 'field' ); ?>
-				
-				<?php if( $el == 'tr' ): ?>
-						</tbody>
-					</table>
-				<?php endif; ?>
-				<?php 
-				
+				echo '<h2>' . $field_group['title'] . '</h2>';
+					
 			}
-		
+			
+			
+			// table start
+			if( $el == 'tr' ) echo '<table class="form-table"><tbody>';
+			
+			
+			// render fields
+			fieldmaster_render_fields( $post_id, $fields, $el, $field_group['instruction_placement'] );
+			
+			
+			// table end
+			if( $el == 'tr' ) echo '</tbody></table>';
+			
 		}
+		
 		
 	}
 	
@@ -297,34 +295,47 @@ class fields_form_user {
 <?php if( is_admin() ): ?>
 
 /* override for user css */
-.fields-field input[type="text"],
-.fields-field input[type="password"],
-.fields-field input[type="number"],
-.fields-field input[type="search"],
-.fields-field input[type="email"],
-.fields-field input[type="url"],
-.fields-field select {
-    width: 25em;
+.fm-field input[type="text"],
+.fm-field input[type="password"],
+.fm-field input[type="number"],
+.fm-field input[type="search"],
+.fm-field input[type="email"],
+.fm-field input[type="url"],
+.fm-field select {
+    max-width: 25em;
 }
 
-.fields-field textarea {
-	width: 500px;
+.fm-field textarea {
+	max-width: 500px;
 }
 
 
 /* allow sub fields to display correctly */
-.fields-field .fields-field input[type="text"],
-.fields-field .fields-field input[type="password"],
-.fields-field .fields-field input[type="number"],
-.fields-field .fields-field input[type="search"],
-.fields-field .fields-field input[type="email"],
-.fields-field .fields-field input[type="url"],
-.fields-field .fields-field textarea,
-.fields-field .fields-field select {
-    width: 100%;
+.fm-field .fm-field input[type="text"],
+.fm-field .fm-field input[type="password"],
+.fm-field .fm-field input[type="number"],
+.fm-field .fm-field input[type="search"],
+.fm-field .fm-field input[type="email"],
+.fm-field .fm-field input[type="url"],
+.fm-field .fm-field textarea,
+.fm-field .fm-field select {
+    max-width: none;
 }
 
 <?php else: ?>
+
+#registerform h2 {
+	margin: 1em 0;
+}
+
+#registerform .fm-field .fieldmaster-label {
+	margin-bottom: 0;
+}
+
+#registerform .fm-field .fieldmaster-label label {
+	font-weight: normal;
+	font-size: 14px;
+}
 
 #registerform p.submit {
 	text-align: right;
@@ -343,8 +354,8 @@ class fields_form_user {
 	// create spinner if not exists (may exist in future WP versions)
 	if( !$spinner.exists() ) {
 		
-		// create spinner (use .fields-spinner becuase .spinner CSS not included on register page)
-		$spinner = $('<span class="fields-spinner"></span>');
+		// create spinner (use .fieldmaster-spinner becuase .spinner CSS not included on register page)
+		$spinner = $('<span class="fieldmaster-spinner"></span>');
 		
 		
 		// append
@@ -375,7 +386,7 @@ class fields_form_user {
 	function save_user( $user_id ) {
 		
 		// verify and remove nonce
-		if( ! fields_verify_nonce('user') ) {
+		if( ! fieldmaster_verify_nonce('user') ) {
 			
 			return $user_id;
 		
@@ -383,9 +394,9 @@ class fields_form_user {
 		
 	    
 	    // save data
-	    if( fields_validate_save_post(true) ) {
+	    if( fieldmaster_validate_save_post(true) ) {
 	    	
-			fields_save_post( "user_{$user_id}" );
+			fieldmaster_save_post( "user_{$user_id}" );
 		
 		}
 			
@@ -393,7 +404,7 @@ class fields_form_user {
 			
 }
 
-new fields_form_user();
+new fieldmaster_form_user();
 
 endif;
 

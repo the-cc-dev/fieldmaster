@@ -5,14 +5,14 @@
 *
 *  All the logic for adding fields to attachments
 *
-*  @class 		fields_form_attachment
+*  @class 		fieldmaster_form_attachment
 *  @package		FieldMaster
 *  @subpackage	Forms
 */
 
-if( ! class_exists('fields_form_attachment') ) :
+if( ! class_exists('fieldmaster_form_attachment') ) :
 
-class fields_form_attachment {
+class fieldmaster_form_attachment {
 	
 	
 	/*
@@ -110,8 +110,8 @@ class fields_form_attachment {
 		}
 		
 		
-		// load fields scripts
-		fields_enqueue_scripts();
+		// load fieldmaster scripts
+		fieldmaster_enqueue_scripts();
 				
 	}
 	
@@ -119,7 +119,7 @@ class fields_form_attachment {
 	/*
 	*  admin_footer
 	*
-	*  This function will add fields_form_data to the WP 4.0 attachment grid
+	*  This function will add fieldmaster_form_data to the WP 4.0 attachment grid
 	*
 	*  @type	action (admin_footer)
 	*  @date	11/09/2014
@@ -132,11 +132,21 @@ class fields_form_attachment {
 	function admin_footer() {
 		
 		// render post data
-		fields_form_data(array( 
+		fieldmaster_form_data(array( 
 			'post_id'	=> 0, 
 			'nonce'		=> 'attachment',
 			'ajax'		=> 1
 		));
+		
+		
+?>
+<script type="text/javascript">
+	
+// WP saves attachment on any input change, so unload is not needed
+fieldmaster.unload.active = 0;
+
+</script>
+<?php
 		
 	}
 	
@@ -157,32 +167,26 @@ class fields_form_attachment {
 	function edit_attachment( $form_fields, $post ) {
 		
 		// vars
-		$el = 'tr';
+		$is_page = $this->validate_page();
 		$post_id = $post->ID;
+		$el = 'tr';
 		$args = array(
-			'attachment' => 'All'
+			'attachment' => $post_id
 		);
 		
 		
-		// $el
-		if( $this->validate_page() ) {
-			
-			//$el = 'div';
-			
-		}
-		
 		// get field groups
-		$field_groups = fields_get_field_groups( $args );
+		$field_groups = fieldmaster_get_field_groups( $args );
 		
 		
 		// render
 		if( !empty($field_groups) ) {
 			
-			// get fields_form_data
+			// get fieldmaster_form_data
 			ob_start();
 			
 			
-			fields_form_data(array( 
+			fieldmaster_form_data(array( 
 				'post_id'	=> $post_id, 
 				'nonce'		=> 'attachment',
 			));
@@ -191,6 +195,7 @@ class fields_form_attachment {
 			if( $this->validate_page() ) {
 				
 				echo '<style type="text/css">
+					
 					.compat-attachment-fields,
 					.compat-attachment-fields > tbody,
 					.compat-attachment-fields > tbody > tr,
@@ -198,46 +203,60 @@ class fields_form_attachment {
 					.compat-attachment-fields > tbody > tr > td {
 						display: block;
 					}
-					tr.fields-field {
-						display: block;
-						margin: 0 0 13px;
+					
+					.compat-attachment-fields > tbody > tr.fm-field {
+						margin: 0 0 15px;
 					}
-					tr.fields-field td.fields-label {
-						display: block;
+					
+					.compat-attachment-fields > tbody > tr.fm-field > td.fieldmaster-label {
 						margin: 0;
 					}
-					tr.fields-field td.fields-input {
-						display: block;
+					
+					.compat-attachment-fields > tbody > tr.fm-field > td.fieldmaster-label label {
+						margin: 0;
+						padding: 0;
+					}
+					
+					.compat-attachment-fields > tbody > tr.fm-field > td.fieldmaster-label p {
+						margin: 0 0 3px !important;
+					}
+					
+					.compat-attachment-fields > tbody > tr.fm-field > td.fieldmaster-input {
 						margin: 0;
 					}
+					
 				</style>';
 				
 			}
 			
 			
-			// $el
-			//if( $el == 'tr' ) {
-				
-				echo '</td></tr>';
-				
-			//}
+			// open
+			echo '</td></tr>';
 			
 			
+			// loop
 			foreach( $field_groups as $field_group ) {
 				
-				$fields = fields_get_fields( $field_group );
+				// load fields
+				$fields = fieldmaster_get_fields( $field_group );
 				
-				fields_render_fields( $post_id, $fields, $el, 'field' );
+				
+				// override instruction placement for modal
+				if( !$is_page ) {
+					
+					$field_group['instruction_placement'] = 'field';
+				}
+				
+				
+				// render			
+				fieldmaster_render_fields( $post_id, $fields, $el, $field_group['instruction_placement'] );
 				
 			}
 			
 			
-			// $el
-			//if( $el == 'tr' ) {
-				
-				echo '<tr class="compat-field-fields-blank"><td>';
-				
-			//}
+			// close
+			echo '<tr class="compat-field-fieldmaster-blank"><td>';
+			
 			
 			
 			$html = ob_get_contents();
@@ -246,7 +265,7 @@ class fields_form_attachment {
 			ob_end_clean();
 			
 			
-			$form_fields[ 'fields-form-data' ] = array(
+			$form_fields[ 'fieldmaster-form-data' ] = array(
 	       		'label' => '',
 	   			'input' => 'html',
 	   			'html' => $html
@@ -277,7 +296,7 @@ class fields_form_attachment {
 	function save_attachment( $post, $attachment ) {
 		
 		// bail early if not valid nonce
-		if( ! fields_verify_nonce('attachment') ) {
+		if( ! fieldmaster_verify_nonce('attachment') ) {
 		
 			return $post;
 			
@@ -285,9 +304,9 @@ class fields_form_attachment {
 		
 	    
 	    // validate and save
-	    if( fields_validate_save_post(true) ) {
+	    if( fieldmaster_validate_save_post(true) ) {
 	    
-			fields_save_post( $post['ID'] );
+			fieldmaster_save_post( $post['ID'] );
 			
 		}
 		
@@ -300,7 +319,7 @@ class fields_form_attachment {
 			
 }
 
-new fields_form_attachment();
+new fieldmaster_form_attachment();
 
 endif;
 

@@ -1,86 +1,85 @@
-<?php 
+<?php
 
 // active
-fields_render_field_wrap(array(
-	'label'			=> __('Status','fields'),
+fieldmaster_render_field_wrap(array(
+	'label'			=> __('Active','fieldmaster'),
 	'instructions'	=> '',
-	'type'			=> 'select',
+	'type'			=> 'true_false',
 	'name'			=> 'active',
 	'prefix'		=> 'fieldmaster_field_group',
 	'value'			=> $field_group['active'],
-	'choices' 		=> array(
-		1				=>	__("Active",'fields'),
-		0				=>	__("Disabled",'fields'),
-	)
+	'ui'			=> 1,
+	//'ui_on_text'	=> __('Active', 'fieldmaster'),
+	//'ui_off_text'	=> __('Inactive', 'fieldmaster'),
 ));
 
 
 // style
-fields_render_field_wrap(array(
-	'label'			=> __('Style','fields'),
+fieldmaster_render_field_wrap(array(
+	'label'			=> __('Style','fieldmaster'),
 	'instructions'	=> '',
 	'type'			=> 'select',
 	'name'			=> 'style',
 	'prefix'		=> 'fieldmaster_field_group',
 	'value'			=> $field_group['style'],
 	'choices' 		=> array(
-		'default'			=>	__("Standard (WP metabox)",'fields'),
-		'seamless'			=>	__("Seamless (no metabox)",'fields'),
+		'default'			=>	__("Standard (WP metabox)",'fieldmaster'),
+		'seamless'			=>	__("Seamless (no metabox)",'fieldmaster'),
 	)
 ));
 
 
 // position
-fields_render_field_wrap(array(
-	'label'			=> __('Position','fields'),
+fieldmaster_render_field_wrap(array(
+	'label'			=> __('Position','fieldmaster'),
 	'instructions'	=> '',
 	'type'			=> 'select',
 	'name'			=> 'position',
 	'prefix'		=> 'fieldmaster_field_group',
 	'value'			=> $field_group['position'],
 	'choices' 		=> array(
-		'fields_after_title'	=> __("High (after title)",'fields'),
-		'normal'			=> __("Normal (after content)",'fields'),
-		'side' 				=> __("Side",'fields'),
+		'fieldmaster_after_title'	=> __("High (after title)",'fieldmaster'),
+		'normal'			=> __("Normal (after content)",'fieldmaster'),
+		'side' 				=> __("Side",'fieldmaster'),
 	),
 	'default_value'	=> 'normal'
 ));
 
 
 // label_placement
-fields_render_field_wrap(array(
-	'label'			=> __('Label placement','fields'),
+fieldmaster_render_field_wrap(array(
+	'label'			=> __('Label placement','fieldmaster'),
 	'instructions'	=> '',
 	'type'			=> 'select',
 	'name'			=> 'label_placement',
 	'prefix'		=> 'fieldmaster_field_group',
 	'value'			=> $field_group['label_placement'],
 	'choices' 		=> array(
-		'top'			=>	__("Top aligned",'fields'),
-		'left'			=>	__("Left Aligned",'fields'),
+		'top'			=>	__("Top aligned",'fieldmaster'),
+		'left'			=>	__("Left Aligned",'fieldmaster'),
 	)
 ));
 
 
 // instruction_placement
-fields_render_field_wrap(array(
-	'label'			=> __('Instruction placement','fields'),
+fieldmaster_render_field_wrap(array(
+	'label'			=> __('Instruction placement','fieldmaster'),
 	'instructions'	=> '',
 	'type'			=> 'select',
 	'name'			=> 'instruction_placement',
 	'prefix'		=> 'fieldmaster_field_group',
 	'value'			=> $field_group['instruction_placement'],
 	'choices' 		=> array(
-		'label'		=>	__("Below labels",'fields'),
-		'field'		=>	__("Below fields",'fields'),
+		'label'		=>	__("Below labels",'fieldmaster'),
+		'field'		=>	__("Below fields",'fieldmaster'),
 	)
 ));
 
 
 // menu_order
-fields_render_field_wrap(array(
-	'label'			=> __('Order No.','fields'),
-	'instructions'	=> __('Field groups with a lower order will appear first','fields'),
+fieldmaster_render_field_wrap(array(
+	'label'			=> __('Order No.','fieldmaster'),
+	'instructions'	=> __('Field groups with a lower order will appear first','fieldmaster'),
 	'type'			=> 'number',
 	'name'			=> 'menu_order',
 	'prefix'		=> 'fieldmaster_field_group',
@@ -89,9 +88,9 @@ fields_render_field_wrap(array(
 
 
 // description
-fields_render_field_wrap(array(
-	'label'			=> __('Description','fields'),
-	'instructions'	=> __('Shown in field group list','fields'),
+fieldmaster_render_field_wrap(array(
+	'label'			=> __('Description','fieldmaster'),
+	'instructions'	=> __('Shown in field group list','fieldmaster'),
 	'type'			=> 'text',
 	'name'			=> 'description',
 	'prefix'		=> 'fieldmaster_field_group',
@@ -100,46 +99,46 @@ fields_render_field_wrap(array(
 
 
 // hide on screen
-fields_render_field_wrap(array(
-	'label'			=> __('Hide on screen','fields'),
-	'instructions'	=> __('<b>Select</b> items to <b>hide</b> them from the edit screen.','fields') . '<br /><br />' . __("If multiple field groups appear on an edit screen, the first field group's options will be used (the one with the lowest order number)",'fields'),
+fieldmaster_render_field_wrap(array(
+	'label'			=> __('Hide on screen','fieldmaster'),
+	'instructions'	=> __('<b>Select</b> items to <b>hide</b> them from the edit screen.','fieldmaster') . '<br /><br />' . __("If multiple field groups appear on an edit screen, the first field group's options will be used (the one with the lowest order number)",'fieldmaster'),
 	'type'			=> 'checkbox',
 	'name'			=> 'hide_on_screen',
 	'prefix'		=> 'fieldmaster_field_group',
 	'value'			=> $field_group['hide_on_screen'],
 	'toggle'		=> true,
 	'choices' => array(
-		'permalink'			=>	__("Permalink", 'fields'),
-		'the_content'		=>	__("Content Editor",'fields'),
-		'excerpt'			=>	__("Excerpt", 'fields'),
-		'custom_fields'		=>	__("FieldMaster", 'fields'),
-		'discussion'		=>	__("Discussion", 'fields'),
-		'comments'			=>	__("Comments", 'fields'),
-		'revisions'			=>	__("Revisions", 'fields'),
-		'slug'				=>	__("Slug", 'fields'),
-		'author'			=>	__("Author", 'fields'),
-		'format'			=>	__("Format", 'fields'),
-		'page_attributes'	=>	__("Page Attributes", 'fields'),
-		'featured_image'	=>	__("Featured Image", 'fields'),
-		'categories'		=>	__("Categories", 'fields'),
-		'tags'				=>	__("Tags", 'fields'),
-		'send-trackbacks'	=>	__("Send Trackbacks", 'fields'),
+		'permalink'			=>	__("Permalink", 'fieldmaster'),
+		'the_content'		=>	__("Content Editor",'fieldmaster'),
+		'excerpt'			=>	__("Excerpt", 'fieldmaster'),
+		'custom_fields'		=>	__("FieldMaster", 'fieldmaster'),
+		'discussion'		=>	__("Discussion", 'fieldmaster'),
+		'comments'			=>	__("Comments", 'fieldmaster'),
+		'revisions'			=>	__("Revisions", 'fieldmaster'),
+		'slug'				=>	__("Slug", 'fieldmaster'),
+		'author'			=>	__("Author", 'fieldmaster'),
+		'format'			=>	__("Format", 'fieldmaster'),
+		'page_attributes'	=>	__("Page Attributes", 'fieldmaster'),
+		'featured_image'	=>	__("Featured Image", 'fieldmaster'),
+		'categories'		=>	__("Categories", 'fieldmaster'),
+		'tags'				=>	__("Tags", 'fieldmaster'),
+		'send-trackbacks'	=>	__("Send Trackbacks", 'fieldmaster'),
 	)
 ));
 
 
 // 3rd party settings
-do_action('fields/render_field_group_settings', $field_group);
+do_action('fieldmaster/render_field_group_settings', $field_group);
 		
 ?>
-<div class="fields-hidden">
+<div class="fieldmaster-hidden">
 	<input type="hidden" name="fieldmaster_field_group[key]" value="<?php echo $field_group['key']; ?>" />
 </div>
 <script type="text/javascript">
-if( typeof fields !== 'undefined' ) {
+if( typeof fieldmaster !== 'undefined' ) {
 		
-	fields.postbox.render({
-		'id': 'fields-field-group-options',
+	fieldmaster.postbox.render({
+		'id': 'fm-field-group-options',
 		'label': 'left'
 	});	
 

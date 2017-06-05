@@ -1,10 +1,14 @@
 <?php
 
-class fields_pro_options_page {
-	
+if( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
+
+if( ! class_exists('fieldmaster_admin_options_page') ) :
+
+class fieldmaster_admin_options_page {
+
 	var $page;
-	
-	
+
+
 	/*
 	*  __construct
 	*
@@ -17,22 +21,23 @@ class fields_pro_options_page {
 	*  @param	n/a
 	*  @return	n/a
 	*/
-	
+
 	function __construct() {
-		
+
 		// actions
 		add_action('admin_menu', array($this,'admin_menu'), 99, 0);
-		
-		
+
+
 		// filters
-		add_filter( 'fields/location/rule_types', 					array($this, 'rule_types'), 10, 1 );
-		add_filter( 'fields/location/rule_values/options_page',	array($this, 'rule_values'), 10, 1 );
-		add_filter( 'fields/location/rule_match/options_page',		array($this, 'rule_match'), 10, 3 );
+		add_filter( 'fieldmaster/location/rule_types', 					array($this, 'rule_types'), 10, 1 );
+		add_filter( 'fieldmaster/location/rule_values/options_page',	array($this, 'rule_values'), 10, 1 );
+		add_filter( 'fieldmaster/location/rule_match/options_page',		array($this, 'rule_match'), 10, 3 );
+
 	}
-		
-	
+
+
 	/*
-	*  fields_location_rules_types
+	*  fieldmaster_location_rules_types
 	*
 	*  this function will add "Options Page" to the FieldMaster location rules
 	*
@@ -42,17 +47,18 @@ class fields_pro_options_page {
 	*  @param	{array}	$choices
 	*  @return	{array}	$choices
 	*/
-	
+
 	function rule_types( $choices ) {
-		
-	    $choices[ __("Forms",'fields') ]['options_page'] = __("Options Page",'fields');
-		
+
+	    $choices[ __("Forms",'fieldmaster') ]['options_page'] = __("Options Page",'fieldmaster');
+
 	    return $choices;
+
 	}
-	
-	
+
+
 	/*
-	*  fields_location_rules_values_options_page
+	*  fieldmaster_location_rules_values_options_page
 	*
 	*  this function will populate the available pages in the FieldMaster location rules
 	*
@@ -62,34 +68,34 @@ class fields_pro_options_page {
 	*  @param	{array}	$choices
 	*  @return	{array}	$choices
 	*/
-	
+
 	function rule_values( $choices ) {
-		
+
 		// vars
-		$pages = fields_get_options_pages();
-		
-		
+		$pages = fieldmaster_get_options_pages();
+
+
 		// populate
 		if( !empty($pages) ) {
-		
+
 			foreach( $pages as $page ) {
-			
+
 				$choices[ $page['menu_slug'] ] = $page['menu_title'];
-				
+
 			}
-			
+
 		} else {
-			
-			$choices[''] = __('No options pages exist', 'fields');
-			
+
+			$choices[''] = __('No options pages exist', 'fieldmaster');
+
 		}
-		
-		
+
+
 		// return
 	    return $choices;
 	}
-	
-	
+
+
 	/*
 	*  rule_match
 	*
@@ -99,51 +105,51 @@ class fields_pro_options_page {
 	*  @date	24/02/2014
 	*  @since	5.0.0
 	*
-	*  @param	$post_id (int)
-	*  @return	$post_id (int)
+	*  @param
+	*  @return
 	*/
-	
+
 	function rule_match( $match, $rule, $options ) {
-		
+
 		// vars
 		$options_page = false;
-		
-		
+
+
 		// $options does not contain a default for "options_page"
 		if( isset($options['options_page']) ) {
-		
+
 			$options_page = $options['options_page'];
-			
+
 		}
-		
+
 
 		if( !$options_page ) {
-		
+
 			global $plugin_page;
-			
+
 			$options_page = $plugin_page;
-			
+
 		}
-		
-		
+
+
 		// match
 		if( $rule['operator'] == "==" ) {
-		
+
         	$match = ( $options_page === $rule['value'] );
-        	
+
         } elseif( $rule['operator'] == "!=" ) {
-        
+
         	$match = ( $options_page !== $rule['value'] );
-        	
+
         }
-        
-        
+
+
         // return
         return $match;
-        
+
     }
-    
-	
+
+
 	/*
 	*  admin_menu
 	*
@@ -153,124 +159,127 @@ class fields_pro_options_page {
 	*  @date	24/02/2014
 	*  @since	5.0.0
 	*
-	*  @param	$post_id (int)
-	*  @return	$post_id (int)
+	*  @param
+	*  @return
 	*/
-	
+
 	function admin_menu() {
-		
+
 		// vars
-		$pages = fields_get_options_pages();
-		
-		
+		$pages = fieldmaster_get_options_pages();
+
+
 		// create pages
 		if( !empty($pages) ) {
-		
+
 			foreach( $pages as $page ) {
-				
+
 				// vars
 				$slug = '';
-				
-				
+
+
 				if( empty($page['parent_slug']) ) {
-					
+
 					// add page
 					$slug = add_menu_page( $page['page_title'], $page['menu_title'], $page['capability'], $page['menu_slug'], array($this, 'html'), $page['icon_url'], $page['position'] );
-					
+
 				} else {
-					
+
 					// add page
 					$slug = add_submenu_page( $page['parent_slug'], $page['page_title'], $page['menu_title'], $page['capability'], $page['menu_slug'], array($this, 'html') );
-					
+
 				}
-				
-				
+
+
 				// actions
 				add_action("load-{$slug}", array($this,'admin_load'));
 			}
-			
+
 		}
-		
+
 	}
-	
-	
+
+
 	/*
 	*  load
 	*
-	*  @description: 
+	*  @description:
 	*  @since: 3.6
 	*  @created: 2/02/13
 	*/
-	
+
 	function admin_load() {
-		
+
 		// globals
 		global $plugin_page;
-		
-		
+
+
 		// vars
-		$this->page = fields_get_options_page($plugin_page);
-		    	
-		    	
+		$this->page = fieldmaster_get_options_page($plugin_page);
+
+
+		// get post_id (allow lang modification)
+		$this->page['post_id'] = fieldmaster_get_valid_post_id($this->page['post_id']);
+
+
 		// verify and remove nonce
-		if( fields_verify_nonce('options') ) {
-		
+		if( fieldmaster_verify_nonce('options') ) {
+
 			// save data
-		    if( fields_validate_save_post(true) ) {
-		    	
-		    	// get post_id (allow lang modification)
-		    	$post_id = fields_get_valid_post_id($this->page['post_id']);
-		    	
-		    	
+		    if( fieldmaster_validate_save_post(true) ) {
+
 		    	// set autoload
-		    	fields_update_setting('autoload', $this->page['autoload']);
-		    	
-		    	
+		    	fieldmaster_update_setting('autoload', $this->page['autoload']);
+
+
 		    	// save
-				fields_save_post( $post_id );
-				
-				
+				fieldmaster_save_post( $this->page['post_id'] );
+
+
 				// redirect
-				wp_redirect( admin_url("admin.php?page={$plugin_page}&message=1") );
+				wp_redirect( add_query_arg(array('message' => '1')) );
 				exit;
-				
+
 			}
-			
+
 		}
-		
-		
+
+
+		// load fieldmaster scripts
+		fieldmaster_enqueue_scripts();
+
+
 		// actions
-		add_action('admin_enqueue_scripts', 	array($this,'admin_enqueue_scripts'));
-	
+		add_action( 'fieldmaster/input/admin_enqueue_scripts',		array($this,'admin_enqueue_scripts') );
+		add_action( 'fieldmaster/input/admin_head',					array($this,'admin_head') );
+
+
+		// add columns support
+		add_screen_option('layout_columns', array('max'	=> 2, 'default' => 2));
+
 	}
-	
-	
+
+
 	/*
 	*  admin_enqueue_scripts
 	*
-	*  This action is run after post query but before any admin script / head actions. 
-	*  It is a good place to register all actions.
+	*  This function will enqueue the 'post.js' script which adds support for 'Screen Options' column toggle
 	*
-	*  @type	action (admin_enqueue_scripts)
-	*  @date	26/01/13
-	*  @since	3.6.0
+	*  @type	function
+	*  @date	23/03/2016
+	*  @since	5.3.2
 	*
-	*  @param	N/A
-	*  @return	N/A
+	*  @param
+	*  @return
 	*/
-	
+
 	function admin_enqueue_scripts() {
-		
-		// load fields scripts
-		fields_enqueue_scripts();
-		
-		
-		// actions
-		add_action( 'fields/input/admin_head',		array($this,'admin_head') );
-		
+
+		wp_enqueue_script('post');
+
 	}
-	
-	
+
+
 	/*
 	*  admin_head
 	*
@@ -283,67 +292,104 @@ class fields_pro_options_page {
 	*  @param	n/a
 	*  @return	n/a
 	*/
-	
+
 	function admin_head() {
-		
+
 		// get field groups
-		$field_groups = fields_get_field_groups(array(
+		$field_groups = fieldmaster_get_field_groups(array(
 			'options_page' => $this->page['menu_slug']
 		));
-		
-		
+
+
 		// notices
 		if( !empty($_GET['message']) && $_GET['message'] == '1' ) {
-		
-			fields_add_admin_notice( __("Options Updated",'fields') );
-			
+
+			fieldmaster_add_admin_notice( __("Options Updated",'fieldmaster') );
+
 		}
-		
+
+
+		// add submit div
+		add_meta_box('submitdiv', __('Publish','fieldmaster'), array($this, 'postbox_submitdiv'), 'fieldmaster_options_page', 'side', 'high');
+
+
+
 		if( empty($field_groups) ) {
-		
-			fields_add_admin_notice(__("No Custom Field Groups found for this options page",'fields') . '. <a href="' . admin_url() . 'post-new.php?post_type=fields-field-group">' . __("Create a Custom Field Group",'fields') . '</a>', 'error');
-		
+
+			fieldmaster_add_admin_notice( sprintf( __('No Custom Field Groups found for this options page. <a href="%s">Create a Custom Field Group</a>', 'fieldmaster'), admin_url() . 'post-new.php?post_type=fm-field-group' ), 'error');
+
 		} else {
-			
+
 			foreach( $field_groups as $i => $field_group ) {
-			
+
 				// vars
-				$id = "fields-{$field_group['key']}";
+				$id = "fieldmaster-{$field_group['key']}";
 				$title = $field_group['title'];
 				$context = $field_group['position'];
 				$priority = 'high';
 				$args = array( 'field_group' => $field_group );
-				
-				
+
+
 				// tweaks to vars
-				if( $context == 'fields_after_title' ) {
-					
+				if( $context == 'fieldmaster_after_title' ) {
+
 					$context = 'normal';
-					
+
 				} elseif( $context == 'side' ) {
-				
+
 					$priority = 'core';
-					
+
 				}
-				
-				
+
+
 				// filter for 3rd party customization
-				$priority = apply_filters('fields/input/meta_box_priority', $priority, $field_group);
-				
-				
+				$priority = apply_filters('fieldmaster/input/meta_box_priority', $priority, $field_group);
+
+
 				// add meta box
-				add_meta_box( $id, $title, array($this, 'render_meta_box'), 'fields_options_page', $context, $priority, $args );
-				
-				
+				add_meta_box( $id, $title, array($this, 'postbox_fieldmaster'), 'fieldmaster_options_page', $context, $priority, $args );
+
+
 			}
 			// foreach
-			
+
 		}
 		// if
-		
+
 	}
-	
-	
+
+
+	/*
+	*  postbox_submitdiv
+	*
+	*  This function will render the submitdiv metabox
+	*
+	*  @type	function
+	*  @date	23/03/2016
+	*  @since	5.3.2
+	*
+	*  @param	n/a
+	*  @return	n/a
+	*/
+
+	function postbox_submitdiv( $post, $args ) {
+
+		?>
+		<div id="major-publishing-actions">
+
+			<div id="publishing-action">
+				<span class="spinner"></span>
+				<input type="submit" accesskey="p" value="<?php echo $this->page['update_button']; ?>" class="button button-primary button-large" id="publish" name="publish">
+			</div>
+
+			<div class="clear"></div>
+
+		</div>
+		<?php
+
+	}
+
+
 	/*
 	*  render_meta_box
 	*
@@ -353,17 +399,18 @@ class fields_pro_options_page {
 	*  @date	24/02/2014
 	*  @since	5.0.0
 	*
-	*  @param	$post_id (int)
-	*  @return	$post_id (int)
+	*  @param	$post (object)
+	*  @param	$args (array)
+	*  @return	n/a
 	*/
-	
-	function render_meta_box( $post, $args ) {
-		
+
+	function postbox_fieldmaster( $post, $args ) {
+
 		// extract args
 		extract( $args ); // all variables from the add_meta_box function
 		extract( $args ); // all variables from the args argument
-		
-		
+
+
 		// vars
 		$o = array(
 			'id'			=> $id,
@@ -371,70 +418,62 @@ class fields_pro_options_page {
 			'style'			=> $field_group['style'],
 			'label'			=> $field_group['label_placement'],
 			'edit_url'		=> '',
-			'edit_title'	=> __('Edit field group', 'fields'),
+			'edit_title'	=> __('Edit field group', 'fieldmaster'),
 			'visibility'	=> true
 		);
-		
-		
-		// get post_id (allow lang modification)
-		$post_id = fields_get_valid_post_id($this->page['post_id']);
-		
-		
-		
+
+
 		// edit_url
-		if( $field_group['ID'] && fields_current_user_can_admin() ) {
-			
+		if( $field_group['ID'] && fieldmaster_current_user_can_admin() ) {
+
 			$o['edit_url'] = admin_url('post.php?post=' . $field_group['ID'] . '&action=edit');
-				
+
 		}
-		
-		
+
+
 		// load fields
-		$fields = fields_get_fields( $field_group );
-		
-		
+		$fields = fieldmaster_get_fields( $field_group );
+
+
 		// render
-		fields_render_fields( $post_id, $fields, 'div', $field_group['instruction_placement'] );
-		
-		
-		
+		fieldmaster_render_fields( $this->page['post_id'], $fields, 'div', $field_group['instruction_placement'] );
+
+
+
 ?>
 <script type="text/javascript">
-if( typeof fields !== 'undefined' ) {
-		
-	fields.postbox.render(<?php echo json_encode($o); ?>);	
+if( typeof fieldmaster !== 'undefined' ) {
+
+	fieldmaster.postbox.render(<?php echo json_encode($o); ?>);
 
 }
 </script>
 <?php
-		
+
 	}
-	
-	
+
+
 	/*
 	*  html
 	*
-	*  @description: 
+	*  @description:
 	*  @since: 2.0.4
 	*  @created: 5/12/12
 	*/
-	
+
 	function html() {
-		
-		// vars
-		$view = array(
-			'page'	=> $this->page
-		);
-		
-		
+
 		// load view
-		fields_pro_get_view('options-page', $view);
-				
+		fieldmaster_get_view(dirname(__FILE__) . '/views/options-page.php', $this->page);
+
 	}
-	
-	
+
+
 }
 
-new fields_pro_options_page();
+// initialize
+new fieldmaster_admin_options_page();
+
+endif; // class_exists check
 
 ?>

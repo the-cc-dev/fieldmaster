@@ -33,7 +33,7 @@ class fieldmaster_field_email extends fieldmaster_field {
 		
 		// vars
 		$this->name = 'email';
-		$this->label = __("Email",'fields');
+		$this->label = __("Email",'fieldmaster');
 		$this->defaults = array(
 			'default_value'	=> '',
 			'placeholder'	=> '',
@@ -62,15 +62,17 @@ class fieldmaster_field_email extends fieldmaster_field {
 	function render_field( $field ) {
 		
 		// vars
+		$atts = array();
 		$o = array( 'type', 'id', 'class', 'name', 'value', 'placeholder' );
+		$s = array( 'readonly', 'disabled' );
 		$e = '';
 		
 		
 		// prepend
 		if( $field['prepend'] !== "" ) {
 		
-			$field['class'] .= ' fields-is-prepended';
-			$e .= '<div class="fields-input-prepend">' . $field['prepend'] . '</div>';
+			$field['class'] .= ' fieldmaster-is-prepended';
+			$e .= '<div class="fieldmaster-input-prepend">' . $field['prepend'] . '</div>';
 			
 		}
 		
@@ -78,14 +80,13 @@ class fieldmaster_field_email extends fieldmaster_field {
 		// append
 		if( $field['append'] !== "" ) {
 		
-			$field['class'] .= ' fields-is-appended';
-			$e .= '<div class="fields-input-append">' . $field['append'] . '</div>';
+			$field['class'] .= ' fieldmaster-is-appended';
+			$e .= '<div class="fieldmaster-input-append">' . $field['append'] . '</div>';
 			
 		}
 		
 		
-		// populate atts
-		$atts = array();
+		// append atts
 		foreach( $o as $k ) {
 		
 			$atts[ $k ] = $field[ $k ];	
@@ -93,9 +94,17 @@ class fieldmaster_field_email extends fieldmaster_field {
 		}
 		
 		
+		// append special atts
+		foreach( $s as $k ) {
+		
+			if( !empty($field[ $k ]) ) $atts[ $k ] = $k;
+			
+		}
+		
+		
 		// render
-		$e .= '<div class="fields-input-wrap">';
-		$e .= '<input ' . fields_esc_attr( $atts ) . ' />';
+		$e .= '<div class="fieldmaster-input-wrap">';
+		$e .= '<input ' . fieldmaster_esc_attr( $atts ) . ' />';
 		$e .= '</div>';
 		
 		
@@ -120,36 +129,36 @@ class fieldmaster_field_email extends fieldmaster_field {
 	function render_field_settings( $field ) {
 		
 		// default_value
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Default Value','fields'),
-			'instructions'	=> __('Appears when creating a new post','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Default Value','fieldmaster'),
+			'instructions'	=> __('Appears when creating a new post','fieldmaster'),
 			'type'			=> 'text',
 			'name'			=> 'default_value',
 		));
 		
 		
 		// placeholder
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Placeholder Text','fields'),
-			'instructions'	=> __('Appears within the input','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Placeholder Text','fieldmaster'),
+			'instructions'	=> __('Appears within the input','fieldmaster'),
 			'type'			=> 'text',
 			'name'			=> 'placeholder',
 		));
 		
 		
 		// prepend
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Prepend','fields'),
-			'instructions'	=> __('Appears before the input','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Prepend','fieldmaster'),
+			'instructions'	=> __('Appears before the input','fieldmaster'),
 			'type'			=> 'text',
 			'name'			=> 'prepend',
 		));
 		
 		
 		// append
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Append','fields'),
-			'instructions'	=> __('Appears after the input','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Append','fieldmaster'),
+			'instructions'	=> __('Appears after the input','fieldmaster'),
 			'type'			=> 'text',
 			'name'			=> 'append',
 		));
@@ -158,8 +167,10 @@ class fieldmaster_field_email extends fieldmaster_field {
 	
 }
 
-new fieldmaster_field_email();
 
-endif;
+// initialize
+fieldmaster_register_field_type( new fieldmaster_field_email() );
+
+endif; // class_exists check
 
 ?>

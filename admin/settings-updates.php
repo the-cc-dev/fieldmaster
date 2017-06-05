@@ -1,8 +1,13 @@
 <?php
 
-class fields_settings_updates {
+if( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
 
-	var $view;
+if( ! class_exists('fieldmaster_settings_updates') ) :
+
+class fieldmaster_settings_updates {
+
+	// vars
+	var $view = array();
 
 
 	/*
@@ -27,6 +32,106 @@ class fields_settings_updates {
 
 
 	/*
+	*  show_notice
+	*
+	*  This function will show a notice (only once)
+	*
+	*  @type	function
+	*  @date	11/4/17
+	*  @since	5.5.10
+	*
+	*  @param	$message (string)
+	*  @param	class (string)
+	*  @return	n/a
+	*/
+
+	function show_notice( $message = '', $class = '' ){
+
+		// only show one notice
+		if( fieldmaster_has_done('fieldmaster_settings_updates_notice') ) return false;
+
+
+		// add notice
+    	fieldmaster_add_admin_notice( $message, $class );
+
+	}
+
+
+	/*
+	*  show_error
+	*
+	*  This function will show an error notice (only once)
+	*
+	*  @type	function
+	*  @date	11/4/17
+	*  @since	5.5.10
+	*
+	*  @param	$error (mixed)
+	*  @return	n/a
+	*/
+
+	function show_error( $error = '' ){
+
+	    // error object
+    	if( is_wp_error($error) ) {
+
+        	$error = __('<b>Error</b>. Could not connect to update server', 'fieldmaster') . ' <span class="description">(' . $error->get_error_message() . ')</span>';
+
+    	}
+
+
+    	// add notice
+    	$this->show_notice( $error, 'error' );
+
+	}
+
+
+	/*
+	*  get_changelog_section
+	*
+	*  This function will find and return a section of content from a plugin changelog
+	*
+	*  @type	function
+	*  @date	11/4/17
+	*  @since	5.5.10
+	*
+	*  @param	$changelog (string)
+	*  @param	$h4 (string)
+	*  @return	(string)
+	*/
+
+	function get_changelog_section( $changelog, $h4 = '' ) {
+
+		// explode
+		$bits = array_filter( explode('<h4>', $changelog) );
+
+
+		// loop
+		foreach( $bits as $bit ) {
+
+			// vars
+			$bit = explode('</h4>', $bit);
+			$version = trim($bit[0]);
+	    	$text = trim($bit[1]);
+
+
+			// is relevant?
+	    	if( version_compare($h4, $version, '==') ) {
+
+	        	return '<h4>' . $version . '</h4>' . $text;
+
+	    	}
+
+		}
+
+
+		// update
+		return '';
+
+	}
+
+
+	/*
 	*  admin_menu
 	*
 	*  This function will add the FieldMaster menu item to the WP admin
@@ -41,32 +146,24 @@ class fields_settings_updates {
 
 	function admin_menu() {
 
-		// vars
-		$basename = fields_get_setting('basename');
-
-
 		// bail early if no show_admin
-		if( !fields_get_setting('show_admin') ) {
-
-			return;
-
-		}
+		if( !fieldmaster_get_setting('show_admin') ) return;
 
 
 		// bail early if no show_updates
-		if( !fields_get_setting('show_updates') ) {
-
-			return;
-
-		}
+		if( !fieldmaster_get_setting('show_updates') ) return;
 
 
 		// bail early if not a plugin (included in theme)
-		if( !is_plugin_active($basename) ) {
+		if( !fieldmaster_is_plugin_active() ) return;
 
-			return;
 
-		}
+		// add page
+		$page = add_submenu_page('edit.php?post_type=fm-field-group', __('Updates','fieldmaster'), __('Updates','fieldmaster'), fieldmaster_get_setting('capability'), 'fieldmaster-settings-updates', array($this,'html') );
+
+
+		// actions
+		add_action('load-' . $page, array($this,'load'));
 
 	}
 
@@ -86,23 +183,25 @@ class fields_settings_updates {
 
 	function load() {
 
-		// $_POST
-		if( fields_verify_nonce('activate_pro_licence') ) {
+		// activate
+		if( fieldmaster_verify_nonce('activate_pro_licence') ) {
 
 			$this->activate_pro_licence();
 
-		} elseif( fields_verify_nonce('deactivate_pro_licence') ) {
+		// deactivate
+		} elseif( fieldmaster_verify_nonce('deactivate_pro_licence') ) {
 
 			$this->deactivate_pro_licence();
 
 		}
 
 
-		// view
+		// vars
+		$license = fieldmaster_pro_get_license_key();
 		$this->view = array(
-			'license'			=> '',
-			'active'			=> 0,
-			'current_version'	=> fields_get_setting('version'),
+			'license'			=> $license,
+			'active'			=> $license ? 1 : 0,
+			'current_version'	=> fieldmaster_get_setting('version'),
 			'remote_version'	=> '',
 			'update_available'	=> false,
 			'changelog'			=> '',
@@ -110,26 +209,16 @@ class fields_settings_updates {
 		);
 
 
-		// license
-		if( fields_pro_is_license_active() ) {
+		// vars
+		$info = fieldmaster_updates()->get_plugin_info('pro');
 
-			$this->view['license'] = fields_pro_get_license();
-			$this->view['active'] = 1;
+
+		// error
+		if( is_wp_error($info) ) {
+
+			return $this->show_error( $info );
 
 		}
-
-
-		// vars
-		$info = fields_pro_get_remote_info();
-
-
-		// validate
-        if( empty($info) ) {
-
-        	fields_add_admin_notice( __('<b>Error</b>. Could not connect to update server', 'fields'), 'error');
-        	return;
-
-        }
 
 
         // add info to view
@@ -137,86 +226,28 @@ class fields_settings_updates {
 
 
         // add changelog if the remote version is '>' than the current version
-		if( fields_pro_is_update_available() )
-        {
+        $version = fieldmaster_get_setting('version');
+
+
+	    // check if remote version is higher than current version
+		if( version_compare($info['version'], $version, '>') ) {
+
+			// update view
         	$this->view['update_available'] = true;
+        	$this->view['changelog'] = $this->get_changelog_section($info['changelog'], $info['version']);
+        	$this->view['upgrade_notice'] = $this->get_changelog_section($info['upgrade_notice'], $info['version']);
 
 
-        	// changelog
-        	$changelogs = explode('<h4>', $info['changelog']);
+        	// refresh transient
+        	// - avoids new version not available in plugin update list
+        	// - only request if license is active
+        	if( $license ) {
 
-        	foreach( $changelogs as $changelog )
-        	{
-        		// validate (first segment is always empty due to explode)
-	        	if( empty($changelog) )
-	        	{
-		        	continue;
-	        	}
-
-
-        	 	// explode
-	        	$changelog = explode('</h4>', $changelog);
-	        	$changelog_version = trim($changelog[0]);
-	        	$changelog_text = trim($changelog[1]);
-	        	$changelog_text = str_replace('<ul>', '<ul class="ul-disc">', $changelog_text);
-
-	        	if( version_compare($this->view['remote_version'], $changelog_version, '==') )
-	        	{
-		        	$this->view['changelog'] = $changelog_text;
-		        	break;
-	        	}
+	        	fieldmaster_updates()->refresh_plugins_transient();
 
         	}
 
-
-        	// upgrade_notice
-        	$upgrade_notices = explode('<h4>', $info['upgrade_notice']);
-
-        	foreach( $upgrade_notices as $upgrade_notice )
-        	{
-        		// validate (first segment is always empty due to explode)
-	        	if( empty($upgrade_notice) )
-	        	{
-		        	continue;
-	        	}
-
-
-        	 	// explode
-	        	$upgrade_notice = explode('</h4>', $upgrade_notice);
-	        	$upgrade_version = trim($upgrade_notice[0]);
-	        	$upgrade_text = trim($upgrade_notice[1]);
-	        	$upgrade_text = str_replace('<ul>', '<ul class="ul-disc">', $upgrade_text);
-
-	        	if( version_compare($this->view['current_version'], $upgrade_version, '<') )
-	        	{
-		        	$this->view['upgrade_notice'] = $upgrade_text;
-		        	break;
-	        	}
-
-        	 }
         }
-
-
-	}
-
-
-	/*
-	*  html
-	*
-	*  description
-	*
-	*  @type	function
-	*  @date	7/01/2014
-	*  @since	5.0.0
-	*
-	*  @param	$post_id (int)
-	*  @return	$post_id (int)
-	*/
-
-	function html() {
-
-		// load view
-		fields_pro_get_view('settings-updates', $this->view);
 
 	}
 
@@ -237,10 +268,9 @@ class fields_settings_updates {
 	function activate_pro_licence() {
 
 		// connect
-		$args = array(
-			'_nonce'		=> wp_create_nonce('activate_pro_licence'),
-			'fields_license'	=> fields_extract_var($_POST, 'fields_pro_licence'),
-			'fields_version'	=> fields_get_setting('version'),
+		$post = array(
+			'fieldmaster_license'	=> $_POST['fieldmaster_pro_licence'],
+			'fieldmaster_version'	=> fieldmaster_get_setting('version'),
 			'wp_name'		=> get_bloginfo('name'),
 			'wp_url'		=> home_url(),
 			'wp_version'	=> get_bloginfo('version'),
@@ -250,39 +280,31 @@ class fields_settings_updates {
 
 
 		// connect
-		$response = fields_pro_get_remote_response( 'activate-license', $args );
+		$response = fieldmaster_updates()->request('v2/plugins/activate?p=pro', $post);
 
 
-		// validate
-		if( empty($response) ) {
+		// error
+		if( is_wp_error($response) ) {
 
-			fields_add_admin_notice( __('<b>Connection Error</b>. Sorry, please try again', 'fields'), 'error');
-			return;
+			return $this->show_error( $response );
 
 		}
 
 
-		// vars
-		$response = json_decode($response, true);
-		$class = '';
-
-
-		// action
+		// success
 		if( $response['status'] == 1 ) {
 
-			fields_pro_update_license($response['license']);
+			// update license
+			fieldmaster_pro_update_license( $response['license'] );
+
+
+			// show message
+			$this->show_notice( $response['message'] );
 
 		} else {
 
-			$class = 'error';
-
-		}
-
-
-		// show message
-		if( $response['message'] ) {
-
-			fields_add_admin_notice($response['message'], $class);
+			// show error
+			$this->show_error( $response['message'] );
 
 		}
 
@@ -304,62 +326,70 @@ class fields_settings_updates {
 
 	function deactivate_pro_licence() {
 
-		// validate
-		if( !fields_pro_is_license_active() ) {
+		// vars
+		$license = fieldmaster_pro_get_license_key();
 
-			return;
 
-		}
+		// bail early if no key
+		if( !$license ) return;
 
 
 		// connect
-		$args = array(
-			'_nonce'		=> wp_create_nonce('deactivate_pro_licence'),
-			'fields_license'	=> fields_pro_get_license(),
+		$post = array(
+			'fieldmaster_license'	=> $license,
 			'wp_url'		=> home_url(),
 		);
 
 
 		// connect
-		$response = fields_pro_get_remote_response( 'deactivate-license', $args );
+		$response = fieldmaster_updates()->request('v2/plugins/deactivate?p=pro', $post);
 
 
-		// validate
-		if( empty($response) ) {
+		// error
+		if( is_wp_error($response) ) {
 
-			fields_add_admin_notice(__('<b>Connection Error</b>. Sorry, please try again', 'fields'), 'error');
-			return;
+			return $this->show_error( $response );
 
 		}
 
 
-		// vars
-		$response = json_decode($response, true);
-		$class = '';
+		// clear DB
+		fieldmaster_pro_update_license('');
 
 
-		// allways clear DB
-		fields_pro_update_license('');
-
-
-		// action
+		// success
 		if( $response['status'] == 1 ) {
 
-
+			// show message
+			$this->show_notice( $response['message'] );
 
 		} else {
 
-			$class = 'error';
+			// show error
+			$this->show_error( $response['message'] );
 
 		}
 
+	}
 
-		// show message
-		if( $response['message'] ) {
 
-			fields_add_admin_notice($response['message'], $class);
+	/*
+	*  html
+	*
+	*  description
+	*
+	*  @type	function
+	*  @date	7/01/2014
+	*  @since	5.0.0
+	*
+	*  @param	$post_id (int)
+	*  @return	$post_id (int)
+	*/
 
-		}
+	function html() {
+
+		// load view
+		fieldmaster_get_view( dirname(__FILE__) . '/views/settings-updates.php', $this->view);
 
 	}
 
@@ -367,6 +397,8 @@ class fields_settings_updates {
 
 
 // initialize
-new fields_settings_updates();
+new fieldmaster_settings_updates();
+
+endif; // class_exists check
 
 ?>

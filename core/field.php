@@ -1,12 +1,16 @@
 <?php
 
+if( ! class_exists('fieldmaster_field') ) :
+
 class fieldmaster_field {
 	
-	var $name,
-		$title,
-		$category,
-		$defaults,
-		$l10n;
+	// vars
+	var $name = '',
+		$label = '',
+		$category = 'basic',
+		$defaults = array(),
+		$l10n = array(),
+		$public = true;
 	
 	
 	/*
@@ -24,40 +28,42 @@ class fieldmaster_field {
 	
 	function __construct() {
 		
-		// register field
-		add_filter("fields/get_field_types",								array($this, 'get_field_types'), 10, 1);
-		add_filter("fields/get_valid_field/type={$this->name}",			array($this, 'get_valid_field'), 10, 1);
+		// info
+		$this->add_filter('fieldmaster/get_field_types',					array($this, 'get_field_types'), 10, 1);
 		
 		
 		// value
-		$this->add_filter("fields/load_value/type={$this->name}",			array($this, 'load_value'), 10, 3);
-		$this->add_filter("fields/update_value/type={$this->name}",		array($this, 'update_value'), 10, 3);
-		$this->add_filter("fields/format_value/type={$this->name}",		array($this, 'format_value'), 10, 3);
-		$this->add_filter("fields/validate_value/type={$this->name}",		array($this, 'validate_value'), 10, 4);
-		$this->add_action("fields/delete_value/type={$this->name}",		array($this, 'delete_value'), 10, 3);
+		$this->add_field_filter('fieldmaster/load_value',					array($this, 'load_value'), 10, 3);
+		$this->add_field_filter('fieldmaster/update_value',					array($this, 'update_value'), 10, 3);
+		$this->add_field_filter('fieldmaster/format_value',					array($this, 'format_value'), 10, 3);
+		$this->add_field_filter('fieldmaster/validate_value',				array($this, 'validate_value'), 10, 4);
+		$this->add_field_action('fieldmaster/delete_value',					array($this, 'delete_value'), 10, 3);
 		
 		
 		// field
-		$this->add_filter("fields/load_field/type={$this->name}",				array($this, 'load_field'), 10, 1);
-		$this->add_filter("fields/update_field/type={$this->name}",			array($this, 'update_field'), 10, 1);
-		$this->add_filter("fields/duplicate_field/type={$this->name}",			array($this, 'duplicate_field'), 10, 1);
-		$this->add_action("fields/delete_field/type={$this->name}",			array($this, 'delete_field'), 10, 1);
-		$this->add_action("fields/render_field/type={$this->name}",			array($this, 'render_field'), 10, 1);
-		$this->add_action("fields/render_field_settings/type={$this->name}",	array($this, 'render_field_settings'), 10, 1);
-		$this->add_action("fields/prepare_field/type={$this->name}",			array($this, 'prepare_field'), 10, 1);
+		$this->add_field_filter('fieldmaster/validate_field',				array($this, 'validate_field'), 10, 1);
+		$this->add_field_filter('fieldmaster/load_field',					array($this, 'load_field'), 10, 1);
+		$this->add_field_filter('fieldmaster/update_field',					array($this, 'update_field'), 10, 1);
+		$this->add_field_filter('fieldmaster/duplicate_field',				array($this, 'duplicate_field'), 10, 1);
+		$this->add_field_action('fieldmaster/delete_field',					array($this, 'delete_field'), 10, 1);
+		$this->add_field_action('fieldmaster/render_field',					array($this, 'render_field'), 9, 1);
+		$this->add_field_action('fieldmaster/render_field_settings',		array($this, 'render_field_settings'), 9, 1);
+		$this->add_field_filter('fieldmaster/prepare_field',				array($this, 'prepare_field'), 10, 1);
+		$this->add_field_filter('fieldmaster/translate_field',				array($this, 'translate_field'), 10, 1);
 		
 		
 		// input actions
-		$this->add_action("fields/input/admin_enqueue_scripts",			array($this, 'input_admin_enqueue_scripts'), 10, 0);
-		$this->add_action("fields/input/admin_head",						array($this, 'input_admin_head'), 10, 0);
-		$this->add_action("fields/input/form_data",						array($this, 'input_form_data'), 10, 1);
-		$this->add_filter("fields/input/admin_l10n",						array($this, 'input_admin_l10n'), 10, 1);
-		$this->add_action("fields/input/admin_footer",						array($this, 'input_admin_footer'), 10, 1);
+		$this->add_action("fieldmaster/input/admin_enqueue_scripts",		array($this, 'input_admin_enqueue_scripts'), 10, 0);
+		$this->add_action("fieldmaster/input/admin_head",					array($this, 'input_admin_head'), 10, 0);
+		$this->add_action("fieldmaster/input/form_data",					array($this, 'input_form_data'), 10, 1);
+		$this->add_filter("fieldmaster/input/admin_l10n",					array($this, 'input_admin_l10n'), 10, 1);
+		$this->add_action("fieldmaster/input/admin_footer",					array($this, 'input_admin_footer'), 10, 1);
 		
 		
 		// field group actions
-		$this->add_action("fields/field_group/admin_enqueue_scripts", 		array($this, 'field_group_admin_enqueue_scripts'), 10, 0);
-		$this->add_action("fields/field_group/admin_head",					array($this, 'field_group_admin_head'), 10, 0);
+		$this->add_action("fieldmaster/field_group/admin_enqueue_scripts", 	array($this, 'field_group_admin_enqueue_scripts'), 10, 0);
+		$this->add_action("fieldmaster/field_group/admin_head",				array($this, 'field_group_admin_head'), 10, 0);
+		$this->add_action("fieldmaster/field_group/admin_footer",			array($this, 'field_group_admin_footer'), 10, 0);
 		
 	}
 	
@@ -78,12 +84,43 @@ class fieldmaster_field {
 	*  @return	n/a
 	*/
 	
-	function add_filter($tag, $function_to_add, $priority = 10, $accepted_args = 1) {
+	function add_filter( $tag = '', $function_to_add = '', $priority = 10, $accepted_args = 1 ) {
 		
-		if( is_callable($function_to_add) )
-		{
-			add_filter($tag, $function_to_add, $priority, $accepted_args);
-		}
+		// bail early if no callable
+		if( !is_callable($function_to_add) ) return;
+		
+		
+		// add
+		add_filter( $tag, $function_to_add, $priority, $accepted_args );
+		
+	}
+	
+	
+	/*
+	*  add_field_filter
+	*
+	*  This function will add a field type specific filter
+	*
+	*  @type	function
+	*  @date	29/09/2016
+	*  @since	5.4.0
+	*
+	*  @param	$tag (string)
+	*  @param	$function_to_add (string)
+	*  @param	$priority (int)
+	*  @param	$accepted_args (int)
+	*  @return	n/a
+	*/
+	
+	function add_field_filter( $tag = '', $function_to_add = '', $priority = 10, $accepted_args = 1 ) {
+		
+		// append
+		$tag .= '/type=' . $this->name;
+		
+		
+		// add
+		$this->add_filter( $tag, $function_to_add, $priority, $accepted_args );
+		
 	}
 	
 	
@@ -103,12 +140,43 @@ class fieldmaster_field {
 	*  @return	n/a
 	*/
 	
-	function add_action($tag, $function_to_add, $priority = 10, $accepted_args = 1) {
+	function add_action( $tag = '', $function_to_add = '', $priority = 10, $accepted_args = 1 ) {
 		
-		if( is_callable($function_to_add) )
-		{
-			add_action($tag, $function_to_add, $priority, $accepted_args);
-		}
+		// bail early if no callable
+		if( !is_callable($function_to_add) ) return;
+		
+		
+		// add
+		add_action( $tag, $function_to_add, $priority, $accepted_args );
+		
+	}
+	
+	
+	/*
+	*  add_field_action
+	*
+	*  This function will add a field type specific filter
+	*
+	*  @type	function
+	*  @date	29/09/2016
+	*  @since	5.4.0
+	*
+	*  @param	$tag (string)
+	*  @param	$function_to_add (string)
+	*  @param	$priority (int)
+	*  @param	$accepted_args (int)
+	*  @return	n/a
+	*/
+	
+	function add_field_action( $tag = '', $function_to_add = '', $priority = 10, $accepted_args = 1 ) {
+		
+		// append
+		$tag .= '/type=' . $this->name;
+		
+		
+		// add
+		$this->add_action( $tag, $function_to_add, $priority, $accepted_args );
+		
 	}
 	
 	
@@ -125,51 +193,29 @@ class fieldmaster_field {
 	*  @return	$fields
 	*/
 	
-	function get_field_types( $fields ) {
+	function get_field_types( $types ) {
 		
-		$l10n = array(
-			'basic'			=> __('Basic', 'fields'),
-			'content'		=> __('Content', 'fields'),
-			'choice'		=> __('Choice', 'fields'),
-			'relational'	=> __('Relational', 'fields'),
-			'jquery'		=> __('jQuery', 'fields'),
-			'layout'		=> __('Layout', 'fields'),
+		// append
+		$types[ $this->name ] = array(
+			'label'		=> $this->label,
+			'name'		=> $this->name,
+			'category'	=> $this->category,
+			'public'	=> $this->public
 		);
 		
 		
-		// defaults
-		if( !$this->category )
-		{
-			$this->category = 'basic';
-		}
+		// return
+		return $types;
 		
-		
-		// cat
-		if( isset($l10n[ $this->category ]) )
-		{
-			$cat = $l10n[ $this->category ];
-		}
-		else
-		{
-			$cat = $this->category;
-		}
-		
-		
-		// add to array
-		$fields[ $cat ][ $this->name ] = $this->label;
-		
-		
-		// return array
-		return $fields;
 	}
 	
 	
 	/*
-	*  get_valid_field
+	*  validate_field
 	*
 	*  This function will append default settings to a field
 	*
-	*  @type	filter ("fields/get_valid_field/type={$this->name}")
+	*  @type	filter ("fieldmaster/validate_field/type={$this->name}")
 	*  @since	3.6
 	*  @date	23/01/13
 	*
@@ -177,20 +223,23 @@ class fieldmaster_field {
 	*  @return	$field (array)
 	*/
 	
-	function get_valid_field( $field ) {
+	function validate_field( $field ) {
 		
-		if( !empty($this->defaults) )
-		{
-			foreach( $this->defaults as $k => $v )
-			{
-				if( !isset($field[ $k ]) )
-				{
-					$field[ $k ] = $v;
-				}
-			}
+		// bail early if no defaults
+		if( !is_array($this->defaults) ) return $field;
+		
+		
+		// merge in defaults but keep order of $field keys
+		foreach( $this->defaults as $k => $v ) {
+			
+			if( !isset($field[ $k ]) ) $field[ $k ] = $v;
+			
 		}
 		
+		
+		// return
 		return $field;
+		
 	}
 	
 	
@@ -199,7 +248,7 @@ class fieldmaster_field {
 	*
 	*  This function will append l10n text translations to an array which is later passed to JS
 	*
-	*  @type	filter ("fields/input/admin_l10n")
+	*  @type	filter ("fieldmaster/input/admin_l10n")
 	*  @since	3.6
 	*  @date	23/01/13
 	*
@@ -209,14 +258,173 @@ class fieldmaster_field {
 	
 	function input_admin_l10n( $l10n ) {
 		
-		if( !empty($this->l10n) )
-		{
-			$l10n[ $this->name ] = $this->l10n;
-		}
+		// bail early if no defaults
+		if( empty($this->l10n) ) return $l10n;
 		
+		
+		// append
+		$l10n[ $this->name ] = $this->l10n;
+		
+		
+		// return		
 		return $l10n;
+		
 	}
 	
+}
+
+endif; // class_exists check
+
+
+/*
+*  fieldmaster_get_field_types
+*
+*  This function will return an array containing info about all field types
+*
+*  @type	function
+*  @date	22/10/16
+*  @since	5.5.0
+*
+*  @param	n/a
+*  @return	(array)
+*/
+
+function fieldmaster_get_field_types() {
+	
+	// vars
+	$cache_key = 'fieldmaster_get_field_types';
+	
+	
+	// check cache
+	if( fieldmaster_isset_cache($cache_key) ) return fieldmaster_get_cache($cache_key);
+	
+		
+	// get types
+	$types = apply_filters('fieldmaster/get_field_types', array());
+	
+	
+	// update cache
+	fieldmaster_set_cache($cache_key, $types);
+	
+	
+	// return
+	return $types;
+	
+}
+
+
+/*
+*  fieldmaster_get_grouped_field_types
+*
+*  This function will return a grouped array of fields types (category => name)
+*
+*  @type	function
+*  @date	1/10/13
+*  @since	5.0.0
+*
+*  @param	n/a
+*  @return	(array)
+*/
+
+function fieldmaster_get_grouped_field_types() {
+	
+	// vars
+	$types = array();
+	$l10n = array(
+		'basic'			=> __('Basic', 'fieldmaster'),
+		'content'		=> __('Content', 'fieldmaster'),
+		'choice'		=> __('Choice', 'fieldmaster'),
+		'relational'	=> __('Relational', 'fieldmaster'),
+		'jquery'		=> __('jQuery', 'fieldmaster'),
+		'layout'		=> __('Layout', 'fieldmaster'),
+	);
+	
+	
+	// get field type information
+	$types_info = fieldmaster_get_field_types();
+	
+	
+	// loop
+	foreach( $types_info as $info ) {
+		
+		// bail early if not public
+		if( !$info['public'] ) continue;
+		
+		
+		// vars
+		$cat = $info['category'];
+		
+		
+		// default to basic
+		if( !$cat ) $cat = 'basic';
+		
+		
+		// translate
+		$cat = isset($l10n[ $cat ]) ? $l10n[ $cat ] : $cat;
+		
+		
+		// append
+		$types[ $cat ][ $info['name'] ] = $info['label'];
+		
+	}
+	
+	
+	// return
+	return $types;
+	
+}
+
+
+/*
+*  fieldmaster_get_field_type_label
+*
+*  This function will return the label of a field type
+*
+*  @type	function
+*  @date	1/10/13
+*  @since	5.0.0
+*
+*  @param	n/a
+*  @return	(array)
+*/
+
+function fieldmaster_get_field_type_label( $type = '' ) {
+
+	// vars
+	$types = fieldmaster_get_field_types();
+	
+	
+	// bail early if doesn't exist
+	if( !isset($types[ $type ]) ) return '';
+	
+	
+	// return
+	return $types[ $type ]['label'];
+	
+}
+
+
+/*
+*  fieldmaster_field_type_exists
+*
+*  This function will check if the field_type exists
+*
+*  @type	function
+*  @date	1/10/13
+*  @since	5.0.0
+*
+*  @param	$type (string)
+*  @return	(boolean)
+*/
+
+function fieldmaster_field_type_exists( $type = '' ) {
+
+	// vars
+	$types = fieldmaster_get_field_types();
+	
+	
+	// return
+	return isset($types[ $type ]);
 	
 }
 

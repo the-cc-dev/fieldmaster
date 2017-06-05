@@ -33,10 +33,9 @@ class fieldmaster_field_message extends fieldmaster_field {
 		
 		// vars
 		$this->name = 'message';
-		$this->label = __("Message",'fields');
+		$this->label = __("Message",'fieldmaster');
 		$this->category = 'layout';
 		$this->defaults = array(
-			'value'			=> false, // prevents fields_render_fields() from attempting to load value
 			'message'		=> '',
 			'esc_html'		=> 0,
 			'new_lines'		=> 'wpautop',
@@ -112,8 +111,8 @@ class fieldmaster_field_message extends fieldmaster_field {
 	function render_field_settings( $field ) {
 		
 		// default_value
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Message','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Message','fieldmaster'),
 			'instructions'	=> '',
 			'type'			=> 'textarea',
 			'name'			=> 'message',
@@ -121,38 +120,95 @@ class fieldmaster_field_message extends fieldmaster_field {
 		
 		
 		// formatting
-		fields_render_field_setting( $field, array(
-			'label'			=> __('New Lines','fields'),
-			'instructions'	=> __('Controls how new lines are rendered','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('New Lines','fieldmaster'),
+			'instructions'	=> __('Controls how new lines are rendered','fieldmaster'),
 			'type'			=> 'select',
 			'name'			=> 'new_lines',
 			'choices'		=> array(
-				'wpautop'		=> __("Automatically add paragraphs",'fields'),
-				'br'			=> __("Automatically add &lt;br&gt;",'fields'),
-				''				=> __("No Formatting",'fields')
+				'wpautop'		=> __("Automatically add paragraphs",'fieldmaster'),
+				'br'			=> __("Automatically add &lt;br&gt;",'fieldmaster'),
+				''				=> __("No Formatting",'fieldmaster')
 			)
 		));
 		
 		
 		// HTML
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Escape HTML','fields'),
-			'instructions'	=> __('Allow HTML markup to display as visible text instead of rendering','fields'),
-			'type'			=> 'radio',
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Escape HTML','fieldmaster'),
+			'instructions'	=> __('Allow HTML markup to display as visible text instead of rendering','fieldmaster'),
 			'name'			=> 'esc_html',
-			'choices'		=> array(
-				1				=> __("Yes",'fields'),
-				0				=> __("No",'fields'),
-			),
-			'layout'	=>	'horizontal',
+			'type'			=> 'true_false',
+			'ui'			=> 1,
 		));
+		
+	}
+	
+	
+	/*
+	*  translate_field
+	*
+	*  This function will translate field settings
+	*
+	*  @type	function
+	*  @date	8/03/2016
+	*  @since	5.3.2
+	*
+	*  @param	$field (array)
+	*  @return	$field
+	*/
+	
+	function translate_field( $field ) {
+		
+		// translate
+		$field['message'] = fieldmaster_translate( $field['message'] );
+		
+		
+		// return
+		return $field;
+		
+	}
+	
+	
+	/*
+	*  load_field()
+	*
+	*  This filter is appied to the $field after it is loaded from the database
+	*
+	*  @type	filter
+	*  @since	3.6
+	*  @date	23/01/13
+	*
+	*  @param	$field - the field array holding all the field options
+	*
+	*  @return	$field - the field array holding all the field options
+	*/
+	
+	function load_field( $field ) {
+		
+		// remove name to avoid caching issue
+		$field['name'] = '';
+		
+		
+		// remove required to avoid JS issues
+		$field['required'] = 0;
+		
+		
+		// set value other than 'null' to avoid FieldMaster loading / caching issue
+		$field['value'] = false;
+		
+		
+		// return
+		return $field;
 		
 	}
 	
 }
 
-new fieldmaster_field_message();
 
-endif;
+// initialize
+fieldmaster_register_field_type( new fieldmaster_field_message() );
+
+endif; // class_exists check
 
 ?>

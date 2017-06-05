@@ -33,14 +33,12 @@ class fieldmaster_field_textarea extends fieldmaster_field {
 		
 		// vars
 		$this->name = 'textarea';
-		$this->label = __("Text Area",'fields');
+		$this->label = __("Text Area",'fieldmaster');
 		$this->defaults = array(
 			'default_value'	=> '',
 			'new_lines'		=> '',
 			'maxlength'		=> '',
 			'placeholder'	=> '',
-			'readonly'		=> 0,
-			'disabled'		=> 0,
 			'rows'			=> ''
 		);
 		
@@ -65,13 +63,14 @@ class fieldmaster_field_textarea extends fieldmaster_field {
 	function render_field( $field ) {
 		
 		// vars
+		$atts = array();
 		$o = array( 'id', 'class', 'name', 'placeholder', 'rows' );
 		$s = array( 'readonly', 'disabled' );
 		$e = '';
 		
 		
 		// maxlength
-		if( $field['maxlength'] !== '' ) {
+		if( $field['maxlength'] ) {
 		
 			$o[] = 'maxlength';
 			
@@ -86,8 +85,7 @@ class fieldmaster_field_textarea extends fieldmaster_field {
 		}
 		
 		
-		// populate atts
-		$atts = array();
+		// append atts
 		foreach( $o as $k ) {
 		
 			$atts[ $k ] = $field[ $k ];	
@@ -95,19 +93,15 @@ class fieldmaster_field_textarea extends fieldmaster_field {
 		}
 		
 		
-		// special atts
+		// append special atts
 		foreach( $s as $k ) {
 		
-			if( $field[ $k ] ) {
-			
-				$atts[ $k ] = $k;
-				
-			}
+			if( !empty($field[ $k ]) ) $atts[ $k ] = $k;
 			
 		}
 		
 
-		$e .= '<textarea ' . fields_esc_attr( $atts ) . ' >';
+		$e .= '<textarea ' . fieldmaster_esc_attr( $atts ) . ' >';
 		$e .= esc_textarea( $field['value'] );
 		$e .= '</textarea>';
 		
@@ -141,36 +135,36 @@ class fieldmaster_field_textarea extends fieldmaster_field {
 		
 		
 		// default_value
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Default Value','fields'),
-			'instructions'	=> __('Appears when creating a new post','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Default Value','fieldmaster'),
+			'instructions'	=> __('Appears when creating a new post','fieldmaster'),
 			'type'			=> 'textarea',
 			'name'			=> 'default_value',
 		));
 		
 		
 		// placeholder
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Placeholder Text','fields'),
-			'instructions'	=> __('Appears within the input','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Placeholder Text','fieldmaster'),
+			'instructions'	=> __('Appears within the input','fieldmaster'),
 			'type'			=> 'text',
 			'name'			=> 'placeholder',
 		));
 		
 		
 		// maxlength
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Character Limit','fields'),
-			'instructions'	=> __('Leave blank for no limit','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Character Limit','fieldmaster'),
+			'instructions'	=> __('Leave blank for no limit','fieldmaster'),
 			'type'			=> 'number',
 			'name'			=> 'maxlength',
 		));
 		
 		
 		// rows
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Rows','fields'),
-			'instructions'	=> __('Sets the textarea height','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Rows','fieldmaster'),
+			'instructions'	=> __('Sets the textarea height','fieldmaster'),
 			'type'			=> 'number',
 			'name'			=> 'rows',
 			'placeholder'	=> 8
@@ -178,15 +172,15 @@ class fieldmaster_field_textarea extends fieldmaster_field {
 		
 		
 		// formatting
-		fields_render_field_setting( $field, array(
-			'label'			=> __('New Lines','fields'),
-			'instructions'	=> __('Controls how new lines are rendered','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('New Lines','fieldmaster'),
+			'instructions'	=> __('Controls how new lines are rendered','fieldmaster'),
 			'type'			=> 'select',
 			'name'			=> 'new_lines',
 			'choices'		=> array(
-				'wpautop'		=> __("Automatically add paragraphs",'fields'),
-				'br'			=> __("Automatically add &lt;br&gt;",'fields'),
-				''				=> __("No Formatting",'fields')
+				'wpautop'		=> __("Automatically add paragraphs",'fieldmaster'),
+				'br'			=> __("Automatically add &lt;br&gt;",'fieldmaster'),
+				''				=> __("No Formatting",'fieldmaster')
 			)
 		));
 		
@@ -237,8 +231,10 @@ class fieldmaster_field_textarea extends fieldmaster_field {
 	
 }
 
-new fieldmaster_field_textarea();
 
-endif;
+// initialize
+fieldmaster_register_field_type( new fieldmaster_field_textarea() );
+
+endif; // class_exists check
 
 ?>

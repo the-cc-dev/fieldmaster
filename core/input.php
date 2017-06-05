@@ -1,31 +1,291 @@
 <?php 
 
-class fields_input {
+if( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
+
+if( ! class_exists('fieldmaster_input') ) :
+
+class fieldmaster_input {
 	
 	
 	/*
 	*  __construct
 	*
-	*  Initialize filters, action, variables and includes
+	*  This function will setup the class functionality
 	*
 	*  @type	function
-	*  @date	23/06/12
+	*  @date	5/03/2014
 	*  @since	5.0.0
 	*
-	*  @param	N/A
-	*  @return	N/A
+	*  @param	n/a
+	*  @return	n/a
 	*/
 	
 	function __construct() {
 		
-		add_action('fields/save_post', 							array($this, 'save_post'), 10, 1);
-		add_action('fields/input/admin_enqueue_scripts', 			array($this, 'admin_enqueue_scripts'), 10, 0);
-		add_action('fields/input/admin_footer', 					array($this, 'admin_footer'), 10, 0);
+		// vars
+		$this->admin_enqueue_scripts = 'admin_enqueue_scripts';
+		$this->admin_head = 'admin_head';
+		$this->admin_footer = 'admin_footer';
+		$this->enqueued = false;
+		$this->data = array();
 		
 		
-		// ajax
-		add_action( 'wp_ajax_fields/validate_save_post',			array($this, 'ajax_validate_save_post') );
-		add_action( 'wp_ajax_nopriv_fields/validate_save_post',	array($this, 'ajax_validate_save_post') );
+		// actions
+		add_action('fieldmaster/save_post', array($this, 'save_post'), 10, 1);
+		
+	}
+	
+	
+	/*
+	*  get_data
+	*
+	*  This function will return form data
+	*
+	*  @type	function
+	*  @date	4/03/2016
+	*  @since	5.3.2
+	*
+	*  @param	$key (mixed)
+	*  @return	(mixed)
+	*/
+	
+	function get_data( $key = false ) {
+		
+		// vars
+		$data = $this->data;
+		
+		
+		// key
+		if( $key && isset($data[ $key ]) ) {
+			
+			$data = $data[ $key ];
+			
+		}
+		
+		
+		// return
+		return $data;
+		
+	}
+	
+	
+	/*
+	*  set_data
+	*
+	*  This function will se the form data
+	*
+	*  @type	function
+	*  @date	4/03/2016
+	*  @since	5.3.2
+	*
+	*  @param	$data (array)
+	*  @return	(array)
+	*/
+	
+	function set_data( $data ) {
+		
+		// defaults
+		$data = fieldmaster_parse_args($data, array(
+			'post_id'		=> 0,		// ID of current post
+			'nonce'			=> 'post',	// nonce used for $_POST validation
+			'validation'	=> 1,		// runs AJAX validation
+			'ajax'			=> 0,		// fetches new field groups via AJAX
+		));
+		
+		
+		// update
+		$this->data = $data;
+		
+		
+		// enqueue uploader if page allows AJAX fields to appear
+		if( $data['ajax'] ) {
+			
+			add_action($this->admin_footer, 'fieldmaster_enqueue_uploader', 1);
+			
+		}
+		
+		
+		// return 
+		return $data;
+		
+	}
+	
+	
+	/*
+	*  enqueue
+	*
+	*  This function will determin the actions to use for different pages
+	*
+	*  @type	function
+	*  @date	13/01/2016
+	*  @since	5.3.2
+	*
+	*  @param	n/a
+	*  @return	n/a
+	*/
+	
+	function enqueue() {
+		
+		// bail ealry if already enqueued
+		if( $this->enqueued ) return;
+		
+		
+		// update setting
+		$this->enqueued = true;
+		
+		
+		// global
+		global $pagenow;
+		
+		
+		// determine action hooks
+		if( $pagenow == 'customize.php' ) {
+			
+			$this->admin_head = 'customize_controls_print_scripts';
+			$this->admin_footer = 'customize_controls_print_footer_scripts';
+			
+		} elseif( $pagenow == 'wp-login.php' ) { 
+			
+			$this->admin_enqueue_scripts = 'login_enqueue_scripts';
+			$this->admin_head = 'login_head';
+			$this->admin_footer = 'login_footer';
+			
+		} elseif( !is_admin() ) {
+			
+			$this->admin_enqueue_scripts = 'wp_enqueue_scripts';
+			$this->admin_head = 'wp_head';
+			$this->admin_footer = 'wp_footer';
+			
+		}
+		
+		
+		// actions
+		fieldmaster_maybe_add_action($this->admin_enqueue_scripts, 	array($this, 'admin_enqueue_scripts'), 20 );
+		fieldmaster_maybe_add_action($this->admin_head, 			array($this, 'admin_head'), 20 );
+		fieldmaster_maybe_add_action($this->admin_footer, 			array($this, 'admin_footer'), 20 );
+				
+	}
+	
+	
+	/*
+	*  admin_enqueue_scripts
+	*
+	*  The fieldmaster input screen admin_enqueue_scripts
+	*
+	*  @type	function
+	*  @date	4/03/2016
+	*  @since	5.3.2
+	*
+	*  @param	n/a
+	*  @return	n/a
+	*/
+	
+	function admin_enqueue_scripts() {
+		
+		// scripts
+		wp_enqueue_script('fieldmaster-input');
+		
+		
+		// styles
+		wp_enqueue_style('fieldmaster-input');
+		
+		
+		// do action
+		do_action('fieldmaster/input/admin_enqueue_scripts');
+		
+	}
+	
+	
+	/*
+	*  admin_head
+	*
+	*  The fieldmaster input screen admin_head
+	*
+	*  @type	function
+	*  @date	4/03/2016
+	*  @since	5.3.2
+	*
+	*  @param	n/a
+	*  @return	n/a
+	*/
+	
+	function admin_head() {
+		
+		// do action
+		do_action('fieldmaster/input/admin_head');
+		
+	}
+	
+	
+	/*
+	*  admin_footer
+	*
+	*  The fieldmaster input screen admin_footer
+	*
+	*  @type	function
+	*  @date	4/03/2016
+	*  @since	5.3.2
+	*
+	*  @param	n/a
+	*  @return	n/a
+	*/
+	
+	function admin_footer() {
+		
+		// global
+		global $wp_version;
+		
+		
+		// options
+		$o = array(
+			'post_id'		=> fieldmaster_get_form_data('post_id'),
+			'nonce'			=> wp_create_nonce( 'fieldmaster_nonce' ),
+			'admin_url'		=> admin_url(),
+			'ajaxurl'		=> admin_url( 'admin-ajax.php' ),
+			'ajax'			=> fieldmaster_get_form_data('ajax'),
+			'validation'	=> fieldmaster_get_form_data('validation'),
+			'wp_version'	=> $wp_version,
+			'fieldmaster_version'	=> fieldmaster_get_setting('version'),
+			'browser'		=> fieldmaster_get_browser(),
+			'locale'		=> get_locale(),
+			'rtl'			=> is_rtl()
+		);
+		
+		
+		// l10n
+		$l10n = apply_filters( 'fieldmaster/input/admin_l10n', array(
+			'unload'				=> __('The changes you made will be lost if you navigate away from this page','fieldmaster'),
+			'expand_details' 		=> __('Expand Details','fieldmaster'),
+			'collapse_details' 		=> __('Collapse Details','fieldmaster'),
+			'validation_successful'	=> __('Validation successful', 'fieldmaster'),
+			'validation_failed'		=> __('Validation failed', 'fieldmaster'),
+			'validation_failed_1'	=> __('1 field requires attention', 'fieldmaster'),
+			'validation_failed_2'	=> __('%d fields require attention', 'fieldmaster'),
+			'restricted'			=> __('Restricted','fieldmaster')
+		));
+		
+		
+?>
+<script type="text/javascript">
+var fieldmaster = fieldmaster || null;
+if( fieldmaster ) {
+	
+	fieldmaster.o = <?php echo json_encode($o); ?>;
+	fieldmaster.l10n = <?php echo json_encode($l10n); ?>;
+	<?php do_action('fieldmaster/input/admin_footer_js'); ?>
+
+}
+</script>
+<?php
+
+do_action('fieldmaster/input/admin_footer');
+	
+?>
+<script type="text/javascript">
+	if( fieldmaster ) fieldmaster.do_action('prepare');
+</script>
+<?php
+		
 	}
 	
 	
@@ -39,249 +299,46 @@ class fields_input {
 	*  @since	5.0.9
 	*
 	*  @param	$post_id (int)
-	*  @return	$post_id (int)
+	*  @return	n/a
 	*/
 	
-	function save_post( $post_id = 0 ) {
+	function save_post( $post_id ) {
+		
+		// bail early if empty
+		if( empty($_POST['fieldmaster']) ) return;
+		
 		
 		// save $_POST data
-		foreach( $_POST['fields'] as $k => $v ) {
+		foreach( $_POST['fieldmaster'] as $k => $v ) {
 			
 			// get field
-			$field = fields_get_field( $k );
+			$field = fieldmaster_get_field( $k );
 			
 			
-			// update field
-			if( $field ) {
-				
-				fields_update_value( $v, $post_id, $field );
-				
-			}
+			// continue if no field
+			if( !$field ) continue;
 			
-		}
-	
-	}
-	
-	
-	/*
-	*  admin_enqueue_scripts
-	*
-	*  This function will enqueue all the required scripts / styles for FieldMaster
-	*
-	*  @type	action (fields/input/admin_enqueue_scripts)
-	*  @date	6/10/13
-	*  @since	5.0.0
-	*
-	*  @param	n/a	
-	*  @return	n/a
-	*/
-	
-	function admin_enqueue_scripts() {
-
-		// scripts
-		wp_enqueue_script('fields-input');
-		
-		
-		// styles
-		wp_enqueue_style('fields-input');
-		
-	}
-	
-
-	/*
-	*  admin_footer
-	*
-	*  description
-	*
-	*  @type	function
-	*  @date	7/10/13
-	*  @since	5.0.0
-	*
-	*  @param	$post_id (int)
-	*  @return	$post_id (int)
-	*/
-	
-	function admin_footer() {
-		
-		// vars
-		$args = fields_get_setting('form_data');
-		
-		
-		// global
-		global $wp_version;
-		
-		
-		// options
-		$o = array(
-			'post_id'		=> $args['post_id'],
-			'nonce'			=> wp_create_nonce( 'fields_nonce' ),
-			'admin_url'		=> admin_url(),
-			'ajaxurl'		=> admin_url( 'admin-ajax.php' ),
-			'ajax'			=> $args['ajax'],
-			'validation'	=> $args['validation'],
-			'wp_version'	=> $wp_version
-		);
-		
-		
-		// l10n
-		$l10n = apply_filters( 'fields/input/admin_l10n', array(
-			'unload'				=> __('The changes you made will be lost if you navigate away from this page','fields'),
-			'expand_details' 		=> __('Expand Details','fields'),
-			'collapse_details' 		=> __('Collapse Details','fields'),
-			'validation_successful'	=> __('Validation successful', 'fields'),
-			'validation_failed'		=> __('Validation failed', 'fields'),
-			'validation_failed_1'	=> __('1 field requires attention', 'fields'),
-			'validation_failed_2'	=> __('%d fields require attention', 'fields'),
-			'restricted'			=> __('Restricted','fields')
-		));
-		
-		
-?>
-<script type="text/javascript">
-/* <![CDATA[ */
-if( typeof fields !== 'undefined' ) {
-
-	fields.o = <?php echo json_encode($o); ?>;
-	fields.l10n = <?php echo json_encode($l10n); ?>;
-	<?php do_action('fields/input/admin_footer_js'); ?>
-	
-	fields.do_action('prepare');
-	
-}
-/* ]]> */
-</script>
-<?php
-		
-	}
-	
-	
-	/*
-	*  ajax_validate_save_post
-	*
-	*  This function will validate the $_POST data via AJAX
-	*
-	*  @type	function
-	*  @date	27/10/2014
-	*  @since	5.0.9
-	*
-	*  @param	n/a
-	*  @return	n/a
-	*/
-	
-	function ajax_validate_save_post() {
-		
-		// bail early if _fieldsnonce is missing
-		if( !isset($_POST['_fieldsnonce']) ) {
 			
-			wp_send_json_error();
+			// update
+			fieldmaster_update_value( $v, $post_id, $field );
 			
 		}
-		
-		
-		// vars
-		$json = array(
-			'valid'		=> 1,
-			'errors'	=> 0
-		);
-		
-		
-		// success
-		if( fields_validate_save_post() ) {
-			
-			wp_send_json_success($json);
-			
-		}
-		
-		
-		// update vars
-		$json['valid'] = 0;
-		$json['errors'] = fields_get_validation_errors();
-		
-		
-		// return
-		wp_send_json_success($json);
-		
+	
 	}
 	
 }
-
 
 // initialize
-new fields_input();
+fieldmaster()->input = new fieldmaster_input();
 
+endif; // class_exists check
 
-/*
-*  listener
-*
-*  This class will call all the neccessary actions during the page load for fields input to function
-*
-*  @type	class
-*  @date	7/10/13
-*  @since	5.0.0
-*
-*  @param	n/a
-*  @return	n/a
-*/
-
-class fields_input_listener {
-	
-	function __construct() {
-		
-		// enqueue scripts
-		do_action('fields/input/admin_enqueue_scripts');
-		
-		
-		// vars
-		$admin_head = 'admin_head';
-		$admin_footer = 'admin_footer';
-		
-		
-		// global
-		global $pagenow;
-		
-		
-		// determine action hooks
-		if( $pagenow == 'customize.php' ) {
-			
-			$admin_head = 'customize_controls_print_scripts';
-			$admin_footer = 'customize_controls_print_footer_scripts';
-			
-		} elseif( $pagenow == 'wp-login.php' ) { 
-		
-			$admin_head = 'login_head';
-			$admin_footer = 'login_footer';
-			
-		} elseif( !is_admin() ) {
-			
-			$admin_head = 'wp_head';
-			$admin_footer = 'wp_footer';
-			
-		}
-		
-		
-		// add actions
-		add_action($admin_head, 	array( $this, 'admin_head'), 20 );
-		add_action($admin_footer, 	array( $this, 'admin_footer'), 20 );
-		
-	}
-	
-	function admin_head() {
-		
-		do_action('fields/input/admin_head');
-	}
-	
-	function admin_footer() {
-		
-		do_action('fields/input/admin_footer');
-	}
-	
-}
 
 
 /*
-*  fields_admin_init
+*  fieldmaster_enqueue_scripts
 *
-*  This function is used to setup all actions / functionality for an admin page which will contain FieldMaster inputs
+*  alias of fieldmaster()->form->enqueue()
 *
 *  @type	function
 *  @date	6/10/13
@@ -291,27 +348,55 @@ class fields_input_listener {
 *  @return	n/a
 */
 
-function fields_enqueue_scripts() {
+function fieldmaster_enqueue_scripts() {
 	
-	// bail early if fields has already loaded
-	if( fields_get_setting('enqueue_scripts') ) {
+	return fieldmaster()->input->enqueue();
 	
-		return;
-		
-	}
-	
-	
-	// update setting
-	fields_update_setting('enqueue_scripts', 1);
-	
-	
-	// add actions
-	new fields_input_listener();
 }
 
 
 /*
-*  fields_enqueue_uploader
+*  fieldmaster_get_form_data
+*
+*  alias of fieldmaster()->form->get_data()
+*
+*  @type	function
+*  @date	6/10/13
+*  @since	5.0.0
+*
+*  @param	n/a
+*  @return	n/a
+*/
+
+function fieldmaster_get_form_data( $key = false ) {
+	
+	return fieldmaster()->input->get_data( $key );
+
+}
+
+
+/*
+*  fieldmaster_set_form_data
+*
+*  alias of fieldmaster()->form->set_data()
+*
+*  @type	function
+*  @date	6/10/13
+*  @since	5.0.0
+*
+*  @param	n/a
+*  @return	n/a
+*/
+
+function fieldmaster_set_form_data( $data = array() ) {
+	
+	return fieldmaster()->input->set_data( $data );
+
+}
+
+
+/*
+*  fieldmaster_enqueue_uploader
 *
 *  This function will render a WP WYSIWYG and enqueue media
 *
@@ -323,30 +408,18 @@ function fields_enqueue_scripts() {
 *  @return	n/a
 */
 
-function fields_enqueue_uploader() {
+function fieldmaster_enqueue_uploader() {
 	
 	// bail early if doing ajax
-	if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
-		
-		return;
-		
-	}
+	if( fieldmaster_is_ajax() ) return;
 	
 	
-	// bail early if fields has already loaded
-	if( fields_get_setting('enqueue_uploader') ) {
-	
-		return;
-		
-	}
-	
-	
-	// update setting
-	fields_update_setting('enqueue_uploader', 1);
+	// bail ealry if already run
+	if( fieldmaster_has_done('enqueue_uploader') ) return;
 	
 	
 	// enqueue media if user can upload
-	if( current_user_can( 'upload_files' ) ) {
+	if( current_user_can('upload_files') ) {
 		
 		wp_enqueue_media();
 		
@@ -354,13 +427,13 @@ function fields_enqueue_uploader() {
 	
 	
 	// create dummy editor
-	?><div class="fields-hidden"><?php wp_editor( '', 'fields_content' ); ?></div><?php
+	?><div id="fieldmaster-hidden-wp-editor" class="fieldmaster-hidden"><?php wp_editor( '', 'fieldmaster_content' ); ?></div><?php
 	
 }
 
 
 /*
-*  fields_form_data
+*  fieldmaster_form_data
 *
 *  description
 *
@@ -372,45 +445,46 @@ function fields_enqueue_uploader() {
 *  @return	$post_id (int)
 */
 
-function fields_form_data( $args = array() ) {
+function fieldmaster_form_data( $args = array() ) {
 	
 	// make sure scripts and styles have been included
 	// case: front end bbPress edit user
-	fields_enqueue_scripts();
+	fieldmaster_enqueue_scripts();
 	
 	
-	// defaults
-	$args = fields_parse_args($args, array(
-		'post_id'		=> 0,		// ID of current post
-		'nonce'			=> 'post',	// nonce used for $_POST validation
-		'validation'	=> 1,		// runs AJAX validation
-		'ajax'			=> 0,		// fetches new field groups via AJAX
-	));
+	// set form data
+	$args = fieldmaster_set_form_data( $args );
 	
 	
-	// save form_data for later actions
-	fields_update_setting('form_data', $args);
+	// hidden inputs
+	$inputs = array(
+		'_fieldmasternonce'		=> wp_create_nonce($args['nonce']),
+		'_fieldmasterchanged'	=> 0
+	);
 	
 	
-	// enqueue uploader if page allows AJAX fields to appear
-	if( $args['ajax'] ) {
+	// append custom
+	foreach( $args as $k => $v ) {
 		
-		add_action('admin_footer', 'fields_enqueue_uploader', 1);
+		if( substr($k, 0, 4) === '_fieldmaster' ) $inputs[ $k ] = $v;
 		
 	}
 	
+	
 	?>
-	<div id="fields-form-data" class="fields-hidden">
-		<input type="hidden" name="_fieldsnonce" value="<?php echo wp_create_nonce( $args['nonce'] ); ?>" />
-		<input type="hidden" name="_fieldschanged" value="0" />
-		<?php do_action('fields/input/form_data', $args); ?>
+	<div id="fieldmaster-form-data" class="fieldmaster-hidden">
+		<?php foreach( $inputs as $k => $v ): ?>
+		<input type="hidden" name="<?php echo esc_attr($k); ?>" value="<?php echo esc_attr($v); ?>" />
+		<?php endforeach; ?>
+		<?php do_action('fieldmaster/input/form_data', $args); ?>
 	</div>
 	<?php
+	
 }
 
 
 /*
-*  fields_save_post
+*  fieldmaster_save_post
 *
 *  description
 *
@@ -422,216 +496,23 @@ function fields_form_data( $args = array() ) {
 *  @return	$post_id (int)
 */
 
-function fields_save_post( $post_id = 0 ) {
+function fieldmaster_save_post( $post_id = 0 ) {
 	
-	// bail early if no fields values
-	if( empty($_POST['fields']) ) {
-		
-		return false;
-		
-	}
+	// bail early if no fieldmaster values
+	if( empty($_POST['fieldmaster']) ) return false;
 	
 	
-	// hook for 3rd party customization
-	do_action('fields/save_post', $post_id);
-	
-	
-	// return
-	return true;
-
-}
-
-
-/*
-*  fields_validate_save_post
-*
-*  This function is run to validate post data
-*
-*  @type	function
-*  @date	25/11/2013
-*  @since	5.0.0
-*
-*  @param	$show_errors (boolean) if true, errors will be shown via a wo_die screen
-*  @return	(boolean)
-*/
-
-function fields_validate_save_post( $show_errors = false ) {
-	
-	// validate required fields
-	if( !empty($_POST['fields']) ) {
-		
-		$keys = array_keys($_POST['fields']);
-		
-		// loop through and save $_POST data
-		foreach( $keys as $key ) {
-			
-			// get field
-			$field = fields_get_field( $key );
-			
-			
-			// validate
-			fields_validate_value( $_POST['fields'][ $key ], $field, "fields[{$key}]" );
-			
-		}
-		// foreach($fields as $key => $value)
-	}
-	// if($fields)
+	// set form data
+	fieldmaster_set_form_data(array(
+		'post_id'	=> $post_id
+	));
 	
 	
 	// hook for 3rd party customization
-	do_action('fields/validate_save_post');
-	
-	
-	// check errors
-	if( $errors = fields_get_validation_errors() ) {
-		
-		if( $show_errors ) {
-			
-			$message = '<h2>Validation failed</h2><ul>';
-			
-			foreach( $errors as $error ) {
-				
-				$message .= '<li>' . $error['message'] . '</li>';
-				
-			}
-			
-			$message .= '</ul>';
-			
-			wp_die( $message, 'Validation failed' );
-			
-		}
-		
-		return false;
-		
-	}
+	do_action('fieldmaster/save_post', $post_id);
 	
 	
 	// return
 	return true;
+
 }
-
-
-/*
-*  fields_validate_value
-*
-*  This function will validate a value for a field
-*
-*  @type	function
-*  @date	27/10/2014
-*  @since	5.0.9
-*
-*  @param	$value (mixed)
-*  @param	$field (array)
-*  @param	$input (string) name attribute of DOM elmenet
-*  @return	(boolean)
-*/
-
-function fields_validate_value( $value, $field, $input ) {
-	
-	// vars
-	$valid = true;
-	$message = sprintf( __( '%s value is required', 'fields' ), $field['label'] );
-	
-	
-	// valid
-	if( $field['required'] ) {
-		
-		// valid is set to false if the value is empty, but allow 0 as a valid value
-		if( empty($value) && !is_numeric($value) ) {
-			
-			$valid = false;
-			
-		}
-		
-	}
-	
-	
-	// filter for 3rd party customization
-	$valid = apply_filters( "fields/validate_value", $valid, $value, $field, $input );
-	$valid = apply_filters( "fields/validate_value/type={$field['type']}", $valid, $value, $field, $input );
-	$valid = apply_filters( "fields/validate_value/name={$field['name']}", $valid, $value, $field, $input );
-	$valid = apply_filters( "fields/validate_value/key={$field['key']}", $valid, $value, $field, $input );
-	
-	
-	// allow $valid to be a custom error message
-	if( !empty($valid) && is_string($valid) ) {
-		
-		$message = $valid;
-		$valid = false;
-		
-	}
-	
-	
-	if( !$valid ) {
-		
-		fields_add_validation_error( $input, $message );
-		return false;
-		
-	}
-	
-	
-	// return
-	return true;
-	
-}
-
-
-/*
-*  fields_add_validation_error
-*
-*  This function will add an error message for a field
-*
-*  @type	function
-*  @date	25/11/2013
-*  @since	5.0.0
-*
-*  @param	$input (string) name attribute of DOM elmenet
-*  @param	$message (string) error message
-*  @return	$post_id (int)
-*/
-
-function fields_add_validation_error( $input, $message = '' ) {
-	
-	// instantiate array if empty
-	if( empty($GLOBALS['fields_validation_errors']) ) {
-		
-		$GLOBALS['fields_validation_errors'] = array();
-		
-	}
-	
-	
-	// add to array
-	$GLOBALS['fields_validation_errors'][] = array(
-		'input'		=> $input,
-		'message'	=> $message
-	);
-	
-}
-
-
-/*
-*  fields_add_validation_error
-*
-*  This function will return any validation errors
-*
-*  @type	function
-*  @date	25/11/2013
-*  @since	5.0.0
-*
-*  @param	n/a
-*  @return	(array|boolean)
-*/
-
-function fields_get_validation_errors() {
-	
-	if( empty($GLOBALS['fields_validation_errors']) ) {
-		
-		return false;
-		
-	}
-	
-	return $GLOBALS['fields_validation_errors'];
-	
-}
-
-?>

@@ -33,233 +33,25 @@ class fieldmaster_field_page_link extends fieldmaster_field {
 		
 		// vars
 		$this->name = 'page_link';
-		$this->label = __("Page Link",'fields');
+		$this->label = __("Page Link",'fieldmaster');
 		$this->category = 'relational';
 		$this->defaults = array(
-			'post_type'		=> array(),
-			'taxonomy'		=> array(),
-			'allow_null' 	=> 0,
-			'multiple'		=> 0,
+			'post_type'			=> array(),
+			'taxonomy'			=> array(),
+			'allow_null' 		=> 0,
+			'multiple'			=> 0,
+			'allow_archives'	=> 1
 		);
 		
 		
 		// extra
-		add_action('wp_ajax_fields/fields/page_link/query',			array($this, 'ajax_query'));
-		add_action('wp_ajax_nopriv_fields/fields/page_link/query',		array($this, 'ajax_query'));
+		add_action('wp_ajax_fieldmaster/fields/page_link/query',			array($this, 'ajax_query'));
+		add_action('wp_ajax_nopriv_fieldmaster/fields/page_link/query',		array($this, 'ajax_query'));
 		
 		
 		// do not delete!
     	parent::__construct();
     	
-	}
-	
-	
-	/*
-	*  get_choices
-	*
-	*  This function will return an array of data formatted for use in a select2 AJAX response
-	*
-	*  @type	function
-	*  @date	15/10/2014
-	*  @since	5.0.9
-	*
-	*  @param	$options (array)
-	*  @return	(array)
-	*/
-	
-	function get_choices( $options = array() ) {
-		
-		// defaults
-   		$options = fields_parse_args($options, array(
-			'post_id'		=> 0,
-			's'				=> '',
-			'lang'			=> false,
-			'field_key'		=> '',
-			'paged'			=> 1
-		));
-		
-		
-   		// vars
-   		$r = array();
-   		$args = array();
-   		
-		
-		// paged
-   		$args['posts_per_page'] = 20;
-   		$args['paged'] = $options['paged'];
-   		
-   		
-		// load field
-		$field = fields_get_field( $options['field_key'] );
-		
-		if( !$field ) {
-		
-			return false;
-			
-		}
-		
-		
-		// update $args
-		if( !empty($field['post_type']) ) {
-		
-			$args['post_type'] = fields_get_array( $field['post_type'] );
-			
-		} else {
-			
-			$args['post_type'] = fields_get_post_types();
-			
-		}
-		
-		// create tax queries
-		if( !empty($field['taxonomy']) ) {
-			
-			// append to $args
-			$args['tax_query'] = array();
-			
-			
-			// decode terms
-			$taxonomies = fields_decode_taxonomy_terms( $field['taxonomy'] );
-			
-			
-			// now create the tax queries
-			foreach( $taxonomies as $taxonomy => $terms ) {
-			
-				$args['tax_query'][] = array(
-					'taxonomy'	=> $taxonomy,
-					'field'		=> 'slug',
-					'terms'		=> $terms,
-				);
-				
-			}
-		}
-		
-				
-		// search
-		if( $options['s'] ) {
-		
-			$args['s'] = $options['s'];
-			
-		}
-		
-		
-		// filters
-		$args = apply_filters('fields/fields/page_link/query', $args, $field, $options['post_id']);
-		$args = apply_filters('fields/fields/page_link/query/name=' . $field['name'], $args, $field, $options['post_id'] );
-		$args = apply_filters('fields/fields/page_link/query/key=' . $field['key'], $args, $field, $options['post_id'] );
-		
-		
-		// add archives to $r
-		if( $args['paged'] == 1 ) {
-			
-			$archives = array();
-			$archives[] = array(
-				'id'	=> home_url(),
-				'text'	=> home_url()
-			);
-			
-			foreach( $args['post_type'] as $post_type ) {
-				
-				$archive_link = get_post_type_archive_link( $post_type );
-				
-				if( $archive_link ) {
-				
-					$archives[] = array(
-						'id'	=> $archive_link,
-						'text'	=> $archive_link
-					);
-					
-				}
-				
-			}
-			
-			
-			// search
-			if( !empty($args['s']) ) {
-				
-				foreach( array_keys($archives) as $i ) {
-					
-					if( strpos( $archives[$i]['text'], $args['s'] ) === false ) {
-						
-						unset($archives[$i]);
-						
-					}
-					
-				}
-				
-				$archives = array_values($archives);
-				
-			}
-			
-			
-			if( !empty($archives) ) {
-				
-				$r[] = array(
-					'text'		=> __('Archives', 'fields'),
-					'children'	=> $archives
-				);
-				
-			}
-			
-		}
-		
-		
-		// get posts grouped by post type
-		$groups = fields_get_grouped_posts( $args );
-		
-		if( !empty($groups) ) {
-			
-			foreach( array_keys($groups) as $group_title ) {
-				
-				// vars
-				$posts = fields_extract_var( $groups, $group_title );
-				$titles = array();
-				
-				
-				// data
-				$data = array(
-					'text'		=> $group_title,
-					'children'	=> array()
-				);
-				
-				
-				foreach( array_keys($posts) as $post_id ) {
-					
-					// override data
-					$posts[ $post_id ] = $this->get_post_title( $posts[ $post_id ], $field, $options['post_id'] );
-					
-				};
-				
-				
-				// order by search
-				if( !empty($args['s']) ) {
-					
-					$posts = fields_order_by_search( $posts, $args['s'] );
-					
-				}
-				
-				
-				// append to $data
-				foreach( array_keys($posts) as $post_id ) {
-					
-					$data['children'][] = array(
-						'id'	=> $post_id,
-						'text'	=> $posts[ $post_id ]
-					);
-					
-				}
-				
-				
-				// append to $r
-				$r[] = $data;
-				
-			}
-			
-		}
-				
-		
-		// return
-		return $r;
-			
 	}
 	
 	
@@ -279,28 +71,229 @@ class fieldmaster_field_page_link extends fieldmaster_field {
 	function ajax_query() {
 		
 		// validate
-		if( !fields_verify_ajax() ) {
+		if( !fieldmaster_verify_ajax() ) die();
 		
-			die();
+		
+		// defaults
+   		$options = fieldmaster_parse_args($_POST, array(
+			'post_id'		=> 0,
+			's'				=> '',
+			'field_key'		=> '',
+			'paged'			=> 1
+		));
+		
+		
+   		// vars
+   		$results = array();
+   		$args = array();
+   		$s = false;
+   		$is_search = false;
+   		
+		
+		// paged
+   		$args['posts_per_page'] = 20;
+   		$args['paged'] = $options['paged'];
+   		
+   		
+   		// search
+		if( $options['s'] !== '' ) {
+			
+			// strip slashes (search may be integer)
+			$s = wp_unslash( strval($options['s']) );
+			
+			
+			// update vars
+			$args['s'] = $s;
+			$is_search = true;
 			
 		}
 		
 		
-		// get choices
-		$choices = $this->get_choices( $_POST );
+		// load field
+		$field = fieldmaster_get_field( $options['field_key'] );
+		if( !$field ) die();
 		
 		
-		// validate
-		if( !$choices ) {
+		// update $args
+		if( !empty($field['post_type']) ) {
+		
+			$args['post_type'] = fieldmaster_get_array( $field['post_type'] );
 			
-			die();
+		} else {
+			
+			$args['post_type'] = fieldmaster_get_post_types();
+			
+		}
+		
+		// create tax queries
+		if( !empty($field['taxonomy']) ) {
+			
+			// append to $args
+			$args['tax_query'] = array();
+			
+			
+			// decode terms
+			$taxonomies = fieldmaster_decode_taxonomy_terms( $field['taxonomy'] );
+			
+			
+			// now create the tax queries
+			foreach( $taxonomies as $taxonomy => $terms ) {
+			
+				$args['tax_query'][] = array(
+					'taxonomy'	=> $taxonomy,
+					'field'		=> 'slug',
+					'terms'		=> $terms,
+				);
+				
+			}
+		}
+		
+		
+		// filters
+		$args = apply_filters('fieldmaster/fields/page_link/query', $args, $field, $options['post_id']);
+		$args = apply_filters('fieldmaster/fields/page_link/query/name=' . $field['name'], $args, $field, $options['post_id'] );
+		$args = apply_filters('fieldmaster/fields/page_link/query/key=' . $field['key'], $args, $field, $options['post_id'] );
+		
+		
+		// add archives to $results
+		if( $field['allow_archives'] && $args['paged'] == 1 ) {
+			
+			$archives = array();
+			$archives[] = array(
+				'id'	=> home_url(),
+				'text'	=> home_url()
+			);
+			
+			foreach( $args['post_type'] as $post_type ) {
+				
+				// vars
+				$archive_link = get_post_type_archive_link( $post_type );
+				
+				
+				// bail ealry if no link
+				if( !$archive_link ) continue;
+				
+				
+				// bail early if no search match
+				if( $is_search && stripos($archive_link, $s) === false ) continue;
+				
+				
+				// append
+				$archives[] = array(
+					'id'	=> $archive_link,
+					'text'	=> $archive_link
+				);
+				
+			}
+			
+			
+			// append
+			$results[] = array(
+				'text'		=> __('Archives', 'fieldmaster'),
+				'children'	=> $archives
+			);
 			
 		}
 		
 		
-		// return JSON
-		echo json_encode( $choices );
-		die();
+		// get posts grouped by post type
+		$groups = fieldmaster_get_grouped_posts( $args );
+		
+		
+		// loop
+		if( !empty($groups) ) {
+			
+			foreach( array_keys($groups) as $group_title ) {
+				
+				// vars
+				$posts = fieldmaster_extract_var( $groups, $group_title );
+				
+				
+				// data
+				$data = array(
+					'text'		=> $group_title,
+					'children'	=> array()
+				);
+				
+				
+				// convert post objects to post titles
+				foreach( array_keys($posts) as $post_id ) {
+					
+					$posts[ $post_id ] = $this->get_post_title( $posts[ $post_id ], $field, $options['post_id'], $is_search );
+					
+				}
+				
+				
+				// order posts by search
+				if( $is_search && empty($args['orderby']) ) {
+					
+					$posts = fieldmaster_order_by_search( $posts, $args['s'] );
+					
+				}
+				
+				
+				// append to $data
+				foreach( array_keys($posts) as $post_id ) {
+					
+					$data['children'][] = $this->get_post_result( $post_id, $posts[ $post_id ]);
+					
+				}
+				
+				
+				// append to $results
+				$results[] = $data;
+				
+			}
+			
+		}
+		
+		
+		// return
+		fieldmaster_send_ajax_results(array(
+			'results'	=> $results,
+			'limit'		=> $args['posts_per_page']
+		));
+		
+	}
+	
+	
+	/*
+	*  get_post_result
+	*
+	*  This function will return an array containing id, text and maybe description data
+	*
+	*  @type	function
+	*  @date	7/07/2016
+	*  @since	5.4.0
+	*
+	*  @param	$id (mixed)
+	*  @param	$text (string)
+	*  @return	(array)
+	*/
+	
+	function get_post_result( $id, $text ) {
+		
+		// vars
+		$result = array(
+			'id'	=> $id,
+			'text'	=> $text
+		);
+		
+		
+		// look for parent
+		$search = '| ' . __('Parent', 'fieldmaster') . ':';
+		$pos = strpos($text, $search);
+		
+		if( $pos !== false ) {
+			
+			$result['description'] = substr($text, $pos+2);
+			$result['text'] = substr($text, 0, $pos);
+			
+		}
+		
+		
+		// return
+		return $result;
 			
 	}
 	
@@ -320,38 +313,25 @@ class fieldmaster_field_page_link extends fieldmaster_field {
 	*  @return	(string)
 	*/
 	
-	function get_post_title( $post, $field, $post_id = 0 ) {
+	function get_post_title( $post, $field, $post_id = 0, $is_search = 0 ) {
 		
 		// get post_id
-		if( !$post_id ) {
-			
-			$form_data = fields_get_setting('form_data');
-			
-			if( !empty($form_data['post_id']) ) {
-				
-				$post_id = $form_data['post_id'];
-				
-			} else {
-				
-				$post_id = get_the_ID();
-				
-			}
-			
-		}
+		if( !$post_id ) $post_id = fieldmaster_get_form_data('post_id');
 		
 		
 		// vars
-		$title = fields_get_post_title( $post );
+		$title = fieldmaster_get_post_title( $post, $is_search );
 			
 		
 		// filters
-		$title = apply_filters('fields/fields/page_link/result', $title, $post, $field, $post_id);
-		$title = apply_filters('fields/fields/page_link/result/name=' . $field['_name'], $title, $post, $field, $post_id);
-		$title = apply_filters('fields/fields/page_link/result/key=' . $field['key'], $title, $post, $field, $post_id);
+		$title = apply_filters('fieldmaster/fields/page_link/result', $title, $post, $field, $post_id);
+		$title = apply_filters('fieldmaster/fields/page_link/result/name=' . $field['_name'], $title, $post, $field, $post_id);
+		$title = apply_filters('fieldmaster/fields/page_link/result/key=' . $field['key'], $title, $post, $field, $post_id);
 		
 		
 		// return
 		return $title;
+		
 	}
 	
 	
@@ -371,7 +351,7 @@ class fieldmaster_field_page_link extends fieldmaster_field {
 	function get_posts( $value, $field ) {
 		
 		// force value to array
-		$value = fields_get_array( $value );
+		$value = fieldmaster_get_array( $value );
 		
 		
 		// get selected post ID's
@@ -398,7 +378,7 @@ class fieldmaster_field_page_link extends fieldmaster_field {
 		
 		
 		// get posts
-		$posts = fields_get_posts(array(
+		$posts = fieldmaster_get_posts(array(
 			'post__in' => $post__in,
 			'post_type'	=> $field['post_type']
 		));
@@ -473,7 +453,7 @@ class fieldmaster_field_page_link extends fieldmaster_field {
 				foreach( array_keys($posts) as $i ) {
 					
 					// vars
-					$post = fields_extract_var( $posts, $i );
+					$post = fieldmaster_extract_var( $posts, $i );
 					
 					
 					if( is_object($post) ) {
@@ -496,7 +476,7 @@ class fieldmaster_field_page_link extends fieldmaster_field {
 		
 		
 		// render
-		fields_render_field( $field );
+		fieldmaster_render_field( $field );
 	}
 	
 	
@@ -516,58 +496,60 @@ class fieldmaster_field_page_link extends fieldmaster_field {
 	function render_field_settings( $field ) {
 		
 		// post_type
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Filter by Post Type','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Filter by Post Type','fieldmaster'),
 			'instructions'	=> '',
 			'type'			=> 'select',
 			'name'			=> 'post_type',
-			'choices'		=> fields_get_pretty_post_types(),
+			'choices'		=> fieldmaster_get_pretty_post_types(),
 			'multiple'		=> 1,
 			'ui'			=> 1,
 			'allow_null'	=> 1,
-			'placeholder'	=> __("All post types",'fields'),
+			'placeholder'	=> __("All post types",'fieldmaster'),
 		));
 		
 		
 		// taxonomy
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Filter by Taxonomy','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Filter by Taxonomy','fieldmaster'),
 			'instructions'	=> '',
 			'type'			=> 'select',
 			'name'			=> 'taxonomy',
-			'choices'		=> fields_get_taxonomy_terms(),
+			'choices'		=> fieldmaster_get_taxonomy_terms(),
 			'multiple'		=> 1,
 			'ui'			=> 1,
 			'allow_null'	=> 1,
-			'placeholder'	=> __("All taxonomies",'fields'),
+			'placeholder'	=> __("All taxonomies",'fieldmaster'),
 		));
 		
 		
 		// allow_null
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Allow Null?','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Allow Null?','fieldmaster'),
 			'instructions'	=> '',
-			'type'			=> 'radio',
 			'name'			=> 'allow_null',
-			'choices'		=> array(
-				1				=> __("Yes",'fields'),
-				0				=> __("No",'fields'),
-			),
-			'layout'	=>	'horizontal',
+			'type'			=> 'true_false',
+			'ui'			=> 1,
+		));
+		
+		
+		// allow_archives
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Allow Archives URLs','fieldmaster'),
+			'instructions'	=> '',
+			'name'			=> 'allow_archives',
+			'type'			=> 'true_false',
+			'ui'			=> 1,
 		));
 		
 		
 		// multiple
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Select multiple values?','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Select multiple values?','fieldmaster'),
 			'instructions'	=> '',
-			'type'			=> 'radio',
 			'name'			=> 'multiple',
-			'choices'		=> array(
-				1				=> __("Yes",'fields'),
-				0				=> __("No",'fields'),
-			),
-			'layout'	=>	'horizontal',
+			'type'			=> 'true_false',
+			'ui'			=> 1,
 		));
 				
 	}
@@ -615,7 +597,7 @@ class fieldmaster_field_page_link extends fieldmaster_field {
 		foreach( array_keys($value) as $i ) {
 			
 			// vars
-			$post = fields_extract_var( $value, $i );
+			$post = fieldmaster_extract_var( $value, $i );
 			
 			
 			// convert $post to permalink
@@ -704,8 +686,10 @@ class fieldmaster_field_page_link extends fieldmaster_field {
 	
 }
 
-new fieldmaster_field_page_link();
 
-endif;
+// initialize
+fieldmaster_register_field_type( new fieldmaster_field_page_link() );
+
+endif; // class_exists check
 
 ?>

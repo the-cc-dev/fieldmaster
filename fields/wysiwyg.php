@@ -15,7 +15,6 @@ if( ! class_exists('fieldmaster_field_wysiwyg') ) :
 
 class fieldmaster_field_wysiwyg extends fieldmaster_field {
 	
-	var $exists = 0;
 	
 	/*
 	*  __construct
@@ -34,41 +33,87 @@ class fieldmaster_field_wysiwyg extends fieldmaster_field {
 		
 		// vars
 		$this->name = 'wysiwyg';
-		$this->label = __("Wysiwyg Editor",'fields');
+		$this->label = __("Wysiwyg Editor",'fieldmaster');
 		$this->category = 'content';
 		$this->defaults = array(
 			'tabs'			=> 'all',
 			'toolbar'		=> 'full',
 			'media_upload' 	=> 1,
 			'default_value'	=> '',
+			'delay'			=> 0
 		);
     	
     	
-    	// Create an fields version of the_content filter (fields_the_content)
-		if(	!empty($GLOBALS['wp_embed']) ) {
-		
-			add_filter( 'fields_the_content', array( $GLOBALS['wp_embed'], 'run_shortcode' ), 8 );
-			add_filter( 'fields_the_content', array( $GLOBALS['wp_embed'], 'autoembed' ), 8 );
-			
-		}
-		
-		add_filter( 'fields_the_content', 'capital_P_dangit', 11 );
-		add_filter( 'fields_the_content', 'wptexturize' );
-		add_filter( 'fields_the_content', 'convert_smilies' );
-		add_filter( 'fields_the_content', 'convert_chars' );
-		add_filter( 'fields_the_content', 'wpautop' );
-		add_filter( 'fields_the_content', 'shortcode_unautop' );
-		//add_filter( 'fields_the_content', 'prepend_attachment' ); *should only be for the_content (causes double image on attachment page)
-		add_filter( 'fields_the_content', 'do_shortcode', 11);
-		
-
-		// actions
-		add_action('fields/input/admin_footer_js', 	array($this, 'input_admin_footer_js'));
+    	// add fieldmaster_the_content filters
+    	$this->add_filters();
 		
 		
 		// do not delete!
     	parent::__construct();
     	
+	}
+	
+	
+	/*
+	*  add_filters
+	*
+	*  This function will add filters to 'fieldmaster_the_content'
+	*
+	*  @type	function
+	*  @date	20/09/2016
+	*  @since	5.4.0
+	*
+	*  @param	n/a
+	*  @return	n/a
+	*/
+	
+	function add_filters() {
+		
+		// globals
+   		global $wp_version;
+   		
+   		
+		// wp-includes/class-wp-embed.php
+		if(	!empty($GLOBALS['wp_embed']) ) {
+		
+			add_filter( 'fieldmaster_the_content', array( $GLOBALS['wp_embed'], 'run_shortcode' ), 8 );
+			add_filter( 'fieldmaster_the_content', array( $GLOBALS['wp_embed'], 'autoembed' ), 8 );
+			
+		}
+		
+		
+		// wp-includes/default-filters.php
+		add_filter( 'fieldmaster_the_content', 'capital_P_dangit', 11 );
+		add_filter( 'fieldmaster_the_content', 'wptexturize' );
+		add_filter( 'fieldmaster_the_content', 'convert_smilies', 20 );
+		
+		
+		// Removed in 4.4
+		if( version_compare($wp_version, '4.4', '<' ) ) {
+			
+			add_filter( 'fieldmaster_the_content', 'convert_chars' );
+			
+		}
+		
+		
+		add_filter( 'fieldmaster_the_content', 'wpautop' );
+		add_filter( 'fieldmaster_the_content', 'shortcode_unautop' );
+		
+		
+		// should only be for the_content (causes double image on attachment page)
+		//add_filter( 'fieldmaster_the_content', 'prepend_attachment' ); 
+		
+		
+		// Added in 4.4
+		if( function_exists('wp_make_content_images_responsive') ) {
+			
+			add_filter( 'fieldmaster_the_content', 'wp_make_content_images_responsive' );
+			
+		}
+		
+		
+		add_filter( 'fieldmaster_the_content', 'do_shortcode', 11);
+		
 	}
 	
 	
@@ -92,61 +137,56 @@ class fieldmaster_field_wysiwyg extends fieldmaster_field {
    		
    		
    		// vars
+   		$editor_id = 'fieldmaster_content';
+   		
+   		
+   		// toolbars
    		$toolbars = array();
-   		$editor_id = 'fields_content';
+   		$mce_buttons = 'formatselect, bold, italic, bullist, numlist, blockquote, alignleft, aligncenter, alignright, link, unlink, wp_more, spellchecker, fullscreen, wp_adv';
+   		$mce_buttons_2 = 'strikethrough, hr, forecolor, pastetext, removeformat, charmap, outdent, indent, undo, redo, wp_help';
+   		$teeny_mce_buttons = 'bold, italic, underline, blockquote, strikethrough, bullist, numlist, alignleft, aligncenter, alignright, undo, redo, link, unlink, fullscreen';
    		
    		
-   		if( version_compare($wp_version, '3.9', '>=' ) ) {
+   		// WP < 3.9
+   		if( fieldmaster_version_compare('wp', '<', '3.9') ) {
+	   		
+	   		$mce_buttons = 'bold, italic, strikethrough, bullist, numlist, blockquote, justifyleft, justifycenter, justifyright, link, unlink, wp_more, spellchecker, fullscreen, wp_adv';
+	   		$mce_buttons_2 = 'formatselect, underline, justifyfull, forecolor, pastetext, pasteword, removeformat, charmap, outdent, indent, undo, redo, wp_help';
+	   		$teeny_mce_buttons = 'bold, italic, underline, blockquote, strikethrough, bullist, numlist, justifyleft, justifycenter, justifyright, undo, redo, link, unlink, fullscreen';
+	   	
+	   	// WP < 4.7	
+	   	} elseif( fieldmaster_version_compare('wp', '<', '4.7') ) {
+			
+			$mce_buttons = 'bold, italic, strikethrough, bullist, numlist, blockquote, hr, alignleft, aligncenter, alignright, link, unlink, wp_more, spellchecker, fullscreen, wp_adv';
+	   		$mce_buttons_2 = 'formatselect, underline, alignjustify, forecolor, pastetext, removeformat, charmap, outdent, indent, undo, redo, wp_help';
+	   		//$teeny_mce_buttons = 'bold, italic, underline, blockquote, strikethrough, bullist, numlist, alignleft, aligncenter, alignright, undo, redo, link, unlink, fullscreen';
+			
+		}
+	   	
+	   	
+	   	// explode
+	   	$mce_buttons = explode(', ', $mce_buttons);
+	   	$mce_buttons_2 = explode(', ', $mce_buttons_2);
+   		$teeny_mce_buttons = explode(', ', $teeny_mce_buttons);
+   			
    		
-   			// Full
-	   		$toolbars['Full'] = array(
-	   			
-	   			1 => apply_filters('mce_buttons', array('bold', 'italic', 'strikethrough', 'bullist', 'numlist', 'blockquote', 'hr', 'alignleft', 'aligncenter', 'alignright', 'link', 'unlink', 'wp_more', 'spellchecker', 'fullscreen', 'wp_adv' ), $editor_id),
-	   			
-	   			2 => apply_filters('mce_buttons_2', array( 'formatselect', 'underline', 'alignjustify', 'forecolor', 'pastetext', 'removeformat', 'charmap', 'outdent', 'indent', 'undo', 'redo', 'wp_help' ), $editor_id),
-	   			
-	   			3 => apply_filters('mce_buttons_3', array(), $editor_id),
-	   			
-	   			4 => apply_filters('mce_buttons_4', array(), $editor_id),
-	   			
-	   		);
-	   		
-	   		
-	   		// Basic
-	   		$toolbars['Basic'] = array(
-	   			
-	   			1 => apply_filters('teeny_mce_buttons', array('bold', 'italic', 'underline', 'blockquote', 'strikethrough', 'bullist', 'numlist', 'alignleft', 'aligncenter', 'alignright', 'undo', 'redo', 'link', 'unlink', 'fullscreen'), $editor_id),
-	   			
-	   		);
-	   		  		
-   		} else {
-	   		
-	   		// Full
-	   		$toolbars['Full'] = array(
-	   			
-	   			1 => apply_filters('mce_buttons', array('bold', 'italic', 'strikethrough', 'bullist', 'numlist', 'blockquote', 'justifyleft', 'justifycenter', 'justifyright', 'link', 'unlink', 'wp_more', 'spellchecker', 'fullscreen', 'wp_adv' ), $editor_id),
-	   			
-	   			2 => apply_filters('mce_buttons_2', array( 'formatselect', 'underline', 'justifyfull', 'forecolor', 'pastetext', 'pasteword', 'removeformat', 'charmap', 'outdent', 'indent', 'undo', 'redo', 'wp_help' ), $editor_id),
-	   			
-	   			3 => apply_filters('mce_buttons_3', array(), $editor_id),
-	   			
-	   			4 => apply_filters('mce_buttons_4', array(), $editor_id),
-	   			
-	   		);
-
-	   		
-	   		// Basic
-	   		$toolbars['Basic'] = array(
-	   			
-	   			1 => apply_filters( 'teeny_mce_buttons', array('bold', 'italic', 'underline', 'blockquote', 'strikethrough', 'bullist', 'numlist', 'justifyleft', 'justifycenter', 'justifyright', 'undo', 'redo', 'link', 'unlink', 'fullscreen'), $editor_id ),
-	   			
-	   		);
-	   		
-   		}
+		// Full
+   		$toolbars['Full'] = array(
+   			1 => apply_filters('mce_buttons',	$mce_buttons,	$editor_id),
+   			2 => apply_filters('mce_buttons_2', $mce_buttons_2,	$editor_id),
+   			3 => apply_filters('mce_buttons_3', array(),		$editor_id),
+   			4 => apply_filters('mce_buttons_4', array(),		$editor_id)
+   		);
+	   	
+	   	
+   		// Basic
+   		$toolbars['Basic'] = array(
+   			1 => apply_filters('teeny_mce_buttons', $teeny_mce_buttons, $editor_id)
+   		);
    		
    		
    		// Filter for 3rd party
-   		$toolbars = apply_filters( 'fields/fields/wysiwyg/toolbars', $toolbars );
+   		$toolbars = apply_filters( 'fieldmaster/fields/wysiwyg/toolbars', $toolbars );
    		
    		
    		// return
@@ -156,7 +196,7 @@ class fieldmaster_field_wysiwyg extends fieldmaster_field {
    	
    	
    	/*
-   	*  input_admin_footer_js
+   	*  input_admin_footer
    	*
    	*  description
    	*
@@ -168,7 +208,7 @@ class fieldmaster_field_wysiwyg extends fieldmaster_field {
    	*  @return	$post_id (int)
    	*/
    	
-   	function input_admin_footer_js() {
+   	function input_admin_footer() {
 	   	
 	   	// vars
 		$json = array();
@@ -208,9 +248,12 @@ class fieldmaster_field_wysiwyg extends fieldmaster_field {
 			
 		}
 		
-		
-		?>fields.fields.wysiwyg.toolbars = <?php echo json_encode($json); ?>;
-	<?php
+
+?>
+<script type="text/javascript">
+	if( fieldmaster ) fieldmaster.fields.wysiwyg.toolbars = <?php echo json_encode($json); ?>;
+</script>
+<?php
 	
    	}
    	
@@ -234,23 +277,27 @@ class fieldmaster_field_wysiwyg extends fieldmaster_field {
    		
    		
 		// enqueue
-		fields_enqueue_uploader();
+		fieldmaster_enqueue_uploader();
 		
 		
 		// vars
-		$id = uniqid('fields-editor-');
+		$id = uniqid('fieldmaster-editor-');
 		$default_editor = 'html';
 		$show_tabs = true;
 		$button = '';
 		
 		
 		// get height
-		$height = fields_get_user_setting('wysiwyg_height', 300);
+		$height = fieldmaster_get_user_setting('wysiwyg_height', 300);
 		$height = max( $height, 300 ); // minimum height is 300
 		
 		
 		// detect mode
-		if( $field['tabs'] == 'visual' ) {
+		if( !user_can_richedit() ) {
+			
+			$show_tabs = false;
+			
+		} elseif( $field['tabs'] == 'visual' ) {
 			
 			// case: visual tab only
 			$default_editor = 'tinymce';
@@ -269,20 +316,28 @@ class fieldmaster_field_wysiwyg extends fieldmaster_field {
 		}
 		
 		
+		// must be logged in tp upload
+		if( !current_user_can('upload_files') ) {
+			
+			$field['media_upload'] = 0;
+			
+		}
+		
+		
 		// mode
 		$switch_class = ($default_editor === 'html') ? 'html-active' : 'tmce-active';
 		
 		
 		// filter value for editor
-		remove_filter( 'fields_the_editor_content', 'format_for_editor', 10, 2 );
-		remove_filter( 'fields_the_editor_content', 'wp_htmledit_pre', 10, 1 );
-		remove_filter( 'fields_the_editor_content', 'wp_richedit_pre', 10, 1 );
+		remove_filter( 'fieldmaster_the_editor_content', 'format_for_editor', 10, 2 );
+		remove_filter( 'fieldmaster_the_editor_content', 'wp_htmledit_pre', 10, 1 );
+		remove_filter( 'fieldmaster_the_editor_content', 'wp_richedit_pre', 10, 1 );
 		
 		
 		// WP 4.3
 		if( version_compare($wp_version, '4.3', '>=' ) ) {
 			
-			add_filter( 'fields_the_editor_content', 'format_for_editor', 10, 2 );
+			add_filter( 'fieldmaster_the_editor_content', 'format_for_editor', 10, 2 );
 			
 			$button = 'data-wp-editor-id="' . $id . '"';
 			
@@ -291,7 +346,7 @@ class fieldmaster_field_wysiwyg extends fieldmaster_field {
 			
 			$function = ($default_editor === 'html') ? 'wp_htmledit_pre' : 'wp_richedit_pre';
 			
-			add_filter('fields_the_editor_content', $function, 10, 1);
+			add_filter('fieldmaster_the_editor_content', $function, 10, 1);
 			
 			$button = 'onclick="switchEditors.switchto(this);"';
 			
@@ -299,10 +354,26 @@ class fieldmaster_field_wysiwyg extends fieldmaster_field {
 		
 		
 		// filter
-		$field['value'] = apply_filters( 'fields_the_editor_content', $field['value'], $default_editor );
+		$field['value'] = apply_filters( 'fieldmaster_the_editor_content', $field['value'], $default_editor );
+		
+		
+		// attr
+		$wrap = array(
+			'id'			=> 'wp-' . $id . '-wrap',
+			'class'			=> 'fieldmaster-editor-wrap wp-core-ui wp-editor-wrap ' . $switch_class,
+			'data-toolbar'	=> $field['toolbar']
+		);
+		
+		
+		// delay
+		if( $field['delay'] ) {
+			
+			$wrap['class'] .= ' delay';
+			
+		}
 		
 		?>
-		<div id="wp-<?php echo $id; ?>-wrap" class="fields-editor-wrap wp-core-ui wp-editor-wrap <?php echo $switch_class; ?>" data-toolbar="<?php echo $field['toolbar']; ?>" data-upload="<?php echo $field['media_upload']; ?>">
+		<div <?php echo fieldmaster_esc_attr($wrap); ?>>
 			<div id="wp-<?php echo $id; ?>-editor-tools" class="wp-editor-tools hide-if-no-js">
 				<?php if( $field['media_upload'] ): ?>
 				<div id="wp-<?php echo $id; ?>-media-buttons" class="wp-media-buttons">
@@ -311,12 +382,15 @@ class fieldmaster_field_wysiwyg extends fieldmaster_field {
 				<?php endif; ?>
 				<?php if( user_can_richedit() && $show_tabs ): ?>
 					<div class="wp-editor-tabs">
-						<button id="<?php echo $id; ?>-tmce" class="wp-switch-editor switch-tmce" <?php echo  $button; ?> type="button"><?php echo __('Visual', 'fields'); ?></button>
-						<button id="<?php echo $id; ?>-html" class="wp-switch-editor switch-html" <?php echo  $button; ?> type="button"><?php echo _x( 'Text', 'Name for the Text editor tab (formerly HTML)', 'fields' ); ?></button>
+						<button id="<?php echo $id; ?>-tmce" class="wp-switch-editor switch-tmce" <?php echo $button; ?> type="button"><?php echo __('Visual', 'fieldmaster'); ?></button>
+						<button id="<?php echo $id; ?>-html" class="wp-switch-editor switch-html" <?php echo $button; ?> type="button"><?php echo _x( 'Text', 'Name for the Text editor tab (formerly HTML)', 'fieldmaster' ); ?></button>
 					</div>
 				<?php endif; ?>
 			</div>
 			<div id="wp-<?php echo $id; ?>-editor-container" class="wp-editor-container">
+				<?php if( $field['delay'] ): ?>
+					<div class="fieldmaster-editor-toolbar"><?php _e('Click to initialize TinyMCE', 'fieldmaster'); ?></div>
+				<?php endif; ?>
 				<textarea id="<?php echo $id; ?>" class="wp-editor-area" name="<?php echo $field['name']; ?>" <?php if($height): ?>style="height:<?php echo $height; ?>px;"<?php endif; ?>><?php echo $field['value']; ?></textarea>
 			</div>
 		</div>
@@ -358,31 +432,31 @@ class fieldmaster_field_wysiwyg extends fieldmaster_field {
 		
 		
 		// default_value
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Default Value','fields'),
-			'instructions'	=> __('Appears when creating a new post','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Default Value','fieldmaster'),
+			'instructions'	=> __('Appears when creating a new post','fieldmaster'),
 			'type'			=> 'textarea',
 			'name'			=> 'default_value',
 		));
 		
 		
 		// tabs
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Tabs','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Tabs','fieldmaster'),
 			'instructions'	=> '',
 			'type'			=> 'select',
 			'name'			=> 'tabs',
 			'choices'		=> array(
-				'all'			=>	__("Visual & Text",'fields'),
-				'visual'		=>	__("Visual Only",'fields'),
-				'text'			=>	__("Text Only",'fields'),
+				'all'			=>	__("Visual & Text",'fieldmaster'),
+				'visual'		=>	__("Visual Only",'fieldmaster'),
+				'text'			=>	__("Text Only",'fieldmaster'),
 			)
 		));
 		
 		
 		// toolbar
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Toolbar','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Toolbar','fieldmaster'),
 			'instructions'	=> '',
 			'type'			=> 'select',
 			'name'			=> 'toolbar',
@@ -391,16 +465,22 @@ class fieldmaster_field_wysiwyg extends fieldmaster_field {
 		
 		
 		// media_upload
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Show Media Upload Buttons?','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Show Media Upload Buttons?','fieldmaster'),
 			'instructions'	=> '',
-			'type'			=> 'radio',
 			'name'			=> 'media_upload',
-			'layout'		=> 'horizontal',
-			'choices'		=> array(
-				1				=>	__("Yes",'fields'),
-				0				=>	__("No",'fields'),
-			)
+			'type'			=> 'true_false',
+			'ui'			=> 1,
+		));
+		
+		
+		// delay
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Delay initialization?','fieldmaster'),
+			'instructions'	=> __('TinyMCE will not be initalized until field is clicked','fieldmaster'),
+			'name'			=> 'delay',
+			'type'			=> 'true_false',
+			'ui'			=> 1,
 		));
 
 	}
@@ -433,7 +513,7 @@ class fieldmaster_field_wysiwyg extends fieldmaster_field {
 		
 		
 		// apply filters
-		$value = apply_filters( 'fields_the_content', $value );
+		$value = apply_filters( 'fieldmaster_the_content', $value );
 		
 		
 		// follow the_content function in /wp-includes/post-template.php
@@ -445,8 +525,10 @@ class fieldmaster_field_wysiwyg extends fieldmaster_field {
 	
 }
 
-new fieldmaster_field_wysiwyg();
 
-endif;
+// initialize
+fieldmaster_register_field_type( new fieldmaster_field_wysiwyg() );
+
+endif; // class_exists check
 
 ?>

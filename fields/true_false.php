@@ -33,11 +33,14 @@ class fieldmaster_field_true_false extends fieldmaster_field {
 		
 		// vars
 		$this->name = 'true_false';
-		$this->label = __("True / False",'fields');
+		$this->label = __('True / False','fieldmaster');
 		$this->category = 'choice';
 		$this->defaults = array(
 			'default_value'	=> 0,
 			'message'		=> '',
+			'ui'			=> 0,
+			'ui_on_text'	=> '',
+			'ui_off_text'	=> '',
 		);
 		
 		
@@ -62,27 +65,59 @@ class fieldmaster_field_true_false extends fieldmaster_field {
 	function render_field( $field ) {
 		
 		// vars
-		$atts = array(
+		$input = array(
 			'type'		=> 'checkbox',
-			'id'		=> "{$field['id']}-1",
+			'id'		=> $field['id'],
 			'name'		=> $field['name'],
 			'value'		=> '1',
+			'class'		=> $field['class'],
+			'autocomplete'	=> 'off'
 		);
+		
+		$hidden = array(
+			'name' 		=> $field['name'],
+			'value'		=> 0
+		);
+		
+		$active = $field['value'] ? true : false;
+		$switch = '';
 		
 		
 		// checked
-		if( !empty($field['value']) ) {
+		if( $active ) $input['checked'] = 'checked';
 		
-			$atts['checked'] = 'checked';
+		
+		// ui
+		if( $field['ui'] ) {
+			
+			// vars
+			if( $field['ui_on_text'] === '' ) $field['ui_on_text'] = __('Yes', 'fieldmaster');
+			if( $field['ui_off_text'] === '' ) $field['ui_off_text'] = __('No', 'fieldmaster');
+			
+			
+			// update input
+			$input['class'] .= ' fieldmaster-switch-input';
+			//$input['style'] = 'display:none;';
+			
+			$switch .= '<div class="fieldmaster-switch' . ($active ? ' -on' : '') . '">';
+				$switch .= '<span class="fieldmaster-switch-on">'.$field['ui_on_text'].'</span>';
+				$switch .= '<span class="fieldmaster-switch-off">'.$field['ui_off_text'].'</span>';
+				$switch .= '<div class="fieldmaster-switch-slider"></div>';
+			$switch .= '</div>';
 			
 		}
 		
+?>
+<div class="fieldmaster-true-false">
+	<?php fieldmaster_hidden_input($hidden); ?>
+	<label>
+		<input <?php echo fieldmaster_esc_attr($input); ?>/>
+		<?php if( $switch ) echo $switch; ?>
+		<?php if( $field['message'] ): ?><span><?php echo $field['message']; ?></span><?php endif; ?>
+	</label>
+</div>
+<?php
 		
-		// html
-		echo '<ul class="fields-checkbox-list fields-bl ' . fields_esc_attr($field['class']) . '">';
-			echo '<input type="hidden" name="' . fields_esc_attr($field['name']) . '" value="0" />';
-			echo '<li><label><input ' . fields_esc_attr($atts) . '/>' . $field['message'] . '</label></li>';
-		echo '</ul>';
 	}
 	
 	
@@ -102,20 +137,51 @@ class fieldmaster_field_true_false extends fieldmaster_field {
 	function render_field_settings( $field ) {
 		
 		// message
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Message','fields'),
-			'instructions'	=> __('eg. Show extra content','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Message','fieldmaster'),
+			'instructions'	=> __('Displays text alongside the checkbox','fieldmaster'),
 			'type'			=> 'text',
 			'name'			=> 'message',
 		));
 		
 		
 		// default_value
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Default Value','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Default Value','fieldmaster'),
 			'instructions'	=> '',
 			'type'			=> 'true_false',
 			'name'			=> 'default_value',
+		));
+		
+		
+		// ui
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Stylised UI','fieldmaster'),
+			'instructions'	=> '',
+			'type'			=> 'true_false',
+			'name'			=> 'ui',
+			'ui'			=> 1,
+			'class'			=> 'fm-field-object-true-false-ui'
+		));
+		
+		
+		// on_text
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('On Text','fieldmaster'),
+			'instructions'	=> __('Text shown when active','fieldmaster'),
+			'type'			=> 'text',
+			'name'			=> 'ui_on_text',
+			'placeholder'	=> __('Yes', 'fieldmaster')
+		));
+		
+		
+		// on_text
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Off Text','fieldmaster'),
+			'instructions'	=> __('Text shown when inactive','fieldmaster'),
+			'type'			=> 'text',
+			'name'			=> 'ui_off_text',
+			'placeholder'	=> __('No', 'fieldmaster')
 		));
 		
 	}
@@ -180,10 +246,39 @@ class fieldmaster_field_true_false extends fieldmaster_field {
 				
 	}
 	
+	
+	/*
+	*  translate_field
+	*
+	*  This function will translate field settings
+	*
+	*  @type	function
+	*  @date	8/03/2016
+	*  @since	5.3.2
+	*
+	*  @param	$field (array)
+	*  @return	$field
+	*/
+	
+	function translate_field( $field ) {
+		
+		// translate
+		$field['message'] = fieldmaster_translate( $field['message'] );
+		$field['ui_on_text'] = fieldmaster_translate( $field['ui_on_text'] );
+		$field['ui_off_text'] = fieldmaster_translate( $field['ui_off_text'] );
+		
+		
+		// return
+		return $field;
+		
+	}
+	
 }
 
-new fieldmaster_field_true_false();
 
-endif;
+// initialize
+fieldmaster_register_field_type( new fieldmaster_field_true_false() );
+
+endif; // class_exists check
 
 ?>

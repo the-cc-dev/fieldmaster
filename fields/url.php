@@ -33,7 +33,7 @@ class fieldmaster_field_url extends fieldmaster_field {
 		
 		// vars
 		$this->name = 'url';
-		$this->label = __("Url",'fields');
+		$this->label = __("Url",'fieldmaster');
 		$this->defaults = array(
 			'default_value'	=> '',
 			'placeholder'	=> '',
@@ -60,12 +60,13 @@ class fieldmaster_field_url extends fieldmaster_field {
 	function render_field( $field ) {
 		
 		// vars
+		$atts = array();
 		$o = array( 'type', 'id', 'class', 'name', 'value', 'placeholder' );
+		$s = array( 'readonly', 'disabled' );
 		$e = '';
 		
 		
-		// populate atts
-		$atts = array();
+		// append atts
 		foreach( $o as $k ) {
 		
 			$atts[ $k ] = $field[ $k ];	
@@ -73,21 +74,17 @@ class fieldmaster_field_url extends fieldmaster_field {
 		}
 		
 		
-		// special atts
-		foreach( array( 'readonly', 'disabled' ) as $k ) {
+		// append special atts
+		foreach( $s as $k ) {
 		
-			if( !empty($field[ $k ]) ) {
-			
-				$atts[ $k ] = $k;
-				
-			}
+			if( !empty($field[ $k ]) ) $atts[ $k ] = $k;
 			
 		}
 		
 		
 		// render
-		$e .= '<div class="fields-input-wrap fields-url">';
-		$e .= '<i class="fields-icon fields-icon-globe small"></i><input ' . fields_esc_attr( $atts ) . ' />';
+		$e .= '<div class="fieldmaster-input-wrap fieldmaster-url">';
+		$e .= '<i class="fieldmaster-icon -globe small"></i><input ' . fieldmaster_esc_attr( $atts ) . ' />';
 		$e .= '</div>';
 		
 		
@@ -113,18 +110,18 @@ class fieldmaster_field_url extends fieldmaster_field {
 	function render_field_settings( $field ) {
 		
 		// default_value
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Default Value','fields'),
-			'instructions'	=> __('Appears when creating a new post','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Default Value','fieldmaster'),
+			'instructions'	=> __('Appears when creating a new post','fieldmaster'),
 			'type'			=> 'text',
 			'name'			=> 'default_value',
 		));
 		
 		
 		// placeholder
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Placeholder Text','fields'),
-			'instructions'	=> __('Appears within the input','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Placeholder Text','fieldmaster'),
+			'instructions'	=> __('Appears within the input','fieldmaster'),
 			'type'			=> 'text',
 			'name'			=> 'placeholder',
 		));
@@ -165,7 +162,7 @@ class fieldmaster_field_url extends fieldmaster_field {
 			
 		} else {
 			
-			$valid = __('Value must be a valid URL', 'fields');
+			$valid = __('Value must be a valid URL', 'fieldmaster');
 			
 		}
 		
@@ -177,8 +174,10 @@ class fieldmaster_field_url extends fieldmaster_field {
 	
 }
 
-new fieldmaster_field_url();
 
-endif;
+// initialize
+fieldmaster_register_field_type( new fieldmaster_field_url() );
+
+endif; // class_exists check
 
 ?>

@@ -5,14 +5,14 @@
 *
 *  All the logic for misc AJAX functionality
 *
-*  @class 		fields_ajax
+*  @class 		fieldmaster_ajax
 *  @package		FieldMaster
 *  @subpackage	Core
 */
 
-if( ! class_exists('fields_ajax') ) :
+if( ! class_exists('fieldmaster_ajax') ) :
 
-class fields_ajax {
+class fieldmaster_ajax {
 	
 	
 	/*
@@ -30,9 +30,9 @@ class fields_ajax {
 	
 	function __construct() {
 		
-		// fields/update_user_setting
-		add_action( 'wp_ajax_fields/update_user_setting',			array($this, 'update_user_setting') );
-		add_action( 'wp_ajax_nopriv_fields/update_user_setting',	array($this, 'update_user_setting') );
+		// fieldmaster/update_user_setting
+		add_action( 'wp_ajax_fieldmaster/update_user_setting',			array($this, 'update_user_setting') );
+		add_action( 'wp_ajax_nopriv_fieldmaster/update_user_setting',	array($this, 'update_user_setting') );
 		
 	}
 	
@@ -53,7 +53,7 @@ class fields_ajax {
 	function update_user_setting() {
 		
 		// options
-		$options = fields_parse_args( $_POST, array(
+		$options = wp_parse_args( $_POST, array(
 			'name'		=> '',
 			'value'		=> '',
 			'nonce'		=> '',
@@ -61,7 +61,7 @@ class fields_ajax {
 		
 		
 		// validate
-		if( ! wp_verify_nonce($options['nonce'], 'fields_nonce') || empty($options['name']) ) {
+		if( ! wp_verify_nonce($options['nonce'], 'fieldmaster_nonce') || empty($options['name']) ) {
 		
 			die('0');
 			
@@ -69,7 +69,7 @@ class fields_ajax {
 		
 		
 		// upadte setting
-		fields_update_user_setting( $options['name'], $options['value'] );
+		fieldmaster_update_user_setting( $options['name'], $options['value'] );
 		
 		
 		// return
@@ -79,7 +79,7 @@ class fields_ajax {
 	
 }
 
-new fields_ajax();
+new fieldmaster_ajax();
 
 endif;
 

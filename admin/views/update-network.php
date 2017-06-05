@@ -44,7 +44,7 @@ extract($args);
 				</td>
 				<td>
 				<?php if( $site['updates'] ): ?>
-					<span class="response"><?php printf(__('Site requires database upgrade from %s to %s', 'fields'), $site['fields_version'], $plugin_version); ?></span>
+					<span class="response"><?php printf(__('Site requires database upgrade from %s to %s', 'fields'), $site['fieldmaster_version'], $plugin_version); ?></span>
 				<?php else: ?>
 					<?php _e("Site is up to date", 'fields'); ?>
 				<?php endif; ?>
@@ -168,7 +168,7 @@ extract($args);
 					type:		'post',
 					data:		{
 						action:		'fields/admin/data_upgrade',
-						nonce:		'<?php echo wp_create_nonce('fields_upgrade'); ?>',
+						nonce:		'<?php echo wp_create_nonce('fieldmaster_upgrade'); ?>',
 						blog_id:	$input.val(),
 					},
 					success: function( json ){

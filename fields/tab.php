@@ -33,10 +33,9 @@ class fieldmaster_field_tab extends fieldmaster_field {
 		
 		// vars
 		$this->name = 'tab';
-		$this->label = __("Tab",'fields');
+		$this->label = __("Tab",'fieldmaster');
 		$this->category = 'layout';
 		$this->defaults = array(
-			'value'		=> false, // prevents fields_render_fields() from attempting to load value
 			'placement'	=> 'top',
 			'endpoint'	=> 0 // added in 5.2.8
 		);
@@ -45,37 +44,6 @@ class fieldmaster_field_tab extends fieldmaster_field {
 		// do not delete!
     	parent::__construct();
 	}
-	
-	
-	/*
-	*  prepare_field
-	*
-	*  description
-	*
-	*  @type	function
-	*  @date	9/07/2015
-	*  @since	5.2.3
-	*
-	*  @param	$post_id (int)
-	*  @return	$post_id (int)
-	*/
-	
-/*
-	function prepare_field( $field ) {
-		
-		// append class
-		if( $field['endpoint'] ) {
-			
-			$field['wrapper']['class'] .= ' fields-field-tab-endpoint';
-			
-		}
-		
-		
-		// return
-		return $field;
-		
-	}
-*/
 	
 	
 	/*
@@ -94,13 +62,13 @@ class fieldmaster_field_tab extends fieldmaster_field {
 		
 		// vars
 		$atts = array(
-			'class'				=> 'fields-tab',
+			'class'				=> 'fieldmaster-tab',
 			'data-placement'	=> $field['placement'],
 			'data-endpoint'		=> $field['endpoint']
 		);
 		
 		?>
-		<div <?php fields_esc_attr_e( $atts ); ?>><?php echo $field['label']; ?></div>
+		<div <?php fieldmaster_esc_attr_e( $atts ); ?>><?php echo $field['label']; ?></div>
 		<?php
 		
 		
@@ -125,13 +93,13 @@ class fieldmaster_field_tab extends fieldmaster_field {
 		
 		// message
 		$message = '';
-		$message .= '<span class="fields-error-message"><p>' . __("The tab field will display incorrectly when added to a Table style repeater field or flexible content field layout", 'fields') . '</p></span>';
-		$message .= '<p>' . __( 'Use "Tab Fields" to better organize your edit screen by grouping fields together.', 'fields') . '</p>';
-		$message .= '<p>' . __( 'All fields following this "tab field" (or until another "tab field" is defined) will be grouped together using this field\'s label as the tab heading.','fields') . '</p>';
+		$message .= '<span class="fieldmaster-error-message"><p>' . __("The tab field will display incorrectly when added to a Table style repeater field or flexible content field layout", 'fieldmaster') . '</p></span>';
+		$message .= '<p>' . __( 'Use "Tab Fields" to better organize your edit screen by grouping fields together.', 'fieldmaster') . '</p>';
+		$message .= '<p>' . __( 'All fields following this "tab field" (or until another "tab field" is defined) will be grouped together using this field\'s label as the tab heading.','fieldmaster') . '</p>';
 		
 		// default_value
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Instructions','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Instructions','fieldmaster'),
 			'instructions'	=> '',
 			'type'			=> 'message',
 			'message'		=> $message,
@@ -140,36 +108,68 @@ class fieldmaster_field_tab extends fieldmaster_field {
 		
 		
 		// preview_size
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Placement','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Placement','fieldmaster'),
 			'type'			=> 'select',
 			'name'			=> 'placement',
 			'choices' 		=> array(
-				'top'			=>	__("Top aligned",'fields'),
-				'left'			=>	__("Left Aligned",'fields'),
+				'top'			=>	__("Top aligned",'fieldmaster'),
+				'left'			=>	__("Left Aligned",'fieldmaster'),
 			)
 		));
 		
 		
 		// endpoint
-		fields_render_field_setting( $field, array(
-			'label'			=> __('End-point','fields'),
-			'instructions'	=> __('Use this field as an end-point and start a new group of tabs','fields'),
-			'type'			=> 'radio',
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('End-point','fieldmaster'),
+			'instructions'	=> __('Use this field as an end-point and start a new group of tabs','fieldmaster'),
 			'name'			=> 'endpoint',
-			'choices'		=> array(
-				1				=> __("Yes",'fields'),
-				0				=> __("No",'fields'),
-			),
-			'layout'	=>	'horizontal',
+			'type'			=> 'true_false',
+			'ui'			=> 1,
 		));
 				
 	}
 	
+	
+	/*
+	*  load_field()
+	*
+	*  This filter is appied to the $field after it is loaded from the database
+	*
+	*  @type	filter
+	*  @since	3.6
+	*  @date	23/01/13
+	*
+	*  @param	$field - the field array holding all the field options
+	*
+	*  @return	$field - the field array holding all the field options
+	*/
+	
+	function load_field( $field ) {
+		
+		// remove name to avoid caching issue
+		$field['name'] = '';
+		
+		
+		// remove required to avoid JS issues
+		$field['required'] = 0;
+		
+		
+		// set value other than 'null' to avoid FieldMaster loading / caching issue
+		$field['value'] = false;
+		
+		
+		// return
+		return $field;
+		
+	}
+	
 }
 
-new fieldmaster_field_tab();
 
-endif;
+// initialize
+fieldmaster_register_field_type( new fieldmaster_field_tab() );
+
+endif; // class_exists check
 
 ?>

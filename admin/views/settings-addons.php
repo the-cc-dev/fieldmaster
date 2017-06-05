@@ -1,32 +1,32 @@
 <?php 
 
 // vars
-$json = fields_extract_var( $args, 'json');
+$json = fieldmaster_extract_var( $args, 'json');
 
 ?>
-<div class="wrap fields-settings-wrap">
+<div class="wrap fieldmaster-settings-wrap">
 	
-	<h2><?php _e("Add-ons",'fields'); ?></h2>
+	<h1><?php _e("Add-ons",'fieldmaster'); ?></h1>
 	
-	<div class="add-ons-list fields-cf">
+	<div class="add-ons-list fieldmaster-cf">
 		
 		<?php if( !empty($json) ): ?>
 			
 			<?php foreach( $json as $addon ): 
 				
-				$addon = fields_parse_args($addon, array(
+				$addon = wp_parse_args($addon, array(
 					"title"			=> "",
 			        "slug"			=> "",
 			        "description"	=> "",
 			        "thumbnail"		=> "",
 			        "url"			=> "",
-			        "btn"			=> __("Download & Install",'fields'),
+			        "btn"			=> __("Download & Install",'fieldmaster'),
 			        "btn_color"		=> ""
 				));
 				
 				?>
 				
-				<div class="fields-box add-on add-on-<?php echo $addon['slug']; ?>">
+				<div class="fieldmaster-box add-on add-on-<?php echo $addon['slug']; ?>">
 					
 					<div class="thumbnail">
 						<a target="_blank" href="<?php echo $addon['url']; ?>">
@@ -38,10 +38,10 @@ $json = fields_extract_var( $args, 'json');
 						<p><?php echo $addon['description']; ?></p>
 					</div>
 					<div class="footer">
-						<?php if( apply_filters("fields/is_add_on_active/slug={$addon['slug']}", false ) ): ?>
-							<a class="fields-button" disabled="disabled"><?php _e("Installed",'fields'); ?></a>
+						<?php if( apply_filters("fieldmaster/is_add_on_active/slug={$addon['slug']}", false ) ): ?>
+							<a class="button" disabled="disabled"><?php _e("Installed",'fieldmaster'); ?></a>
 						<?php else: ?>
-							<a class="fields-button <?php echo $addon['btn_color']; ?>" target="_blank" href="<?php echo $addon['url']; ?>" ><?php _e($addon['btn']); ?></a>
+							<a class="button <?php echo $addon['btn_color']; ?>" target="_blank" href="<?php echo $addon['url']; ?>" ><?php _e($addon['btn']); ?></a>
 						<?php endif; ?>
 						
 						<?php if( !empty($addon['footer']) ): ?>

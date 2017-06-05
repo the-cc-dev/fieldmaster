@@ -33,26 +33,50 @@ class fieldmaster_field_oembed extends fieldmaster_field {
 		
 		// vars
 		$this->name = 'oembed';
-		$this->label = __("oEmbed",'fields');
+		$this->label = __("oEmbed",'fieldmaster');
 		$this->category = 'content';
 		$this->defaults = array(
 			'width'		=> '',
 			'height'	=> '',
 		);
-		$this->default_values = array(
-			'width' 	=> 640,
-			'height'	=> 390
-		);
-
+		$this->width = 640;
+		$this->height = 390;
+		
 		
 		// extra
-		add_action('wp_ajax_fields/fields/oembed/search',			array($this, 'ajax_search'));
-		add_action('wp_ajax_nopriv_fields/fields/oembed/search',	array($this, 'ajax_search'));
+		add_action('wp_ajax_fieldmaster/fields/oembed/search',			array($this, 'ajax_query'));
+		add_action('wp_ajax_nopriv_fieldmaster/fields/oembed/search',	array($this, 'ajax_query'));
 		
 		
 		// do not delete!
     	parent::__construct();
     	
+	}
+	
+	
+	/*
+	*  prepare_field
+	*
+	*  This function will prepare the field for input
+	*
+	*  @type	function
+	*  @date	14/2/17
+	*  @since	5.5.8
+	*
+	*  @param	$field (array)
+	*  @return	(int)
+	*/
+	
+	function prepare_field( $field ) {
+		
+		// defaults
+		if( !$field['width'] ) $field['width'] = $this->width;
+		if( !$field['height'] ) $field['height'] = $this->height;
+		
+		
+		// return
+		return $field;
+		
 	}
 	
 	
@@ -83,13 +107,26 @@ class fieldmaster_field_oembed extends fieldmaster_field {
 		$embed = @wp_oembed_get( $url, $res );
 		
 		
+		// try shortcode
+		if( !$embed ) {
+			
+			 // global
+			global $wp_embed;
+			
+			
+			// get emebed
+			$embed = $wp_embed->shortcode($res, $url);
+		
+		}
+				
+		
 		// return
 		return $embed;
 	}
 	
 	
 	/*
-	*  ajax_search
+	*  ajax_query
 	*
 	*  description
 	*
@@ -101,45 +138,62 @@ class fieldmaster_field_oembed extends fieldmaster_field {
 	*  @return	$post_id (int)
 	*/
 	
-	function ajax_search() {
+	function ajax_query() {
 		
-   		// options
-   		$args = fields_parse_args( $_POST, array(
-			's'			=> '',
-			'nonce'		=> '',
-			'width'		=> 0,
-			'height'	=> 0,
+		// validate
+		if( !fieldmaster_verify_ajax() ) die();
+		
+		
+		// get choices
+		$response = $this->get_ajax_query( $_POST );
+		
+		
+		// return
+		wp_send_json($response);
+			
+	}
+	
+	
+	/*
+	*  get_ajax_query
+	*
+	*  This function will return an array of data formatted for use in a select2 AJAX response
+	*
+	*  @type	function
+	*  @date	15/10/2014
+	*  @since	5.0.9
+	*
+	*  @param	$options (array)
+	*  @return	(array)
+	*/
+	
+	function get_ajax_query( $args = array() ) {
+		
+   		// defaults
+   		$args = fieldmaster_parse_args($args, array(
+			's'				=> '',
+			'field_key'		=> '',
 		));
 		
 		
-		// width and height
-		if( !$args['width'] ) {
-		
-			$args['width'] = $this->default_values['width'];
-			
-		}
-		
-		if( !$args['height'] ) {
-		
-			$args['height'] = $this->default_values['height'];
-			
-		}
+		// load field
+		$field = fieldmaster_get_field( $args['field_key'] );
+		if( !$field ) return false;
 		
 		
-		// validate
-		if( ! wp_verify_nonce($args['nonce'], 'fields_nonce') ) {
-		
-			die();
-			
-		}
+		// prepare field to correct width and height
+		$field = $this->prepare_field($field);
 		
 		
-		// get oembed
-		echo $this->wp_oembed_get($args['s'], $args['width'], $args['height']);
+		// vars
+		$response = array(
+			'url'	=> $args['s'],
+			'html'	=> $this->wp_oembed_get($args['s'], $field['width'], $field['height'])
+		);
 		
 		
-		// die
-		die();
+		// return
+		return $response;
 			
 	}
 	
@@ -158,37 +212,21 @@ class fieldmaster_field_oembed extends fieldmaster_field {
 	
 	function render_field( $field ) {
 		
-		// default options
-		foreach( $this->default_values as $k => $v ) {
-		
-			if( empty($field[ $k ]) ) {
-			
-				$field[ $k ] = $v;
-				
-			}
-			
-		}
-		
-		
 		// atts
 		$atts = array(
-			'class'			=> 'fields-oembed',
-			'data-width'	=> $field['width'],
-			'data-height'	=> $field['height']
+			'class' => 'fieldmaster-oembed',
 		);
 		
-		if( $field['value'] ) {
 		
-			$atts['class'] .= ' has-value';
-			
-		}
+		// value
+		if( $field['value'] ) $atts['class'] .= ' has-value';
 		
 ?>
-<div <?php fields_esc_attr_e($atts) ?>>
-	<div class="fields-hidden">
+<div <?php fieldmaster_esc_attr_e($atts) ?>>
+	<div class="fieldmaster-hidden">
 		<input type="hidden" data-name="value-input" name="<?php echo esc_attr($field['name']); ?>" value="<?php echo esc_attr($field['value']); ?>" />
 	</div>
-	<div class="title fields-soh">
+	<div class="title fieldmaster-soh">
 		
 		<div class="title-value">
 			<h4 data-name="value-title"><?php echo $field['value']; ?></h4>
@@ -196,32 +234,29 @@ class fieldmaster_field_oembed extends fieldmaster_field {
 		
 		<div class="title-search">
 			
-			<input data-name="search-input" type="text" placeholder="<?php _e("Enter URL", 'fields'); ?>" autocomplete="off" />
+			<input data-name="search-input" type="text" placeholder="<?php _e("Enter URL", 'fieldmaster'); ?>" autocomplete="off" />
 		</div>
 		
-		<a data-name="clear-button" href="#" class="fields-icon fields-icon-cancel grey fields-soh-target"></a>
+		<a data-name="clear-button" href="#" class="fieldmaster-icon -cancel grey fieldmaster-soh-target"></a>
 		
 	</div>
 	<div class="canvas">
 		
 		<div class="canvas-loading">
-			<i class="fields-loading"></i>
+			<i class="fieldmaster-loading"></i>
 		</div>
 		
 		<div class="canvas-error">
-			<p><strong><?php _e("Error", 'fields'); ?></strong>. <?php _e("No embed found for the given URL", 'fields'); ?></p>
+			<p><strong><?php _e("Error.", 'fieldmaster'); ?></strong> <?php _e("No embed found for the given URL.", 'fieldmaster'); ?></p>
 		</div>
 		
 		<div class="canvas-media" data-name="value-embed">
-			<?php if( !empty( $field['value'] ) ): ?>
-				<?php echo $this->wp_oembed_get($field['value'], $field['width'], $field['height']); ?>
-			<?php endif; ?>
+			<?php if( $field['value'] ) echo $this->wp_oembed_get($field['value'], $field['width'], $field['height']); ?>
 		</div>
 		
-		<i class="fields-icon fields-icon-picture hide-if-value"></i>
+		<i class="fieldmaster-icon -picture hide-if-value"></i>
 		
 	</div>
-	
 </div>
 <?php
 		
@@ -244,27 +279,25 @@ class fieldmaster_field_oembed extends fieldmaster_field {
 	function render_field_settings( $field ) {
 		
 		// width
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Embed Size','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Embed Size','fieldmaster'),
 			'type'			=> 'text',
 			'name'			=> 'width',
-			'prepend'		=> __('Width', 'fields'),
+			'prepend'		=> __('Width', 'fieldmaster'),
 			'append'		=> 'px',
-			'placeholder'	=> $this->default_values['width']
+			'placeholder'	=> $this->width
 		));
 		
 		
 		// height
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Embed Size','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Embed Size','fieldmaster'),
 			'type'			=> 'text',
 			'name'			=> 'height',
-			'prepend'		=> __('Height', 'fields'),
+			'prepend'		=> __('Height', 'fieldmaster'),
 			'append'		=> 'px',
-			'placeholder'	=> $this->default_values['height'],
-			'wrapper'		=> array(
-				'data-append' => 'width'
-			)
+			'placeholder'	=> $this->height,
+			'_append' 		=> 'width'
 		));
 		
 	}
@@ -289,11 +322,11 @@ class fieldmaster_field_oembed extends fieldmaster_field {
 	function format_value( $value, $post_id, $field ) {
 		
 		// bail early if no value
-		if( empty($value) ) {
-			
-			return $value;
+		if( empty($value) ) return $value;
 		
-		}
+		
+		// prepare field to correct width and height
+		$field = $this->prepare_field($field);
 		
 		
 		// get oembed
@@ -307,8 +340,10 @@ class fieldmaster_field_oembed extends fieldmaster_field {
 	
 }
 
-new fieldmaster_field_oembed();
 
-endif;
+// initialize
+fieldmaster_register_field_type( new fieldmaster_field_oembed() );
+
+endif; // class_exists check
 
 ?>

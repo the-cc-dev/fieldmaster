@@ -33,15 +33,13 @@ class fieldmaster_field_text extends fieldmaster_field {
 		
 		// vars
 		$this->name = 'text';
-		$this->label = __("Text",'fields');
+		$this->label = __("Text",'fieldmaster');
 		$this->defaults = array(
 			'default_value'	=> '',
 			'maxlength'		=> '',
 			'placeholder'	=> '',
 			'prepend'		=> '',
-			'append'		=> '',
-			'readonly'		=> 0,
-			'disabled'		=> 0,
+			'append'		=> ''
 		);
 		
 		
@@ -65,13 +63,14 @@ class fieldmaster_field_text extends fieldmaster_field {
 	function render_field( $field ) {
 		
 		// vars
+		$atts = array();
 		$o = array( 'type', 'id', 'class', 'name', 'value', 'placeholder' );
 		$s = array( 'readonly', 'disabled' );
 		$e = '';
 		
 		
 		// maxlength
-		if( $field['maxlength'] !== "" ) {
+		if( $field['maxlength'] ) {
 		
 			$o[] = 'maxlength';
 			
@@ -79,25 +78,24 @@ class fieldmaster_field_text extends fieldmaster_field {
 		
 		
 		// prepend
-		if( $field['prepend'] !== "" ) {
+		if( $field['prepend'] !== '' ) {
 		
-			$field['class'] .= ' fields-is-prepended';
-			$e .= '<div class="fields-input-prepend">' . $field['prepend'] . '</div>';
+			$field['class'] .= ' fieldmaster-is-prepended';
+			$e .= '<div class="fieldmaster-input-prepend">' . $field['prepend'] . '</div>';
 			
 		}
 		
 		
 		// append
-		if( $field['append'] !== "" ) {
+		if( $field['append'] !== '' ) {
 		
-			$field['class'] .= ' fields-is-appended';
-			$e .= '<div class="fields-input-append">' . $field['append'] . '</div>';
+			$field['class'] .= ' fieldmaster-is-appended';
+			$e .= '<div class="fieldmaster-input-append">' . $field['append'] . '</div>';
 			
 		}
 		
 		
-		// populate atts
-		$atts = array();
+		// append atts
 		foreach( $o as $k ) {
 		
 			$atts[ $k ] = $field[ $k ];	
@@ -105,21 +103,17 @@ class fieldmaster_field_text extends fieldmaster_field {
 		}
 		
 		
-		// special atts
+		// append special atts
 		foreach( $s as $k ) {
 		
-			if( $field[ $k ] ) {
-			
-				$atts[ $k ] = $k;
-				
-			}
+			if( !empty($field[ $k ]) ) $atts[ $k ] = $k;
 			
 		}
 		
 		
 		// render
-		$e .= '<div class="fields-input-wrap">';
-		$e .= '<input ' . fields_esc_attr( $atts ) . ' />';
+		$e .= '<div class="fieldmaster-input-wrap">';
+		$e .= '<input ' . fieldmaster_esc_attr( $atts ) . ' />';
 		$e .= '</div>';
 		
 		
@@ -144,45 +138,45 @@ class fieldmaster_field_text extends fieldmaster_field {
 	function render_field_settings( $field ) {
 		
 		// default_value
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Default Value','fields'),
-			'instructions'	=> __('Appears when creating a new post','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Default Value','fieldmaster'),
+			'instructions'	=> __('Appears when creating a new post','fieldmaster'),
 			'type'			=> 'text',
 			'name'			=> 'default_value',
 		));
 		
 		
 		// placeholder
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Placeholder Text','fields'),
-			'instructions'	=> __('Appears within the input','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Placeholder Text','fieldmaster'),
+			'instructions'	=> __('Appears within the input','fieldmaster'),
 			'type'			=> 'text',
 			'name'			=> 'placeholder',
 		));
 		
 		
 		// prepend
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Prepend','fields'),
-			'instructions'	=> __('Appears before the input','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Prepend','fieldmaster'),
+			'instructions'	=> __('Appears before the input','fieldmaster'),
 			'type'			=> 'text',
 			'name'			=> 'prepend',
 		));
 		
 		
 		// append
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Append','fields'),
-			'instructions'	=> __('Appears after the input','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Append','fieldmaster'),
+			'instructions'	=> __('Appears after the input','fieldmaster'),
 			'type'			=> 'text',
 			'name'			=> 'append',
 		));
 		
 		
 		// maxlength
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Character Limit','fields'),
-			'instructions'	=> __('Leave blank for no limit','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Character Limit','fieldmaster'),
+			'instructions'	=> __('Leave blank for no limit','fieldmaster'),
 			'type'			=> 'number',
 			'name'			=> 'maxlength',
 		));
@@ -191,8 +185,10 @@ class fieldmaster_field_text extends fieldmaster_field {
 	
 }
 
-new fieldmaster_field_text();
 
-endif;
+// initialize
+fieldmaster_register_field_type( new fieldmaster_field_text() );
+
+endif; // class_exists check
 
 ?>

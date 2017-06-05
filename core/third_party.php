@@ -5,14 +5,14 @@
 *
 *  All the logic for 3rd party functionality
 *
-*  @class 		fields_third_party
+*  @class 		fieldmaster_third_party
 *  @package		FieldMaster
 *  @subpackage	Core
 */
 
-if( ! class_exists('fields_third_party') ) :
+if( ! class_exists('fieldmaster_third_party') ) :
 
-class fields_third_party {
+class fieldmaster_third_party {
 	
 	
 	/*
@@ -59,7 +59,7 @@ class fields_third_party {
 		add_filter('tabify_posttypes',			array($this, 'tabify_posttypes'));
 		
 		
-		// add fields metaboxes to list
+		// add fieldmaster metaboxes to list
 		add_action('tabify_add_meta_boxes',		array($this, 'tabify_add_meta_boxes'));
 		
 	}
@@ -81,8 +81,8 @@ class fields_third_party {
 	function tabify_posttypes( $posttypes ) {
 		
 		// unset
-		unset( $posttypes['fields-field-group'] );
-		unset( $posttypes['fields-field'] );
+		unset( $posttypes['fm-field-group'] );
+		unset( $posttypes['fm-field'] );
 		
 		
 		// return
@@ -106,7 +106,7 @@ class fields_third_party {
 	function tabify_add_meta_boxes( $post_type ) {
 		
 		// get field groups
-		$field_groups = fields_get_field_groups();
+		$field_groups = fieldmaster_get_field_groups();
 		
 		
 		if( !empty($field_groups) ) {
@@ -114,7 +114,7 @@ class fields_third_party {
 			foreach( $field_groups as $field_group ) {
 				
 				// vars
-				$id = "fields-{$field_group['key']}";
+				$id = "fieldmaster-{$field_group['key']}";
 				$title = 'FieldMaster: ' . $field_group['title'];
 
 				
@@ -161,7 +161,7 @@ class fields_third_party {
 				
 		
 		// check post type
-		if( $post_type == 'fields-field-group' ) {
+		if( $post_type == 'fm-field-group' ) {
 			
 			$pages = array();
 			
@@ -175,7 +175,7 @@ class fields_third_party {
 	
 }
 
-new fields_third_party();
+new fieldmaster_third_party();
 
 endif;
 

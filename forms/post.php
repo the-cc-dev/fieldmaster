@@ -5,14 +5,14 @@
 *
 *  All the logic for adding fields to posts
 *
-*  @class 		fields_form_post
+*  @class 		fieldmaster_form_post
 *  @package		FieldMaster
 *  @subpackage	Forms
 */
 
-if( ! class_exists('fields_form_post') ) :
+if( ! class_exists('fieldmaster_form_post') ) :
 
-class fields_form_post {
+class fieldmaster_form_post {
 	
 	var $post_id	= 0,
 		$typenow	= '',
@@ -44,7 +44,7 @@ class fields_form_post {
 		
 		
 		// ajax
-		add_action('wp_ajax_fields/post/get_field_groups',	array($this, 'get_field_groups'));
+		add_action('wp_ajax_fieldmaster/post/get_field_groups',	array($this, 'get_field_groups'));
 		
 	}
 	
@@ -90,7 +90,7 @@ class fields_form_post {
 		
 		
 		// validate post type
-		if( in_array($typenow, array('fields-field-group', 'attachment')) ) {
+		if( in_array($typenow, array('fm-field-group', 'attachment')) ) {
 			
 			return false;
 			
@@ -130,20 +130,16 @@ class fields_form_post {
 	function admin_enqueue_scripts() {
 		
 		// validate page
-		if( ! $this->validate_page() ) {
-			
-			return;
-			
-		}
+		if( !$this->validate_page() ) return;
 
 		
-		// load fields scripts
-		fields_enqueue_scripts();
+		// load fieldmaster scripts
+		fieldmaster_enqueue_scripts();
 		
 		
 		// actions
-		add_action('fields/input/admin_head',		array($this,'admin_head'));
-		add_action('fields/input/admin_footer',	array($this,'admin_footer'));
+		add_action('fieldmaster/input/admin_head',		array($this,'admin_head'));
+		add_action('fieldmaster/input/admin_footer',	array($this,'admin_footer'));
 	}
 	
 	
@@ -167,7 +163,7 @@ class fields_form_post {
 		
 		
 		// get field groups
-		$field_groups = fields_get_field_groups();
+		$field_groups = fieldmaster_get_field_groups();
 		
 		
 		// add meta boxes
@@ -176,7 +172,7 @@ class fields_form_post {
 			foreach( $field_groups as $i => $field_group ) {
 				
 				// vars
-				$id = "fields-{$field_group['key']}";
+				$id = "fieldmaster-{$field_group['key']}";
 				$title = $field_group['title'];
 				$context = $field_group['position'];
 				$priority = 'high';
@@ -195,11 +191,11 @@ class fields_form_post {
 				
 				
 				// filter for 3rd party customization
-				$priority = apply_filters('fields/input/meta_box_priority', $priority, $field_group);
+				$priority = apply_filters('fieldmaster/input/meta_box_priority', $priority, $field_group);
 				
 				
 				// visibility
-				$args['visibility'] = fields_get_field_group_visibility( $field_group, array(
+				$args['visibility'] = fieldmaster_get_field_group_visibility( $field_group, array(
 					'post_id'	=> $this->post_id, 
 					'post_type'	=> $this->typenow
 				));
@@ -214,7 +210,7 @@ class fields_form_post {
 					
 					$style_found = true;
 					
-					$this->style = fields_get_field_group_style( $field_group );
+					$this->style = fieldmaster_get_field_group_style( $field_group );
 					
 				}
 				
@@ -223,12 +219,21 @@ class fields_form_post {
 		}
 				
 		
-		// Allow 'fields_after_title' metabox position
+		// Allow 'fieldmaster_after_title' metabox position
 		add_action('edit_form_after_title', array($this, 'edit_form_after_title'));
 		
 		
-		// remove FieldMaster from meta postbox
+		// remove postcustom metabox (removes expensive SQL query)
+		if( fieldmaster_get_setting('remove_wp_meta_box') ) {
+			
+			remove_meta_box( 'postcustom', false, 'normal' ); 
+			
+		}
+		
+		
+		// remove FieldMaster values from meta postbox ()
 		add_filter('is_protected_meta', array($this, 'is_protected_meta'), 10, 3);
+		
 	}
 	
 	
@@ -251,7 +256,7 @@ class fields_form_post {
 		
 		
 		// render post data
-		fields_form_data(array( 
+		fieldmaster_form_data(array( 
 			'post_id'	=> $this->post_id, 
 			'nonce'		=> 'post',
 			'ajax'		=> 1
@@ -259,11 +264,11 @@ class fields_form_post {
 		
 		
 		// render
-		do_meta_boxes( get_current_screen(), 'fields_after_title', $post);
+		do_meta_boxes( get_current_screen(), 'fieldmaster_after_title', $post);
 		
 		
 		// clean up
-		unset( $wp_meta_boxes['post']['fields_after_title'] );
+		unset( $wp_meta_boxes['post']['fieldmaster_after_title'] );
 
 	}
 	
@@ -295,13 +300,13 @@ class fields_form_post {
 			'style'			=> $field_group['style'],
 			'label'			=> $field_group['label_placement'],
 			'edit_url'		=> '',
-			'edit_title'	=> __('Edit field group', 'fields'),
+			'edit_title'	=> __('Edit field group', 'fieldmaster'),
 			'visibility'	=> $visibility
 		);
 		
 		
 		// edit_url
-		if( $field_group['ID'] && fields_current_user_can_admin() ) {
+		if( $field_group['ID'] && fieldmaster_current_user_can_admin() ) {
 			
 			$o['edit_url'] = admin_url('post.php?post=' . $field_group['ID'] . '&action=edit');
 				
@@ -312,24 +317,24 @@ class fields_form_post {
 		if( $visibility ) {
 			
 			// load fields
-			$fields = fields_get_fields( $field_group );
+			$fields = fieldmaster_get_fields( $field_group );
 			
 			
 			// render
-			fields_render_fields( $this->post_id, $fields, 'div', $field_group['instruction_placement'] );
+			fieldmaster_render_fields( $this->post_id, $fields, 'div', $field_group['instruction_placement'] );
 		
 		// render replace-me div
 		} else {
 			
-			echo '<div class="fields-replace-with-fields"><div class="fields-loading"></div></div>';
+			echo '<div class="fieldmaster-replace-with-fields"><div class="fieldmaster-loading"></div></div>';
 		
 		}
 	
 	?>
 <script type="text/javascript">
-if( typeof fields !== 'undefined' ) {
+if( typeof fieldmaster !== 'undefined' ) {
 		
-	fields.postbox.render(<?php echo json_encode($o); ?>);	
+	fieldmaster.postbox.render(<?php echo json_encode($o); ?>);	
 
 }
 </script>
@@ -354,7 +359,7 @@ if( typeof fields !== 'undefined' ) {
 	function admin_footer(){
 		
 		// get style of first field group
-		echo '<style type="text/css" id="fields-style">' . $this->style . '</style>';
+		echo '<style type="text/css" id="fieldmaster-style">' . $this->style . '</style>';
 		
 	}
 	
@@ -375,73 +380,85 @@ if( typeof fields !== 'undefined' ) {
 	function get_field_groups() {
 		
 		// options
-		$options = fields_parse_args($_POST, array(
+		$options = fieldmaster_parse_args($_POST, array(
 			'nonce'		=> '',
 			'post_id'	=> 0,
 			'ajax'		=> 1,
+			'exists'	=> array()
 		));
 		
 		
 		// vars
-		$r = array();
-		$nonce = fields_extract_var( $options, 'nonce' );
+		$json = array();
+		$exists = fieldmaster_extract_var( $options, 'exists' );
 		
 		
 		// verify nonce
-		if( ! wp_verify_nonce($nonce, 'fields_nonce') ) {
+		if( !fieldmaster_verify_ajax() ) die();
 		
-			die;
+		
+		// get field groups
+		$field_groups = fieldmaster_get_field_groups( $options );
+		
+		
+		// bail early if no field groups
+		if( empty($field_groups) ) {
+			
+			wp_send_json_success( $json );
 			
 		}
 		
 		
-		// get field groups
-		$field_groups = fields_get_field_groups( $options );
-		
-		
-		// loop through field groups and build $r
-		if( !empty($field_groups) ) {
+		// loop through field groups
+		foreach( $field_groups as $i => $field_group ) {
 			
-			foreach( $field_groups as $field_group ) {
+			// vars
+			$item = array(
+				//'ID'	=> $field_group['ID'], - JSON does not have ID (not used by JS anyway)
+				'key'	=> $field_group['key'],
+				'title'	=> $field_group['title'],
+				'html'	=> '',
+				'style' => ''
+			);
+			
+			
+			// style
+			if( $i == 0 ) {
 				
-				// vars
-				$class = 'fields-postbox ' . $field_group['style'];
+				$item['style'] = fieldmaster_get_field_group_style( $field_group );
 				
+			}
+			
+			
+			// html
+			if( !in_array($field_group['key'], $exists) ) {
 				
 				// load fields
-				$fields = fields_get_fields( $field_group );
+				$fields = fieldmaster_get_fields( $field_group );
 
-
+	
 				// get field HTML
 				ob_start();
 				
 				
 				// render
-				fields_render_fields( $options['post_id'], $fields, 'div', $field_group['instruction_placement'] );
+				fieldmaster_render_fields( $options['post_id'], $fields, 'div', $field_group['instruction_placement'] );
 				
 				
-				$html = ob_get_clean();
+				$item['html'] = ob_get_clean();
 				
 				
-				// get style
-				$style = fields_get_field_group_style( $field_group );
-				
-				
-				// append to $r
-				$r[] = array(
-					//'ID'	=> $field_group['ID'], - JSON does not have ID (not used by JS anyway)
-					'key'	=> $field_group['key'],
-					'title'	=> $field_group['title'],
-					'html'	=> $html,
-					'style' => $style,
-					'class'	=> $class
-				);
 			}
+			
+			
+			// append
+			$json[] = $item;
+			
 		}
 		
 		
 		// return
-		wp_send_json_success( $r );
+		wp_send_json_success( $json );
 		
 	}
 	
@@ -462,7 +479,7 @@ if( typeof fields !== 'undefined' ) {
 	
 	function wp_insert_post_empty_content( $maybe_empty, $postarr ) {
 		
-		if( $maybe_empty && !empty($_POST['_fieldschanged']) ) {
+		if( $maybe_empty && !empty($_POST['_fieldmasterchanged']) ) {
 			
 			$maybe_empty = false;
 			
@@ -471,6 +488,41 @@ if( typeof fields !== 'undefined' ) {
 		
 		// return
 		return $maybe_empty;
+	}
+	
+	
+	/*
+	*  allow_save_post
+	*
+	*  This function will return true if the post is allowed to be saved
+	*
+	*  @type	function
+	*  @date	26/06/2016
+	*  @since	5.3.8
+	*
+	*  @param	$post_id (int)
+	*  @return	$post_id (int)
+	*/
+	
+	function allow_save_post( $post ) {
+		
+		// vars
+		$allow = true;
+		$reject = array( 'auto-draft', 'revision', 'fm-field', 'fm-field-group' );
+		$wp_preview = fieldmaster_maybe_get($_POST, 'wp-preview');
+		
+		
+		// check post type
+		if( in_array($post->post_type, $reject) ) $allow = false;
+		
+		
+		// allow preview
+		if( $post->post_type == 'revision' && $wp_preview == 'dopreview' ) $allow = true;
+		
+		
+		// return
+		return $allow;
+		
 	}
 	
 	
@@ -489,50 +541,38 @@ if( typeof fields !== 'undefined' ) {
 	
 	function save_post( $post_id, $post ) {
 		
-		// do not save if this is an auto save routine
-		if( defined('DOING_AUTOSAVE') && DOING_AUTOSAVE ) {
-			
-			return $post_id;
-			
-		}
+		// bail ealry if no allowed to save this post type
+		if( !$this->allow_save_post($post) ) return $post_id;
 		
 		
-		// bail early if is fields-field-group or fields-field
-		if( in_array($post->post_type, array('fields-field', 'fields-field-group'))) {
-			
-			return $post_id;
-			
-		}
+		// ensure saving to the correct post
+		if( !fieldmaster_verify_nonce('post', $post_id) ) return $post_id;
 		
 		
-		// verify and remove nonce
-		if( !fields_verify_nonce('post', $post_id) ) {
+		// validate for published post (allow draft to save without validation)
+		if( $post->post_status == 'publish' ) {
 			
-			return $post_id;
-			
-		}
-		
-		
-		// validate and save
-		if( get_post_status($post_id) == 'publish' ) {
-			
-			if( fields_validate_save_post(true) ) {
+			// show errors
+			fieldmaster_validate_save_post( true );
 				
-				fields_save_post( $post_id );
-				
-			}
-			
-		} else {
-			
-			fields_save_post( $post_id );
-			
 		}
 		
+		
+		// save
+		fieldmaster_save_post( $post_id );
+		
+		
+		// save revision
+		if( post_type_supports($post->post_type, 'revisions') ) {
+			
+			fieldmaster_save_post_revision( $post_id );
+			
+		}
+				
 		
 		// return
 		return $post_id;
 		
-        
 	}
 	
 	
@@ -551,12 +591,12 @@ if( typeof fields !== 'undefined' ) {
 	
 	function is_protected_meta( $protected, $meta_key, $meta_type ) {
 		
-		// if fields_get_field_reference returns a valid key, this is an fields value, so protect it!
+		// if fieldmaster_get_field_reference returns a valid key, this is an fieldmaster value, so protect it!
 		if( !$protected ) {
 			
-			$reference = fields_get_field_reference( $meta_key, $this->post_id );
+			$reference = fieldmaster_get_field_reference( $meta_key, $this->post_id );
 			
-			if( fields_is_field_key($reference) ) {
+			if( fieldmaster_is_field_key($reference) ) {
 				
 				$protected = true;
 				
@@ -572,7 +612,7 @@ if( typeof fields !== 'undefined' ) {
 			
 }
 
-new fields_form_post();
+new fieldmaster_form_post();
 
 endif;
 

@@ -33,7 +33,7 @@ class fieldmaster_field_user extends fieldmaster_field {
 		
 		// vars
 		$this->name = 'user';
-		$this->label = __("User",'fields');
+		$this->label = __("User",'fieldmaster');
 		$this->category = 'relational';
 		$this->defaults = array(
 			'role' 			=> '',
@@ -43,8 +43,8 @@ class fieldmaster_field_user extends fieldmaster_field {
 		
 		
 		// extra
-		add_action('wp_ajax_fields/fields/user/query',			array($this, 'ajax_query'));
-		add_action('wp_ajax_nopriv_fields/fields/user/query',	array($this, 'ajax_query'));
+		add_action('wp_ajax_fieldmaster/fields/user/query',			array($this, 'ajax_query'));
+		add_action('wp_ajax_nopriv_fieldmaster/fields/user/query',	array($this, 'ajax_query'));
 		
 		
 		// do not delete!
@@ -52,167 +52,6 @@ class fieldmaster_field_user extends fieldmaster_field {
     	
 	}
 
-	
-	/*
-	*  get_choices
-	*
-	*  This function will return an array of data formatted for use in a select2 AJAX response
-	*
-	*  @type	function
-	*  @date	15/10/2014
-	*  @since	5.0.9
-	*
-	*  @param	$options (array)
-	*  @return	(array)
-	*/
-	
-	function get_choices( $options = array() ) {
-		
-   		// defaults
-   		$options = fields_parse_args($options, array(
-			'post_id'		=>	0,
-			's'				=>	'',
-			'field_key'		=>	'',
-		));
-		
-				
-   		// vars
-   		$r = array();
-   		$args = array();
-   		
-		
-		// load field
-		$field = fields_get_field( $options['field_key'] );
-		
-		if( !$field ) {
-		
-			return false;
-			
-		}
-		
-		
-		// editable roles
-		$editable_roles = get_editable_roles();
-		
-		if( !empty($field['role']) ) {
-			
-			foreach( $editable_roles as $role => $role_info ) {
-				
-				if( !in_array($role, $field['role']) ) {
-				
-					unset( $editable_roles[ $role ] );
-					
-				}
-				
-			}
-			
-		}
-		
-				
-		// search
-		if( $options['s'] ) {
-			
-			// append to $args
-			$args['search'] = '*' . $options['s'] . '*';
-			
-			
-			// add reference
-			$this->field = $field;
-			
-			
-			// add filter to modify search colums
-			add_filter('user_search_columns', array($this, 'user_search_columns'), 10, 3);
-			
-		}
-		
-		
-		// filters
-		$args = apply_filters("fields/fields/user/query",							$args, $field, $options['post_id']);
-		$args = apply_filters("fields/fields/user/query/name={$field['_name']}",	$args, $field, $options['post_id']);
-		$args = apply_filters("fields/fields/user/query/key={$field['key']}",		$args, $field, $options['post_id']);
-		
-		
-		// get users
-		$users = get_users( $args );
-		
-		if( !empty($users) && !empty($editable_roles) ) {
-			
-			foreach( $editable_roles as $role => $role_info ) {
-				
-				// vars
-				$this_users = array();
-				$this_json = array();
-				
-				
-				// loop over users
-				foreach( array_keys($users) as $key ) {
-					
-					if( in_array($role, $users[ $key ]->roles) ) {
-						
-						// extract user
-						$user = fields_extract_var( $users, $key );
-						
-						
-						// append to $this_users
-						$this_users[ $user->ID ] = $this->get_result( $user, $field, $options['post_id'] );
-						
-					}
-					
-				}
-				
-				
-				// bail early if no users for this role
-				if( empty($this_users) ) {
-				
-					continue;
-					
-				}
-				
-								
-				// order by search
-				if( !empty($args['s']) ) {
-					
-					$this_users = fields_order_by_search( $this_users, $args['s'] );
-					
-				}
-				
-				
-				// append to json
-				foreach( array_keys($this_users) as $user_id ) {
-					
-					// add to json
-					$this_json[] = array(
-						'id'	=> $user_id,
-						'text'	=> $this_users[ $user_id ]
-					);
-	
-				}
-				
-				
-				// add as optgroup or results
-				if( count($editable_roles) == 1 ) {
-				
-					$r = $this_json;
-					
-				} else {
-					
-					$r[] = array(
-						'text'		=> translate_user_role( $role_info['name'] ),
-						'children'	=> $this_json
-					);
-					
-				}
-				
-			}
-			
-		}
-		
-		
-		// return
-		return $r;
-			
-	}
-	
 	
 	/*
 	*  ajax_query
@@ -230,30 +69,177 @@ class fieldmaster_field_user extends fieldmaster_field {
 	function ajax_query() {
 		
 		// validate
-		if( !fields_verify_ajax() ) {
-		
-			die();
-			
-		}
+		if( !fieldmaster_verify_ajax() ) die();
 		
 		
 		// get choices
-		$choices = $this->get_choices( $_POST );
+		$response = $this->get_ajax_query( $_POST );
 		
 		
-		// validate
-		if( !$choices ) {
+		// return
+		fieldmaster_send_ajax_results($response);
 			
-			die();
+	}
+	
+	
+	/*
+	*  get_ajax_query
+	*
+	*  This function will return an array of data formatted for use in a select2 AJAX response
+	*
+	*  @type	function
+	*  @date	15/10/2014
+	*  @since	5.0.9
+	*
+	*  @param	$options (array)
+	*  @return	(array)
+	*/
+	
+	function get_ajax_query( $options = array() ) {
+		
+		// defaults
+   		$options = fieldmaster_parse_args($options, array(
+			'post_id'		=> 0,
+			's'				=> '',
+			'field_key'		=> '',
+			'paged'			=> 1
+		));
+		
+		
+		// load field
+		$field = fieldmaster_get_field( $options['field_key'] );
+		if( !$field ) return false;
+		
+		
+   		// vars
+   		$results = array();
+   		$args = array();
+   		$s = false;
+   		$is_search = false;
+   		
+		
+		// paged
+   		$args['users_per_page'] = 20;
+   		$args['paged'] = $options['paged'];
+   		
+   		
+   		// search
+		if( $options['s'] !== '' ) {
+			
+			// strip slashes (search may be integer)
+			$s = wp_unslash( strval($options['s']) );
+			
+			
+			// update vars
+			$args['s'] = $s;
+			$is_search = true;
 			
 		}
 		
 		
-		// return JSON
-		echo json_encode( $choices );
-		die();
+		// role
+		if( !empty($field['role']) ) {
+		
+			$args['role'] = fieldmaster_get_array( $field['role'] );
 			
+		}
+		
+		
+		// search
+		if( $is_search ) {
+			
+			// append to $args
+			$args['search'] = '*' . $options['s'] . '*';
+			
+			
+			// add reference
+			$this->field = $field;
+			
+			
+			// add filter to modify search colums
+			add_filter('user_search_columns', array($this, 'user_search_columns'), 10, 3);
+			
+		}
+		
+		
+		// filters
+		$args = apply_filters("fieldmaster/fields/user/query",							$args, $field, $options['post_id']);
+		$args = apply_filters("fieldmaster/fields/user/query/name={$field['_name']}",	$args, $field, $options['post_id']);
+		$args = apply_filters("fieldmaster/fields/user/query/key={$field['key']}",		$args, $field, $options['post_id']);
+		
+		
+		// get users
+		$groups = fieldmaster_get_grouped_users( $args );
+		
+		
+		// loop
+		if( !empty($groups) ) {
+			
+			foreach( array_keys($groups) as $group_title ) {
+				
+				// vars
+				$users = fieldmaster_extract_var( $groups, $group_title );
+				$data = array(
+					'text'		=> $group_title,
+					'children'	=> array()
+				);
+				
+				
+				// append users
+				foreach( array_keys($users) as $user_id ) {
+					
+					$users[ $user_id ] = $this->get_result( $users[ $user_id ], $field, $options['post_id'] );
+					
+				};
+				
+				
+				// order by search
+				if( $is_search && empty($args['orderby']) ) {
+					
+					$users = fieldmaster_order_by_search( $users, $args['s'] );
+					
+				}
+				
+				
+				// append to $data
+				foreach( $users as $id => $title ) {
+					
+					$data['children'][] = array(
+						'id'	=> $id,
+						'text'	=> $title
+					);
+					
+				}
+				
+				
+				// append to $r
+				$results[] = $data;
+				
+			}
+			
+			
+		}
+		
+		// optgroup or single
+		if( !empty($args['role']) && count($args['role']) == 1 ) {
+			
+			$results = $results[0]['children'];
+			
+		}
+		
+		
+		// vars
+		$response = array(
+			'results'	=> $results,
+			'limit'		=> $args['users_per_page']
+		);
+		
+		
+		// return
+		return $response;
+		
 	}
+	
 	
 	
 	/*
@@ -274,11 +260,7 @@ class fieldmaster_field_user extends fieldmaster_field {
 	function get_result( $user, $field, $post_id = 0 ) {
 		
 		// get post_id
-		if( !$post_id ) {
-			
-			$post_id = fields_get_setting('form_data/post_id', get_the_ID());
-			
-		}
+		if( !$post_id ) $post_id = fieldmaster_get_form_data('post_id');
 		
 		
 		// vars
@@ -302,9 +284,9 @@ class fieldmaster_field_user extends fieldmaster_field {
 		
 		
 		// filters
-		$result = apply_filters("fields/fields/user/result",							$result, $user, $field, $post_id);
-		$result = apply_filters("fields/fields/user/result/name={$field['_name']}",	$result, $user, $field, $post_id);
-		$result = apply_filters("fields/fields/user/result/key={$field['key']}",		$result, $user, $field, $post_id);
+		$result = apply_filters("fieldmaster/fields/user/result",							$result, $user, $field, $post_id);
+		$result = apply_filters("fieldmaster/fields/user/result/name={$field['_name']}",	$result, $user, $field, $post_id);
+		$result = apply_filters("fieldmaster/fields/user/result/key={$field['key']}",		$result, $user, $field, $post_id);
 		
 		
 		// return
@@ -341,9 +323,9 @@ class fieldmaster_field_user extends fieldmaster_field {
 		
 		
 		// filter for 3rd party customization
-		$columns = apply_filters("fields/fields/user/search_columns", 							$columns, $search, $WP_User_Query, $field);
-		$columns = apply_filters("fields/fields/user/search_columns/name={$field['_name']}",	$columns, $search, $WP_User_Query, $field);
-		$columns = apply_filters("fields/fields/user/search_columns/key={$field['key']}",		$columns, $search, $WP_User_Query, $field);
+		$columns = apply_filters("fieldmaster/fields/user/search_columns", 							$columns, $search, $WP_User_Query, $field);
+		$columns = apply_filters("fieldmaster/fields/user/search_columns/name={$field['_name']}",	$columns, $search, $WP_User_Query, $field);
+		$columns = apply_filters("fieldmaster/fields/user/search_columns/key={$field['key']}",		$columns, $search, $WP_User_Query, $field);
 		
 		
 		// return
@@ -376,7 +358,7 @@ class fieldmaster_field_user extends fieldmaster_field {
 		if( !empty($field['value']) ) {
 			
 			// force value to array
-			$field['value'] = fields_get_array( $field['value'] );
+			$field['value'] = fieldmaster_get_array( $field['value'] );
 			
 			
 			// convert values to int
@@ -402,7 +384,7 @@ class fieldmaster_field_user extends fieldmaster_field {
 		
 		
 		// render
-		fields_render_field( $field );
+		fieldmaster_render_field( $field );
 		
 	}
 	
@@ -422,56 +404,37 @@ class fieldmaster_field_user extends fieldmaster_field {
 	
 	function render_field_settings( $field ) {
 		
-		// role
-		$choices = array();
-		$editable_roles = get_editable_roles();
-
-		foreach( $editable_roles as $role => $details ) {	
-				
-			// only translate the output not the value
-			$choices[ $role ] = translate_user_role( $details['name'] );
-			
-		}
-		
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Filter by role','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Filter by role','fieldmaster'),
 			'instructions'	=> '',
 			'type'			=> 'select',
 			'name'			=> 'role',
-			'choices'		=> $choices,
+			'choices'		=> fieldmaster_get_pretty_user_roles(),
 			'multiple'		=> 1,
 			'ui'			=> 1,
 			'allow_null'	=> 1,
-			'placeholder'	=> __("All user roles",'fields'),
+			'placeholder'	=> __("All user roles",'fieldmaster'),
 		));
 		
 		
 		
 		// allow_null
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Allow Null?','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Allow Null?','fieldmaster'),
 			'instructions'	=> '',
-			'type'			=> 'radio',
 			'name'			=> 'allow_null',
-			'choices'		=> array(
-				1				=> __("Yes",'fields'),
-				0				=> __("No",'fields'),
-			),
-			'layout'	=>	'horizontal',
+			'type'			=> 'true_false',
+			'ui'			=> 1,
 		));
 		
 		
 		// multiple
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Select multiple values?','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Select multiple values?','fieldmaster'),
 			'instructions'	=> '',
-			'type'			=> 'radio',
 			'name'			=> 'multiple',
-			'choices'		=> array(
-				1				=> __("Yes",'fields'),
-				0				=> __("No",'fields'),
-			),
-			'layout'	=>	'horizontal',
+			'type'			=> 'true_false',
+			'ui'			=> 1,
 		));
 		
 		
@@ -573,7 +536,7 @@ class fieldmaster_field_user extends fieldmaster_field {
 		
 		
 		// force value to array
-		$value = fields_get_array( $value );
+		$value = fieldmaster_get_array( $value );
 		
 		
 		// convert values to int
@@ -629,8 +592,10 @@ class fieldmaster_field_user extends fieldmaster_field {
 		
 }
 
-new fieldmaster_field_user();
 
-endif;
+// initialize
+fieldmaster_register_field_type( new fieldmaster_field_user() );
+
+endif; // class_exists check
 
 ?>

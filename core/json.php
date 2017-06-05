@@ -1,21 +1,25 @@
 <?php 
 
-class fields_json {
+if( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
+
+if( ! class_exists('fieldmaster_json') ) :
+
+class fieldmaster_json {
 	
 	function __construct() {
 		
 		// update setting
-		fields_update_setting('save_json', get_stylesheet_directory() . '/fields-json');
-		fields_append_setting('load_json', get_stylesheet_directory() . '/fields-json');
+		fieldmaster_update_setting('save_json', get_stylesheet_directory() . '/fieldmaster-json');
+		fieldmaster_append_setting('load_json', get_stylesheet_directory() . '/fieldmaster-json');
 		
 		
 		// actions
-		add_action('fields/update_field_group',		array($this, 'update_field_group'), 10, 5);
-		add_action('fields/duplicate_field_group',		array($this, 'update_field_group'), 10, 5);
-		add_action('fields/untrash_field_group',		array($this, 'update_field_group'), 10, 5);
-		add_action('fields/trash_field_group',			array($this, 'delete_field_group'), 10, 5);
-		add_action('fields/delete_field_group',		array($this, 'delete_field_group'), 10, 5);
-		add_action('fields/include_fields', 			array($this, 'include_fields'), 10, 5);
+		add_action('fieldmaster/update_field_group',		array($this, 'update_field_group'), 10, 1);
+		add_action('fieldmaster/duplicate_field_group',		array($this, 'update_field_group'), 10, 1);
+		add_action('fieldmaster/untrash_field_group',		array($this, 'update_field_group'), 10, 1);
+		add_action('fieldmaster/trash_field_group',			array($this, 'delete_field_group'), 10, 1);
+		add_action('fieldmaster/delete_field_group',		array($this, 'delete_field_group'), 10, 1);
+		add_action('fieldmaster/include_fields', 			array($this, 'include_json_folders'), 10, 0);
 		
 	}
 	
@@ -23,7 +27,7 @@ class fields_json {
 	/*
 	*  update_field_group
 	*
-	*  This function is hooked into the fields/update_field_group action and will save all field group data to a .json file 
+	*  This function is hooked into the fieldmaster/update_field_group action and will save all field group data to a .json file 
 	*
 	*  @type	function
 	*  @date	10/03/2014
@@ -36,19 +40,15 @@ class fields_json {
 	function update_field_group( $field_group ) {
 		
 		// validate
-		if( !fields_get_setting('json') ) {
-		
-			return;
-			
-		}
+		if( !fieldmaster_get_setting('json') ) return;
 		
 		
 		// get fields
-		$field_group['fields'] = fields_get_fields( $field_group );
+		$field_group['fields'] = fieldmaster_get_fields( $field_group );
 		
 		
 		// save file
-		fields_write_json_field_group( $field_group );
+		fieldmaster_write_json_field_group( $field_group );
 			
 	}
 	
@@ -69,108 +69,124 @@ class fields_json {
 	function delete_field_group( $field_group ) {
 		
 		// validate
-		if( !fields_get_setting('json') ) {
-		
-			return;
-			
-		}
+		if( !fieldmaster_get_setting('json') ) return;
 		
 		
-		fields_delete_json_field_group( $field_group['key'] );
+		// WP appends '__trashed' to end of 'key' (post_name) 
+		$field_group['key'] = str_replace('__trashed', '', $field_group['key']);
+		
+		
+		// delete
+		fieldmaster_delete_json_field_group( $field_group['key'] );
 		
 	}
 		
 	
 	/*
-	*  include_fields
+	*  include_json_folders
 	*
-	*  This function will include any JSON files found in the active theme
+	*  This function will include all registered .json files
 	*
 	*  @type	function
 	*  @date	10/03/2014
 	*  @since	5.0.0
 	*
-	*  @param	$version (int)
+	*  @param	n/a
 	*  @return	n/a
 	*/
 	
-	function include_fields() {
+	function include_json_folders() {
 		
 		// validate
-		if( !fields_get_setting('json') ) {
-		
-			return;
-			
-		}
+		if( !fieldmaster_get_setting('json') ) return;
 		
 		
 		// vars
-		$paths = fields_get_setting('load_json');
+		$paths = fieldmaster_get_setting('load_json');
 		
 		
 		// loop through and add to cache
 		foreach( $paths as $path ) {
 			
-			// remove trailing slash
-			$path = untrailingslashit( $path );
-		
-		
-			// check that path exists
-			if( !file_exists( $path ) ) {
-			
-				continue;
-				
-			}
-			
-			
-			$dir = opendir( $path );
-	    
-		    while(false !== ( $file = readdir($dir)) ) {
-		    
-		    	// only json files
-		    	if( strpos($file, '.json') === false ) {
-		    	
-			    	continue;
-			    	
-		    	}
-		    	
-		    	
-		    	// read json
-		    	$json = file_get_contents("{$path}/{$file}");
-		    	
-		    	
-		    	// validate json
-		    	if( empty($json) ) {
-			    	
-			    	continue;
-			    	
-		    	}
-		    	
-		    	
-		    	// decode
-		    	$json = json_decode($json, true);
-		    	
-		    	
-		    	// add local
-		    	$json['local'] = 'json';
-		    	
-		    	
-		    	// add field group
-		    	fields_add_local_field_group( $json );
-		        
-		    }
+			$this->include_json_folder( $path );
 		    
 		}
 		
 	}
 	
+	
+	/*
+	*  include_json_folder
+	*
+	*  This function will include all .json files within a folder
+	*
+	*  @type	function
+	*  @date	1/5/17
+	*  @since	5.5.13
+	*
+	*  @param	n/a
+	*  @return	n/a
+	*/
+	
+	function include_json_folder( $path = '' ) {
+		
+		// remove trailing slash
+		$path = untrailingslashit( $path );
+		
+		
+		// bail early if path does not exist
+		if( !is_dir($path) ) return false;
+		
+		
+		// open
+		$dir = opendir( $path );
+    
+		
+		// loop over files
+	    while(false !== ( $file = readdir($dir)) ) {
+	    	
+	    	// validate type
+			if( pathinfo($file, PATHINFO_EXTENSION) !== 'json' ) continue;
+	    	
+	    	
+	    	// read json
+	    	$json = file_get_contents("{$path}/{$file}");
+	    	
+	    	
+	    	// validate json
+	    	if( empty($json) ) continue;
+	    	
+	    	
+	    	// decode
+	    	$json = json_decode($json, true);
+	    	
+	    	
+	    	// add local
+	    	$json['local'] = 'json';
+	    	
+	    	
+	    	// add field group
+	    	fieldmaster_add_local_field_group( $json );
+	        
+	    }
+	    
+	    
+	    // return
+	    return true;
+	    
+	}
+	
 }
 
-new fields_json();
+
+// initialize
+fieldmaster()->json = new fieldmaster_json();
+
+endif; // class_exists check
 
 
 /*
-*  fields_write_json_field_group
+*  fieldmaster_write_json_field_group
 *
 *  This function will save a field group to a json file within the current theme
 *
@@ -182,10 +198,10 @@ new fields_json();
 *  @return	(boolean)
 */
 
-function fields_write_json_field_group( $field_group ) {
+function fieldmaster_write_json_field_group( $field_group ) {
 	
 	// vars
-	$path = fields_get_setting('save_json');
+	$path = fieldmaster_get_setting('save_json');
 	$file = $field_group['key'] . '.json';
 	
 	
@@ -194,28 +210,21 @@ function fields_write_json_field_group( $field_group ) {
 	
 	
 	// bail early if dir does not exist
-	if( !is_writable($path) ) {
-	
-		return false;
-		
-	}
+	if( !is_writable($path) ) return false;
 	
 	
-	// extract field group ID
-	$id = fields_extract_var( $field_group, 'ID' );
+	// prepare for export
+	$id = fieldmaster_extract_var( $field_group, 'ID' );
+	$field_group = fieldmaster_prepare_field_group_for_export( $field_group );
 	
-	
+
 	// add modified time
 	$field_group['modified'] = get_post_modified_time('U', true, $id, true);
 	
 	
-	// prepare fields
-	$field_group['fields'] = fields_prepare_fields_for_export( $field_group['fields'] );
-		
-		
 	// write file
 	$f = fopen("{$path}/{$file}", 'w');
-	fwrite($f, fields_json_encode( $field_group ));
+	fwrite($f, fieldmaster_json_encode( $field_group ));
 	fclose($f);
 	
 	
@@ -226,7 +235,7 @@ function fields_write_json_field_group( $field_group ) {
 
 
 /*
-*  fields_delete_json_field_group
+*  fieldmaster_delete_json_field_group
 *
 *  This function will delete a json field group file
 *
@@ -238,10 +247,10 @@ function fields_write_json_field_group( $field_group ) {
 *  @return	(boolean)
 */
 
-function fields_delete_json_field_group( $key ) {
+function fieldmaster_delete_json_field_group( $key ) {
 	
 	// vars
-	$path = fields_get_setting('save_json');
+	$path = fieldmaster_get_setting('save_json');
 	$file = $key . '.json';
 	
 	

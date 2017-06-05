@@ -33,7 +33,7 @@ class fieldmaster_field_post_object extends fieldmaster_field {
 		
 		// vars
 		$this->name = 'post_object';
-		$this->label = __("Post Object",'fields');
+		$this->label = __("Post Object",'fieldmaster');
 		$this->category = 'relational';
 		$this->defaults = array(
 			'post_type'		=> array(),
@@ -46,175 +46,12 @@ class fieldmaster_field_post_object extends fieldmaster_field {
 		
 		
 		// extra
-		add_action('wp_ajax_fields/fields/post_object/query',			array($this, 'ajax_query'));
-		add_action('wp_ajax_nopriv_fields/fields/post_object/query',	array($this, 'ajax_query'));
+		add_action('wp_ajax_fieldmaster/fields/post_object/query',			array($this, 'ajax_query'));
+		add_action('wp_ajax_nopriv_fieldmaster/fields/post_object/query',	array($this, 'ajax_query'));
 		
 		
 		// do not delete!
     	parent::__construct();
-		
-	}
-	
-	
-	/*
-	*  get_choices
-	*
-	*  This function will return an array of data formatted for use in a select2 AJAX response
-	*
-	*  @type	function
-	*  @date	15/10/2014
-	*  @since	5.0.9
-	*
-	*  @param	$options (array)
-	*  @return	(array)
-	*/
-	
-	function get_choices( $options = array() ) {
-		
-		// defaults
-   		$options = fields_parse_args($options, array(
-			'post_id'		=> 0,
-			's'				=> '',
-			'field_key'		=> '',
-			'paged'			=> 1
-		));
-		
-		
-		// vars
-   		$r = array();
-   		$args = array();
-   		
-		
-		// paged
-   		$args['posts_per_page'] = 20;
-   		$args['paged'] = $options['paged'];
-   		
-   		
-		// load field
-		$field = fields_get_field( $options['field_key'] );
-		
-		if( !$field ) {
-		
-			return false;
-			
-		}
-		
-		
-		// update $args
-		if( !empty($field['post_type']) ) {
-		
-			$args['post_type'] = fields_get_array( $field['post_type'] );
-			
-		} else {
-			
-			$args['post_type'] = fields_get_post_types();
-			
-		}
-
-		
-		// create tax queries
-		if( !empty($field['taxonomy']) ) {
-			
-			// append to $args
-			$args['tax_query'] = array();
-			
-			
-			// decode terms
-			$taxonomies = fields_decode_taxonomy_terms( $field['taxonomy'] );
-			
-			
-			// now create the tax queries
-			foreach( $taxonomies as $taxonomy => $terms ) {
-			
-				$args['tax_query'][] = array(
-					'taxonomy'	=> $taxonomy,
-					'field'		=> 'slug',
-					'terms'		=> $terms,
-				);
-				
-			}
-			
-		}
-		
-		
-		// search
-		if( $options['s'] ) {
-		
-			$args['s'] = $options['s'];
-			
-		}
-		
-		
-		// filters
-		$args = apply_filters('fields/fields/post_object/query', $args, $field, $options['post_id']);
-		$args = apply_filters('fields/fields/post_object/query/name=' . $field['name'], $args, $field, $options['post_id'] );
-		$args = apply_filters('fields/fields/post_object/query/key=' . $field['key'], $args, $field, $options['post_id'] );
-		
-		
-		// get posts grouped by post type
-		$groups = fields_get_grouped_posts( $args );
-		
-		if( !empty($groups) ) {
-			
-			foreach( array_keys($groups) as $group_title ) {
-				
-				// vars
-				$posts = fields_extract_var( $groups, $group_title );
-				$titles = array();
-				
-				
-				// data
-				$data = array(
-					'text'		=> $group_title,
-					'children'	=> array()
-				);
-				
-				
-				foreach( array_keys($posts) as $post_id ) {
-					
-					// override data
-					$posts[ $post_id ] = $this->get_post_title( $posts[ $post_id ], $field, $options['post_id'] );
-					
-				};
-				
-				
-				// order by search
-				if( !empty($args['s']) ) {
-					
-					$posts = fields_order_by_search( $posts, $args['s'] );
-					
-				}
-				
-				
-				// append to $data
-				foreach( array_keys($posts) as $post_id ) {
-					
-					$data['children'][] = array(
-						'id'	=> $post_id,
-						'text'	=> $posts[ $post_id ]
-					);
-					
-				}
-				
-				
-				// append to $r
-				$r[] = $data;
-				
-			}
-			
-			
-			// optgroup or single
-			if( count($args['post_type']) == 1 ) {
-				
-				$r = $r[0]['children'];
-				
-			}
-			
-		}
-		
-		
-		// return
-		return $r;
 		
 	}
 	
@@ -235,28 +72,227 @@ class fieldmaster_field_post_object extends fieldmaster_field {
 	function ajax_query() {
 		
 		// validate
-		if( !fields_verify_ajax() ) {
-		
-			die();
-			
-		}
+		if( !fieldmaster_verify_ajax() ) die();
 		
 		
 		// get choices
-		$choices = $this->get_choices( $_POST );
+		$response = $this->get_ajax_query( $_POST );
 		
 		
-		// validate
-		if( !$choices ) {
+		// return
+		fieldmaster_send_ajax_results($response);
 			
-			die();
+	}
+	
+	
+	/*
+	*  get_ajax_query
+	*
+	*  This function will return an array of data formatted for use in a select2 AJAX response
+	*
+	*  @type	function
+	*  @date	15/10/2014
+	*  @since	5.0.9
+	*
+	*  @param	$options (array)
+	*  @return	(array)
+	*/
+	
+	function get_ajax_query( $options = array() ) {
+		
+   		// defaults
+   		$options = fieldmaster_parse_args($options, array(
+			'post_id'		=> 0,
+			's'				=> '',
+			'field_key'		=> '',
+			'paged'			=> 1
+		));
+		
+		
+		// load field
+		$field = fieldmaster_get_field( $options['field_key'] );
+		if( !$field ) return false;
+		
+		
+		// vars
+   		$results = array();
+		$args = array();
+		$s = false;
+		$is_search = false;
+		
+		
+   		// paged
+   		$args['posts_per_page'] = 20;
+   		$args['paged'] = $options['paged'];
+   		
+   		
+   		// search
+		if( $options['s'] !== '' ) {
+			
+			// strip slashes (search may be integer)
+			$s = wp_unslash( strval($options['s']) );
+			
+			
+			// update vars
+			$args['s'] = $s;
+			$is_search = true;
+			
+		}
+		
+				
+		// post_type
+		if( !empty($field['post_type']) ) {
+		
+			$args['post_type'] = fieldmaster_get_array( $field['post_type'] );
+			
+		} else {
+			
+			$args['post_type'] = fieldmaster_get_post_types();
 			
 		}
 		
 		
-		// return JSON
-		echo json_encode( $choices );
-		die();
+		// taxonomy
+		if( !empty($field['taxonomy']) ) {
+			
+			// vars
+			$terms = fieldmaster_decode_taxonomy_terms( $field['taxonomy'] );
+			
+			
+			// append to $args
+			$args['tax_query'] = array();
+			
+			
+			// now create the tax queries
+			foreach( $terms as $k => $v ) {
+			
+				$args['tax_query'][] = array(
+					'taxonomy'	=> $k,
+					'field'		=> 'slug',
+					'terms'		=> $v,
+				);
+				
+			}
+			
+		}
+		
+		
+		// filters
+		$args = apply_filters('fieldmaster/fields/post_object/query', $args, $field, $options['post_id']);
+		$args = apply_filters('fieldmaster/fields/post_object/query/name=' . $field['name'], $args, $field, $options['post_id'] );
+		$args = apply_filters('fieldmaster/fields/post_object/query/key=' . $field['key'], $args, $field, $options['post_id'] );
+		
+		
+		// get posts grouped by post type
+		$groups = fieldmaster_get_grouped_posts( $args );
+		
+		
+		// bail early if no posts
+		if( empty($groups) ) return false;
+		
+		
+		// loop
+		foreach( array_keys($groups) as $group_title ) {
+			
+			// vars
+			$posts = fieldmaster_extract_var( $groups, $group_title );
+			
+			
+			// data
+			$data = array(
+				'text'		=> $group_title,
+				'children'	=> array()
+			);
+			
+			
+			// convert post objects to post titles
+			foreach( array_keys($posts) as $post_id ) {
+				
+				$posts[ $post_id ] = $this->get_post_title( $posts[ $post_id ], $field, $options['post_id'], $is_search );
+				
+			}
+			
+			
+			// order posts by search
+			if( $is_search && empty($args['orderby']) ) {
+				
+				$posts = fieldmaster_order_by_search( $posts, $args['s'] );
+				
+			}
+			
+			
+			// append to $data
+			foreach( array_keys($posts) as $post_id ) {
+				
+				$data['children'][] = $this->get_post_result( $post_id, $posts[ $post_id ]);
+				
+			}
+			
+			
+			// append to $results
+			$results[] = $data;
+			
+		}
+		
+		
+		// optgroup or single
+		if( count($args['post_type']) == 1 ) {
+			
+			$results = $results[0]['children'];
+			
+		}
+		
+		
+		// vars
+		$response = array(
+			'results'	=> $results,
+			'limit'		=> $args['posts_per_page']
+		);
+		
+		
+		// return
+		return $response;
+			
+	}
+	
+	
+	/*
+	*  get_post_result
+	*
+	*  This function will return an array containing id, text and maybe description data
+	*
+	*  @type	function
+	*  @date	7/07/2016
+	*  @since	5.4.0
+	*
+	*  @param	$id (mixed)
+	*  @param	$text (string)
+	*  @return	(array)
+	*/
+	
+	function get_post_result( $id, $text ) {
+		
+		// vars
+		$result = array(
+			'id'	=> $id,
+			'text'	=> $text
+		);
+		
+		
+		// look for parent
+		$search = '| ' . __('Parent', 'fieldmaster') . ':';
+		$pos = strpos($text, $search);
+		
+		if( $pos !== false ) {
+			
+			$result['description'] = substr($text, $pos+2);
+			$result['text'] = substr($text, 0, $pos);
+			
+		}
+		
+		
+		// return
+		return $result;
 			
 	}
 	
@@ -276,34 +312,20 @@ class fieldmaster_field_post_object extends fieldmaster_field {
 	*  @return	(string)
 	*/
 	
-	function get_post_title( $post, $field, $post_id = 0 ) {
+	function get_post_title( $post, $field, $post_id = 0, $is_search = 0 ) {
 		
 		// get post_id
-		if( !$post_id ) {
-			
-			$form_data = fields_get_setting('form_data');
-			
-			if( !empty($form_data['post_id']) ) {
-				
-				$post_id = $form_data['post_id'];
-				
-			} else {
-				
-				$post_id = get_the_ID();
-				
-			}
-			
-		}
+		if( !$post_id ) $post_id = fieldmaster_get_form_data('post_id');
 		
 		
 		// vars
-		$title = fields_get_post_title( $post );
+		$title = fieldmaster_get_post_title( $post, $is_search );
 			
 		
 		// filters
-		$title = apply_filters('fields/fields/post_object/result', $title, $post, $field, $post_id);
-		$title = apply_filters('fields/fields/post_object/result/name=' . $field['_name'], $title, $post, $field, $post_id);
-		$title = apply_filters('fields/fields/post_object/result/key=' . $field['key'], $title, $post, $field, $post_id);
+		$title = apply_filters('fieldmaster/fields/post_object/result', $title, $post, $field, $post_id);
+		$title = apply_filters('fieldmaster/fields/post_object/result/name=' . $field['_name'], $title, $post, $field, $post_id);
+		$title = apply_filters('fieldmaster/fields/post_object/result/key=' . $field['key'], $title, $post, $field, $post_id);
 		
 		
 		// return
@@ -332,29 +354,19 @@ class fieldmaster_field_post_object extends fieldmaster_field {
 		$field['choices'] = array();
 		
 		
-		// populate choices if value exists
-		if( !empty($field['value']) ) {
-			
-			// get posts
-			$posts = fields_get_posts(array(
-				'post__in' => $field['value'],
-				'post_type'	=> $field['post_type']
-			));
-			
-			
-			// set choices
-			if( !empty($posts) ) {
+		// load posts
+		$posts = $this->get_posts( $field['value'], $field );
+		
+		if( $posts ) {
 				
-				foreach( array_keys($posts) as $i ) {
-					
-					// vars
-					$post = fields_extract_var( $posts, $i );
-					
-					
-					// append to choices
-					$field['choices'][ $post->ID ] = $this->get_post_title( $post, $field );
-					
-				}
+			foreach( array_keys($posts) as $i ) {
+				
+				// vars
+				$post = fieldmaster_extract_var( $posts, $i );
+				
+				
+				// append to choices
+				$field['choices'][ $post->ID ] = $this->get_post_title( $post, $field );
 				
 			}
 			
@@ -362,7 +374,8 @@ class fieldmaster_field_post_object extends fieldmaster_field {
 
 		
 		// render
-		fields_render_field( $field );
+		fieldmaster_render_field( $field );
+		
 	}
 	
 	
@@ -382,70 +395,62 @@ class fieldmaster_field_post_object extends fieldmaster_field {
 	function render_field_settings( $field ) {
 		
 		// default_value
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Filter by Post Type','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Filter by Post Type','fieldmaster'),
 			'instructions'	=> '',
 			'type'			=> 'select',
 			'name'			=> 'post_type',
-			'choices'		=> fields_get_pretty_post_types(),
+			'choices'		=> fieldmaster_get_pretty_post_types(),
 			'multiple'		=> 1,
 			'ui'			=> 1,
 			'allow_null'	=> 1,
-			'placeholder'	=> __("All post types",'fields'),
+			'placeholder'	=> __("All post types",'fieldmaster'),
 		));
 		
 		
 		// default_value
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Filter by Taxonomy','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Filter by Taxonomy','fieldmaster'),
 			'instructions'	=> '',
 			'type'			=> 'select',
 			'name'			=> 'taxonomy',
-			'choices'		=> fields_get_taxonomy_terms(),
+			'choices'		=> fieldmaster_get_taxonomy_terms(),
 			'multiple'		=> 1,
 			'ui'			=> 1,
 			'allow_null'	=> 1,
-			'placeholder'	=> __("All taxonomies",'fields'),
+			'placeholder'	=> __("All taxonomies",'fieldmaster'),
 		));
 		
 		
 		// allow_null
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Allow Null?','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Allow Null?','fieldmaster'),
 			'instructions'	=> '',
-			'type'			=> 'radio',
 			'name'			=> 'allow_null',
-			'choices'		=> array(
-				1				=> __("Yes",'fields'),
-				0				=> __("No",'fields'),
-			),
-			'layout'	=>	'horizontal',
+			'type'			=> 'true_false',
+			'ui'			=> 1,
 		));
 		
 		
 		// multiple
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Select multiple values?','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Select multiple values?','fieldmaster'),
 			'instructions'	=> '',
-			'type'			=> 'radio',
 			'name'			=> 'multiple',
-			'choices'		=> array(
-				1				=> __("Yes",'fields'),
-				0				=> __("No",'fields'),
-			),
-			'layout'	=>	'horizontal',
+			'type'			=> 'true_false',
+			'ui'			=> 1,
 		));
 		
 		
 		// return_format
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Return Format','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Return Format','fieldmaster'),
 			'instructions'	=> '',
 			'type'			=> 'radio',
 			'name'			=> 'return_format',
 			'choices'		=> array(
-				'object'		=> __("Post Object",'fields'),
-				'id'			=> __("Post ID",'fields'),
+				'object'		=> __("Post Object",'fieldmaster'),
+				'id'			=> __("Post ID",'fieldmaster'),
 			),
 			'layout'	=>	'horizontal',
 		));
@@ -471,15 +476,12 @@ class fieldmaster_field_post_object extends fieldmaster_field {
 	function load_value( $value, $post_id, $field ) {
 		
 		// FieldMaster4 null
-		if( $value === 'null' ) {
-		
-			return false;
-			
-		}
+		if( $value === 'null' ) return false;
 		
 		
 		// return
 		return $value;
+		
 	}
 	
 	
@@ -501,38 +503,26 @@ class fieldmaster_field_post_object extends fieldmaster_field {
 	
 	function format_value( $value, $post_id, $field ) {
 		
+		// numeric
+		$value = fieldmaster_get_numeric($value);
+		
+		
 		// bail early if no value
-		if( empty($value) ) {
-			
-			return $value;
-		
-		}
-		
-		
-		// force value to array
-		$value = fields_get_array( $value );
-		
-		
-		// convert values to int
-		$value = array_map('intval', $value);
+		if( empty($value) ) return false;
 		
 		
 		// load posts if needed
 		if( $field['return_format'] == 'object' ) {
 			
-			// get posts
-			$value = fields_get_posts(array(
-				'post__in' => $value,
-				'post_type'	=> $field['post_type']
-			));
-		
+			$value = $this->get_posts( $value, $field );
+			
 		}
 		
 		
 		// convert back from array if neccessary
-		if( !$field['multiple'] ) {
+		if( !$field['multiple'] && fieldmaster_is_array($value) ) {
 		
-			$value = array_shift($value);
+			$value = current($value);
 			
 		}
 		
@@ -601,10 +591,48 @@ class fieldmaster_field_post_object extends fieldmaster_field {
 		
 	}
 	
+	
+	/*
+	*  get_posts
+	*
+	*  This function will return an array of posts for a given field value
+	*
+	*  @type	function
+	*  @date	13/06/2014
+	*  @since	5.0.0
+	*
+	*  @param	$value (array)
+	*  @return	$value
+	*/
+	
+	function get_posts( $value, $field ) {
+		
+		// numeric
+		$value = fieldmaster_get_numeric($value);
+		
+		
+		// bail early if no value
+		if( empty($value) ) return false;
+		
+		
+		// get posts
+		$posts = fieldmaster_get_posts(array(
+			'post__in'	=> $value,
+			'post_type'	=> $field['post_type']
+		));
+		
+		
+		// return
+		return $posts;
+		
+	}
+	
 }
 
-new fieldmaster_field_post_object();
 
-endif;
+// initialize
+fieldmaster_register_field_type( new fieldmaster_field_post_object() );
+
+endif; // class_exists check
 
 ?>

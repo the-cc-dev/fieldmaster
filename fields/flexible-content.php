@@ -33,25 +33,43 @@ class fieldmaster_field_flexible_content extends fieldmaster_field {
 		
 		// vars
 		$this->name = 'flexible_content';
-		$this->label = __("Flexible Content",'fields');
+		$this->label = __("Flexible Content",'fieldmaster');
 		$this->category = 'layout';
 		$this->defaults = array(
 			'layouts'		=> array(),
 			'min'			=> '',
 			'max'			=> '',
-			'button_label'	=> __("Add Row",'fields'),
+			'button_label'	=> __("Add Row",'fieldmaster'),
 		);
 		$this->l10n = array(
-			'layout' 		=> __("layout", 'fields'),
-			'layouts'		=> __("layouts", 'fields'),
-			'remove'		=> __("remove {layout}?", 'fields'),
-			'min'			=> __("This field requires at least {min} {identifier}",'fields'),
-			'max'			=> __("This field has a limit of {max} {identifier}",'fields'),
-			'min_layout'	=> __("This field requires at least {min} {label} {identifier}",'fields'),
-			'max_layout'	=> __("Maximum {label} limit reached ({max} {identifier})",'fields'),
-			'available'		=> __("{available} {label} {identifier} available (max {max})",'fields'),
-			'required'		=> __("{required} {label} {identifier} required (min {min})",'fields'),
+			'layout' 		=> __("layout", 'fieldmaster'),
+			'layouts'		=> __("layouts", 'fieldmaster'),
+			'remove'		=> __("remove {layout}?", 'fieldmaster'),
+			'min'			=> __("This field requires at least {min} {identifier}",'fieldmaster'),
+			'max'			=> __("This field has a limit of {max} {identifier}",'fieldmaster'),
+			'min_layout'	=> __("This field requires at least {min} {label} {identifier}",'fieldmaster'),
+			'max_layout'	=> __("Maximum {label} limit reached ({max} {identifier})",'fieldmaster'),
+			'available'		=> __("{available} {label} {identifier} available (max {max})",'fieldmaster'),
+			'required'		=> __("{required} {label} {identifier} required (min {min})",'fieldmaster'),
+			'layout_warning'	=> __('Flexible Content requires at least 1 layout','fieldmaster')
 		);		
+		
+		
+		// ajax
+		$this->add_action('wp_ajax_fieldmaster/fields/flexible_content/layout_title',			array($this, 'ajax_layout_title'));
+		$this->add_action('wp_ajax_nopriv_fieldmaster/fields/flexible_content/layout_title',	array($this, 'ajax_layout_title'));
+		
+		
+		// filters
+		$this->add_filter('fieldmaster/prepare_field_for_export',	array($this, 'prepare_any_field_for_export'));
+		$this->add_filter('fieldmaster/clone_field', 				array($this, 'clone_any_field'), 10, 2);
+		$this->add_filter('fieldmaster/validate_field',					array($this, 'validate_any_field'));
+		
+		
+		// field filters
+		$this->add_field_filter('fieldmaster/get_sub_field', 			array($this, 'get_sub_field'), 10, 3);
+		$this->add_field_filter('fieldmaster/prepare_field_for_export', array($this, 'prepare_field_for_export'));
+		$this->add_field_filter('fieldmaster/prepare_field_for_import', array($this, 'prepare_field_for_import'));
 		
 		
 		// do not delete!
@@ -117,14 +135,14 @@ class fieldmaster_field_flexible_content extends fieldmaster_field {
 		
 		
 		// vars
-		$sub_fields = fields_get_fields($field);
+		$sub_fields = fieldmaster_get_fields($field);
 		
 		
 		// loop through layouts, sub fields and swap out the field key with the real field
 		foreach( array_keys($field['layouts']) as $i ) {
 			
 			// extract layout
-			$layout = fields_extract_var( $field['layouts'], $i );
+			$layout = fieldmaster_extract_var( $field['layouts'], $i );
 			
 			
 			// validate layout
@@ -148,7 +166,7 @@ class fieldmaster_field_flexible_content extends fieldmaster_field {
 					// append sub field to layout, 
 					if( $sub_fields[ $k ]['parent_layout'] == $layout['key'] ) {
 					
-						$layout['sub_fields'][] = fields_extract_var( $sub_fields, $k );
+						$layout['sub_fields'][] = fieldmaster_extract_var( $sub_fields, $k );
 						
 					}
 					
@@ -165,6 +183,64 @@ class fieldmaster_field_flexible_content extends fieldmaster_field {
 		
 		// return
 		return $field;
+	}
+	
+	
+	/*
+	*  get_sub_field
+	*
+	*  This function will return a specific sub field
+	*
+	*  @type	function
+	*  @date	29/09/2016
+	*  @since	5.4.0
+	*
+	*  @param	$sub_field 
+	*  @param	$selector (string)
+	*  @param	$field (array)
+	*  @return	$post_id (int)
+	*/
+
+	function get_sub_field( $sub_field, $selector, $field ) {
+		
+		// bail early if no layouts
+		if( empty($field['layouts']) ) return false;
+		
+		
+		// vars
+		$active = get_row_layout();
+		
+		
+		// loop
+		foreach( $field['layouts'] as $layout ) {
+			
+			// bail early if active layout does not match
+			if( $active && $active !== $layout['name'] ) continue;
+			
+			
+			// bail early if no sub fields
+			if( empty($layout['sub_fields']) ) continue;
+			
+			
+			// loop
+			foreach( $layout['sub_fields'] as $sub_field ) {
+				
+				// check name and key
+				if( $sub_field['name'] == $selector || $sub_field['key'] == $selector ) {
+					
+					// return
+					return $sub_field;
+					
+				}
+				
+			}
+			
+		}
+		
+		
+		// return
+		return false;
+		
 	}
 	
 	
@@ -195,24 +271,27 @@ class fieldmaster_field_flexible_content extends fieldmaster_field {
 		
 		foreach( $field['layouts'] as $k => $layout ) {
 		
-			$layouts[ $layout['name'] ] = fields_extract_var( $field['layouts'], $k );
+			$layouts[ $layout['name'] ] = $layout;
 			
 		}
 		
 		
-		// hidden input
-		fields_hidden_input(array(
-			'type'	=> 'hidden',
-			'name'	=> $field['name'],
-		));
+		// vars
+		$div = array(
+			'class'		=> 'fieldmaster-flexible-content',
+			'data-min'	=> $field['min'],
+			'data-max'	=> $field['max']
+		);
 		
 		
 		// no value message
-		$no_value_message = __('Click the "%s" button below to start creating your layout','fields');
-		$no_value_message = apply_filters('fields/fields/flexible_content/no_value_message', $no_value_message, $field);
+		$no_value_message = __('Click the "%s" button below to start creating your layout','fieldmaster');
+		$no_value_message = apply_filters('fieldmaster/fields/flexible_content/no_value_message', $no_value_message, $field);
 
 ?>
-<div <?php fields_esc_attr_e(array( 'class' => 'fields-flexible-content', 'data-min' => $field['min'], 'data-max'	=> $field['max'] )); ?>>
+<div <?php fieldmaster_esc_attr_e( $div ); ?>>
+	
+	<?php fieldmaster_hidden_input(array( 'name' => $field['name'] )); ?>
 	
 	<div class="no-value-message" <?php if( $field['value'] ){ echo 'style="display:none;"'; } ?>>
 		<?php printf( $no_value_message, $field['button_label'] ); ?>
@@ -220,36 +299,35 @@ class fieldmaster_field_flexible_content extends fieldmaster_field {
 	
 	<div class="clones">
 		<?php foreach( $layouts as $layout ): ?>
-			<?php $this->render_layout( $field, $layout, 'fieldscloneindex', array() ); ?>
+			<?php $this->render_layout( $field, $layout, 'fieldmastercloneindex', array() ); ?>
 		<?php endforeach; ?>
 	</div>
+	
 	<div class="values">
-		<?php if( !empty($field['value']) ): ?>
-			<?php foreach( $field['value'] as $i => $value ): ?>
-				<?php 
+		<?php if( !empty($field['value']) ): 
+			
+			foreach( $field['value'] as $i => $value ):
 				
 				// validate
-				if( empty($layouts[ $value['fields_fc_layout'] ]) ) {
+				if( empty($layouts[ $value['fieldmaster_fc_layout'] ]) ) continue;
 				
-					continue;
-					
-				}
-
-				$this->render_layout( $field, $layouts[ $value['fields_fc_layout'] ], $i, $value );
 				
-				?>
-			<?php endforeach; ?>
-		<?php endif; ?>
+				// render
+				$this->render_layout( $field, $layouts[ $value['fieldmaster_fc_layout'] ], $i, $value );
+				
+			endforeach;
+			
+		endif; ?>
 	</div>
-
-	<ul class="fields-hl">
-		<li class="fields-fr">
-			<a href="#" class="fields-button blue fields-fc-add"><?php echo $field['button_label']; ?></a>
+	
+	<ul class="fieldmaster-actions fieldmaster-hl">
+		<li>
+			<a class="fieldmaster-button button button-primary" href="#" data-event="add-layout"><?php echo $field['button_label']; ?></a>
 		</li>
 	</ul>
 	
 	<script type="text-html" class="tmpl-popup"><?php 
-		?><div class="fields-fc-popup">
+		?><div class="fieldmaster-fc-popup">
 			<ul>
 				<?php foreach( $layouts as $layout ): 
 					
@@ -261,11 +339,10 @@ class fieldmaster_field_flexible_content extends fieldmaster_field {
 					
 					?>
 					<li>
-						<a href="#" <?php fields_esc_attr_e( $atts ); ?>><?php echo $layout['label']; ?><span class="status"></span></a>
+						<a href="#" <?php fieldmaster_esc_attr_e( $atts ); ?>><?php echo $layout['label']; ?></a>
 					</li>
 				<?php endforeach; ?>
 			</ul>
-			<div class="bit"></div>
 			<a href="#" class="focus"></a>
 		</div>
 	</script>
@@ -294,24 +371,22 @@ class fieldmaster_field_flexible_content extends fieldmaster_field {
 		// vars
 		$order = 0;
 		$el = 'div';
+		$sub_fields = $layout['sub_fields'];
+		$prefix = $field['name'] . '[' . $i .  ']';
+		
+		
+		// div
 		$div = array(
 			'class'			=> 'layout',
+			'data-id'		=> $i,
 			'data-layout'	=> $layout['name']
 		);
 		
-	
-		// collapsed
-		$cookie = fields_maybe_get($_COOKIE, "fields_collapsed_{$field['key']}", '');
-		
-		if( $cookie !== '' ) {
-			
-			$collapsed = explode('|', $cookie);
-			
-			if( in_array($i, $collapsed) ) {
 				
-				$div['class'] .= ' closed';
-				
-			}
+		// collapsed class
+		if( fieldmaster_is_row_collapsed($field['key'], $i) ) {
+			
+			$div['class'] .= ' -collapsed';
 			
 		}
 		
@@ -323,67 +398,75 @@ class fieldmaster_field_flexible_content extends fieldmaster_field {
 			
 		} else {
 			
-			$div['class'] .= ' fields-clone';
+			$div['class'] .= ' fieldmaster-clone';
 			
 		}
 		
 		
-?>
-<div <?php fields_esc_attr_e($div); ?>>
+		// display
+		if( $layout['display'] == 'table' ) {
 			
-	<div class="fields-hidden">
-		<?php fields_hidden_input(array( 'name' => "{$field['name']}[{$i}][fields_fc_layout]", 'value' => $layout['name'] )); ?>
+			$el = 'td';
+			
+		}
+		
+		
+		// title
+		$title = $this->get_layout_title( $field, $layout, $i, $value );
+		
+		
+		// remove row
+		reset_rows();
+		
+?>
+<div <?php echo fieldmaster_esc_attr($div); ?>>
+			
+	<?php fieldmaster_hidden_input(array( 'name' => $prefix.'[fieldmaster_fc_layout]', 'value' => $layout['name'] )); ?>
+	
+	<div class="fieldmaster-fc-layout-handle" title="<?php _e('Drag to reorder','fieldmaster'); ?>"><?php echo $title; ?></div>
+	
+	<div class="fieldmaster-fc-layout-controlls">
+		<a class="fieldmaster-icon -plus small" href="#" data-event="add-layout" title="<?php _e('Add layout','fieldmaster'); ?>"></a>
+		<a class="fieldmaster-icon -minus small" href="#" data-event="remove-layout" title="<?php _e('Remove layout','fieldmaster'); ?>"></a>
+		<a class="fieldmaster-icon -collapse small" href="#" data-event="collapse-layout" title="<?php _e('Click to toggle','fieldmaster'); ?>"></a>
 	</div>
 	
-	<div class="fields-fc-layout-handle">
-		<span class="fc-layout-order"><?php echo $order; ?></span> <?php echo $layout['label']; ?>
-	</div>
+<?php if( !empty($sub_fields) ): ?>
 	
-	<ul class="fields-fc-layout-controlls fields-hl">
-		<li class="fields-fc-show-on-hover">
-			<a class="fields-icon fields-icon-plus small fields-fc-add" href="#" data-before="1" title="<?php _e('Add layout','fields'); ?>"></a>
-		</li>
-		<li class="fields-fc-show-on-hover">
-			<a class="fields-icon fields-icon-minus small fields-fc-remove" href="#" title="<?php _e('Remove layout','fields'); ?>"></a>
-		</li>
-		<li class="fields-fc-show-on-open">
-			<i class="fields-icon fields-icon-arrow-up small fields-fc-toggle" title="<?php _e('Click to toggle','fields'); ?>"></i>
-		</li>
-		<li class="fields-fc-show-on-close">
-			<i class="fields-icon fields-icon-arrow-down small fields-fc-toggle" title="<?php _e('Click to toggle','fields'); ?>"></i>
-		</li>
-	</ul>
-	
-<?php if( !empty($layout['sub_fields']) ): ?>
-	
-	<?php if( $layout['display'] == 'table' ): 
-		
-		// update vars
-		$el = 'td';
-		
-		?>
-	<table class="fields-table">
+	<?php if( $layout['display'] == 'table' ): ?>
+	<table class="fieldmaster-table">
 		
 		<thead>
 			<tr>
-				<?php foreach( $layout['sub_fields'] as $sub_field ): 
+				<?php foreach( $sub_fields as $sub_field ): 
 					
-					$atts = array(
-						'class'		=> "fields-th fields-th-{$sub_field['name']}",
-						'data-key'	=> $sub_field['key'],
-					);
+					// prepare field (allow sub fields to be removed)
+					$sub_field = fieldmaster_prepare_field($sub_field);
+					
+					
+					// bail ealry if no field
+					if( !$sub_field ) continue;
+					
+					
+					// vars
+					$atts = array();
+					$atts['class'] = 'fieldmaster-th';
+					$atts['data-name'] = $sub_field['_name'];
+					$atts['data-type'] = $sub_field['type'];
+					$atts['data-key'] = $sub_field['key'];
 					
 					
 					// Add custom width
 					if( $sub_field['wrapper']['width'] ) {
 					
 						$atts['data-width'] = $sub_field['wrapper']['width'];
+						$atts['style'] = 'width: ' . $sub_field['wrapper']['width'] . '%;';
 						
 					}
-						
+					
 					?>
-					<th <?php fields_esc_attr_e( $atts ); ?>>
-						<?php fields_the_field_label( $sub_field ); ?>
+					<th <?php echo fieldmaster_esc_attr( $atts ); ?>>
+						<?php echo fieldmaster_get_field_label( $sub_field ); ?>
 						<?php if( $sub_field['instructions'] ): ?>
 							<p class="description"><?php echo $sub_field['instructions']; ?></p>
 						<?php endif; ?>
@@ -395,16 +478,16 @@ class fieldmaster_field_flexible_content extends fieldmaster_field {
 		
 		<tbody>
 	<?php else: ?>
-	<div class="fields-fields <?php if($layout['display'] == 'row'): ?>-left<?php endif; ?>">
+	<div class="fm-fields <?php if($layout['display'] == 'row'): ?>-left<?php endif; ?>">
 	<?php endif; ?>
 	
 		<?php
 			
 		// loop though sub fields
-		foreach( $layout['sub_fields'] as $sub_field ) {
+		foreach( $sub_fields as $sub_field ) {
 			
 			// prevent repeater field from creating multiple conditional logic items for each row
-			if( $i !== 'fieldscloneindex' ) {
+			if( $i !== 'fieldmastercloneindex' ) {
 				
 				$sub_field['conditional_logic'] = 0;
 				
@@ -426,11 +509,11 @@ class fieldmaster_field_flexible_content extends fieldmaster_field {
 			
 			
 			// update prefix to allow for nested values
-			$sub_field['prefix'] = "{$field['name']}[{$i}]";
+			$sub_field['prefix'] = $prefix;
 			
 			
 			// render input
-			fields_render_field_wrap( $sub_field, $el );
+			fieldmaster_render_field_wrap( $sub_field, $el );
 		
 		}
 		
@@ -469,8 +552,9 @@ class fieldmaster_field_flexible_content extends fieldmaster_field {
 		// load default layout
 		if( empty($field['layouts']) ) {
 		
-			$field['layouts'] = array();
-			$field['layouts'][] = $this->get_valid_layout();
+			$field['layouts'] = array(
+				array()
+			);
 			
 		}
 		
@@ -486,23 +570,23 @@ class fieldmaster_field_flexible_content extends fieldmaster_field {
 			$layout_prefix = "{$field['prefix']}[layouts][{$layout['key']}]";
 			
 			
-?><tr class="fields-field" data-name="fc_layout" data-setting="flexible_content" data-id="<?php echo $layout['key']; ?>">
-	<td class="fields-label">
-		<label><?php _e("Layout",'fields'); ?></label>
-		<p class="description fields-fl-actions">
-			<a data-name="fields-fc-reorder" title="<?php _e("Reorder Layout",'fields'); ?>" ><?php _e("Reorder",'fields'); ?></a>
-			<a data-name="fields-fc-delete" title="<?php _e("Delete Layout",'fields'); ?>" href="#"><?php _e("Delete",'fields'); ?></a>
-			<a data-name="fields-fc-duplicate" title="<?php _e("Duplicate Layout",'fields'); ?>" href="#"><?php _e("Duplicate",'fields'); ?></a>
-			<a data-name="fields-fc-add" title="<?php _e("Add New Layout",'fields'); ?>" href="#"><?php _e("Add New",'fields'); ?></a>
+?><tr class="fm-field fm-field-setting-fc_layout" data-name="fc_layout" data-setting="flexible_content" data-id="<?php echo $layout['key']; ?>">
+	<td class="fieldmaster-label">
+		<label><?php _e("Layout",'fieldmaster'); ?></label>
+		<p class="description fieldmaster-fl-actions">
+			<a data-name="fieldmaster-fc-reorder" title="<?php _e("Reorder Layout",'fieldmaster'); ?>" ><?php _e("Reorder",'fieldmaster'); ?></a>
+			<a data-name="fieldmaster-fc-delete" title="<?php _e("Delete Layout",'fieldmaster'); ?>" href="#"><?php _e("Delete",'fieldmaster'); ?></a>
+			<a data-name="fieldmaster-fc-duplicate" title="<?php _e("Duplicate Layout",'fieldmaster'); ?>" href="#"><?php _e("Duplicate",'fieldmaster'); ?></a>
+			<a data-name="fieldmaster-fc-add" title="<?php _e("Add New Layout",'fieldmaster'); ?>" href="#"><?php _e("Add New",'fieldmaster'); ?></a>
 		</p>
 	</td>
-	<td class="fields-input">
+	<td class="fieldmaster-input">
 		
-		<ul class="fields-fc-meta fields-bl">
-			<li class="fields-fc-meta-key">
+		<ul class="fieldmaster-fc-meta fieldmaster-bl">
+			<li class="fieldmaster-fc-meta-key">
 				<?php 
 				
-				fields_hidden_input(array(
+				fieldmaster_hidden_input(array(
 					'name'		=> "{$layout_prefix}[key]",
 					'data-name'	=> 'layout-key',
 					'value'		=> $layout['key']
@@ -510,74 +594,74 @@ class fieldmaster_field_flexible_content extends fieldmaster_field {
 				
 				?>
 			</li>
-			<li class="fields-fc-meta-label">
+			<li class="fieldmaster-fc-meta-label">
 				<?php 
 				
-				fields_render_field(array(
+				fieldmaster_render_field(array(
 					'type'		=> 'text',
 					'name'		=> 'label',
 					'prefix'	=> $layout_prefix,
 					'value'		=> $layout['label'],
-					'prepend'	=> __('Label','fields')
+					'prepend'	=> __('Label','fieldmaster')
 				));
 				
 				?>
 			</li>
-			<li class="fields-fc-meta-name">
+			<li class="fieldmaster-fc-meta-name">
 				<?php 
 						
-				fields_render_field(array(
+				fieldmaster_render_field(array(
 					'type'		=> 'text',
 					'name'		=> 'name',
 					'prefix'	=> $layout_prefix,
 					'value'		=> $layout['name'],
-					'prepend'	=> __('Name','fields')
+					'prepend'	=> __('Name','fieldmaster')
 				));
 				
 				?>
 			</li>
-			<li class="fields-fc-meta-display">
-				<div class="fields-input-prepend"><?php _e('Layout','fields'); ?></div>
-				<div class="fields-input-wrap select">
+			<li class="fieldmaster-fc-meta-display">
+				<div class="fieldmaster-input-prepend"><?php _e('Layout','fieldmaster'); ?></div>
+				<div class="fieldmaster-input-wrap select">
 					<?php 
 					
-					fields_render_field(array(
+					fieldmaster_render_field(array(
 						'type'		=> 'select',
 						'name'		=> 'display',
 						'prefix'	=> $layout_prefix,
 						'value'		=> $layout['display'],
 						'choices'	=> array(
-							'table'			=> __('Table','fields'),
-							'block'			=> __('Block','fields'),
-							'row'			=> __('Row','fields')
+							'table'			=> __('Table','fieldmaster'),
+							'block'			=> __('Block','fieldmaster'),
+							'row'			=> __('Row','fieldmaster')
 						),
 					));
 					
 					?>
 				</div>
 			</li>
-			<li class="fields-fc-meta-min">
+			<li class="fieldmaster-fc-meta-min">
 				<?php
 						
-				fields_render_field(array(
+				fieldmaster_render_field(array(
 					'type'		=> 'text',
 					'name'		=> 'min',
 					'prefix'	=> $layout_prefix,
 					'value'		=> $layout['min'],
-					'prepend'	=> __('Min','fields')
+					'prepend'	=> __('Min','fieldmaster')
 				));
 				
 				?>
 			</li>
-			<li class="fields-fc-meta-max">
+			<li class="fieldmaster-fc-meta-max">
 				<?php 
 				
-				fields_render_field(array(
+				fieldmaster_render_field(array(
 					'type'		=> 'text',
 					'name'		=> 'max',
 					'prefix'	=> $layout_prefix,
 					'value'		=> $layout['max'],
-					'prepend'	=> __('Max','fields')
+					'prepend'	=> __('Max','fieldmaster')
 				));
 				
 				?>
@@ -588,11 +672,10 @@ class fieldmaster_field_flexible_content extends fieldmaster_field {
 		// vars
 		$args = array(
 			'fields'	=> $layout['sub_fields'],
-			'layout'	=> $layout['display'],
 			'parent'	=> $field['ID']
 		);
 		
-		fields_get_view('field-group-fields', $args);
+		fieldmaster_get_view('field-group-fields', $args);
 		
 		?>
 	</td>
@@ -604,8 +687,8 @@ class fieldmaster_field_flexible_content extends fieldmaster_field {
 		
 		
 		// min
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Button Label','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Button Label','fieldmaster'),
 			'instructions'	=> '',
 			'type'			=> 'text',
 			'name'			=> 'button_label',
@@ -613,8 +696,8 @@ class fieldmaster_field_flexible_content extends fieldmaster_field {
 		
 		
 		// min
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Minimum Layouts','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Minimum Layouts','fieldmaster'),
 			'instructions'	=> '',
 			'type'			=> 'number',
 			'name'			=> 'min',
@@ -622,8 +705,8 @@ class fieldmaster_field_flexible_content extends fieldmaster_field {
 		
 		
 		// max
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Maximum Layouts','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Maximum Layouts','fieldmaster'),
 			'instructions'	=> '',
 			'type'			=> 'number',
 			'name'			=> 'max',
@@ -658,34 +741,28 @@ class fieldmaster_field_flexible_content extends fieldmaster_field {
 		
 		
 		// value must be an array
-		$value = fields_get_array( $value );
+		$value = fieldmaster_get_array( $value );
 		
 		
 		// vars
 		$rows = array();
 		
 		
-		// populate $layouts
+		// sort layouts into names
 		$layouts = array();
+		foreach( $field['layouts'] as $k => $layout ) {
 		
-		foreach( array_keys($field['layouts']) as $i ) {
-			
-			// get layout
-			$layout = $field['layouts'][ $i ];
-			
-			
-			// append to $layouts
 			$layouts[ $layout['name'] ] = $layout['sub_fields'];
 			
 		}
-	
+		
 		
 		// loop through rows
 		foreach( $value as $i => $l ) {
 			
 			// append to $values
 			$rows[ $i ] = array();
-			$rows[ $i ]['fields_fc_layout'] = $l;
+			$rows[ $i ]['fieldmaster_fc_layout'] = $l;
 			
 			
 			// bail early if layout deosnt contain sub fields
@@ -707,12 +784,16 @@ class fieldmaster_field_flexible_content extends fieldmaster_field {
 				$sub_field = $layout[ $j ];
 				
 				
+				// bail ealry if no name (tab)
+				if( fieldmaster_is_empty($sub_field['name']) ) continue;
+				
+				
 				// update full name
 				$sub_field['name'] = "{$field['name']}_{$i}_{$sub_field['name']}";
 				
 				
 				// get value
-				$sub_value = fields_get_value( $post_id, $sub_field );
+				$sub_value = fieldmaster_get_value( $post_id, $sub_field );
 				
 				
 				// add value
@@ -753,21 +834,15 @@ class fieldmaster_field_flexible_content extends fieldmaster_field {
 		// bail early if no value
 		if( empty($value) || empty($field['layouts']) ) {
 			
-			return $value;
+			return false;
 			
 		}
 		
 		
-		// populate $layouts
+		// sort layouts into names
 		$layouts = array();
+		foreach( $field['layouts'] as $k => $layout ) {
 		
-		foreach( array_keys($field['layouts']) as $i ) {
-			
-			// get layout
-			$layout = $field['layouts'][ $i ];
-			
-			
-			// append to $layouts
 			$layouts[ $layout['name'] ] = $layout['sub_fields'];
 			
 		}
@@ -777,15 +852,11 @@ class fieldmaster_field_flexible_content extends fieldmaster_field {
 		foreach( array_keys($value) as $i ) {
 			
 			// get layout name
-			$l = $value[ $i ]['fields_fc_layout'];
+			$l = $value[ $i ]['fieldmaster_fc_layout'];
 			
 			
 			// bail early if layout deosnt exist
-			if( empty($layouts[ $l ]) ) {
-				
-				continue;
-				
-			}
+			if( empty($layouts[ $l ]) ) continue;
 			
 			
 			// get layout
@@ -799,16 +870,24 @@ class fieldmaster_field_flexible_content extends fieldmaster_field {
 				$sub_field = $layout[ $j ];
 				
 				
-				// extract value
-				$sub_value = fields_extract_var( $value[ $i ], $sub_field['key'] );
+				// bail ealry if no name (tab)
+				if( fieldmaster_is_empty($sub_field['name']) ) continue;
 				
+				
+				// extract value
+				$sub_value = fieldmaster_extract_var( $value[ $i ], $sub_field['key'] );
+				
+				
+				// update $sub_field name
+				$sub_field['name'] = "{$field['name']}_{$i}_{$sub_field['name']}";
+					
 				
 				// format value
-				$sub_value = fields_format_value( $sub_value, $post_id, $sub_field );
+				$sub_value = fieldmaster_format_value( $sub_value, $post_id, $sub_field );
 				
 				
 				// append to $row
-				$value[ $i ][ $sub_field['name'] ] = $sub_value;
+				$value[ $i ][ $sub_field['_name'] ] = $sub_value;
 				
 			}
 			
@@ -835,82 +914,299 @@ class fieldmaster_field_flexible_content extends fieldmaster_field {
 	
 	function validate_value( $valid, $value, $field, $input ){
 		
-		// remove fieldscloneindex
-		if( isset($value['fieldscloneindex']) ) {
+		// remove fieldmastercloneindex
+		if( isset($value['fieldmastercloneindex']) ) {
 		
-			unset($value['fieldscloneindex']);
+			unset($value['fieldmastercloneindex']);
 			
 		}
 		
 		
-		// valid
-		if( $field['required'] && empty($value) ) {
+		// check if no value
+		if( $field['required'] && empty($value) ) return false;
 		
-			$valid = false;
-			
-		}
+		
+		// vars
+		$count = 0;
+		$layouts = array();
 		
 		
 		// populate $layouts
-		$layouts = array();
-		
 		foreach( array_keys($field['layouts']) as $i ) {
 			
-			$layout = fields_extract_var($field['layouts'], $i);
+			// vars
+			$layout = $field['layouts'][ $i ];
 			
-			// append to $layouts
-			$layouts[ $layout['name'] ] = $layout['sub_fields'];
 			
-		}	
+			// add count
+			$layout['count'] = 0;
+			
+			
+			// append
+			$layouts[ $layout['name'] ] = $layout;
+			
+		}
 		
 		
 		// check sub fields
 		if( !empty($value) ) {
 			
+			// set count
+			$count = count($value);
+			
+			
 			// loop through rows
 			foreach( $value as $i => $row ) {	
 				
 				// get layout
-				$l = $row['fields_fc_layout'];
+				$l = $row['fieldmaster_fc_layout'];
 				
 				
-				// loop through sub fields
-				if( !empty($layouts[ $l ]) ) {
+				// bail if layout doesn't exist
+				if( !isset($layouts[ $l ]) ) continue;
+				
+				
+				// increase count
+				$layouts[ $l ]['count']++;
+				
+				
+				
+				// bail if no sub fields
+				if( empty($layouts[ $l ]['sub_fields']) ) continue;
+				
+				
+				// loop
+				foreach( $layouts[ $l ]['sub_fields'] as $sub_field ) {
 					
-					foreach( $layouts[ $l ] as $sub_field ) {
-						
-						// get sub field key
-						$k = $sub_field['key'];
-						
-						
-						// exists?
-						if( ! isset($value[ $i ][ $k ]) ) {
-							
-							continue;
-							
-						}
-						
-						
-						// validate
-						fields_validate_value( $value[ $i ][ $k ], $sub_field, "{$input}[{$i}][{$k}]" );
+					// get sub field key
+					$k = $sub_field['key'];
 					
-					}
-					// foreach
 					
+					// bail if no value
+					if( !isset($value[ $i ][ $k ]) ) continue;
+					
+					
+					// validate
+					fieldmaster_validate_value( $value[ $i ][ $k ], $sub_field, "{$input}[{$i}][{$k}]" );
+				
 				}
-				// if
 				
 			}
-			// foreach
 			
 		}
-		// if
+		
+		
+		// validate min / max
+		$min = (int) $field['min'];
+		
+		if( $min && $min > $count ) {
+			
+			// vars
+			$error = $this->l10n['min'];
+			$identifier = ($min == 1) ? $this->l10n['layout'] : $this->l10n['layouts'];
+			
+ 			
+ 			// replace
+ 			$error = str_replace('{min}', $min, $error);
+ 			$error = str_replace('{identifier}', $identifier, $error);
+ 			
+ 			
+ 			// return
+			return $error;
+			
+		}
+		
+		
+		foreach( $layouts as $layout ) {
+			
+			// validate min / max
+			$min = (int) $layout['min'];
+			$count = $layout['count'];
+			
+			if( $min && $min > $count ) {
+				
+				// vars
+				$error = $this->l10n['min_layout'];
+				$identifier = ($min == 1) ? $this->l10n['layout'] : $this->l10n['layouts'];
+				
+	 			
+	 			// replace
+	 			$error = str_replace('{min}', $min, $error);
+	 			$error = str_replace('{label}', '"' . $layout['label'] . '"', $error);
+	 			$error = str_replace('{identifier}', $identifier, $error);
+	 			
+	 			
+	 			// return
+				return $error;
+				
+			}
+			
+		}
 		
 		
 		// return
 		return $valid;
 		
 	}
+	
+	
+	/*
+	*  get_layout
+	*
+	*  This function will return a specific layout by name from a field
+	*
+	*  @type	function
+	*  @date	15/2/17
+	*  @since	5.5.8
+	*
+	*  @param	$name (string)
+	*  @param	$field (array)
+	*  @return	(array)
+	*/
+	
+	function get_layout( $name = '', $field ) {
+		
+		// bail early if no layouts
+		if( !isset($field['layouts']) ) return false;
+		
+		
+		// loop
+		foreach( $field['layouts'] as $layout ) {
+			
+			// match
+			if( $layout['name'] === $name ) return $layout;
+			
+		}
+		
+		
+		// return
+		return false;
+		
+	}
+	
+	
+	/*
+	*  delete_row
+	*
+	*  This function will delete a value row
+	*
+	*  @type	function
+	*  @date	15/2/17
+	*  @since	5.5.8
+	*
+	*  @param	$i (int)
+	*  @param	$field (array)
+	*  @param	$post_id (mixed)
+	*  @return	(boolean)
+	*/
+	
+	function delete_row( $i = 0, $field, $post_id ) {
+		
+		// vars
+		$value = fieldmaster_get_metadata( $post_id, $field['name'] );
+		
+		
+		// bail early if no value
+		if( !is_array($value) || !isset($value[ $i ]) ) return false;
+		
+		
+		// get layout
+		$layout = $this->get_layout($value[ $i ], $field);
+		
+		
+		// bail early if no layout
+		if( !$layout || empty($layout['sub_fields']) ) return false;
+		
+		
+		// loop
+		foreach( $layout['sub_fields'] as $sub_field ) {
+			
+			// modify name for delete
+			$sub_field['name'] = "{$field['name']}_{$i}_{$sub_field['name']}";
+			
+			
+			// delete value
+			fieldmaster_delete_value( $post_id, $sub_field );
+			
+		}
+		
+		
+		// return
+		return true;
+		
+	}
+	
+	
+	/*
+	*  update_row
+	*
+	*  This function will update a value row
+	*
+	*  @type	function
+	*  @date	15/2/17
+	*  @since	5.5.8
+	*
+	*  @param	$i (int)
+	*  @param	$field (array)
+	*  @param	$post_id (mixed)
+	*  @return	(boolean)
+	*/
+	
+	function update_row( $row, $i = 0, $field, $post_id ) {
+		
+		// bail early if no layout reference
+		if( !is_array($row) || !isset($row['fieldmaster_fc_layout']) ) return false;
+		
+		
+		// get layout
+		$layout = $this->get_layout($row['fieldmaster_fc_layout'], $field);
+		
+		
+		// bail early if no layout
+		if( !$layout || empty($layout['sub_fields']) ) return false;
+		
+		
+		// loop
+		foreach( $layout['sub_fields'] as $sub_field ) {
+			
+			// value
+			$value = null;
+			
+
+			// find value (key)
+			if( isset($row[ $sub_field['key'] ]) ) {
+				
+				$value = $row[ $sub_field['key'] ];
+			
+			// find value (name)	
+			} elseif( isset($row[ $sub_field['name'] ]) ) {
+				
+				$value = $row[ $sub_field['name'] ];
+				
+			// value does not exist	
+			} else {
+				
+				continue;
+				
+			}
+			
+			
+			// modify name for save
+			$sub_field['name'] = "{$field['name']}_{$i}_{$sub_field['name']}";
+								
+			
+			// update field
+			fieldmaster_update_value( $value, $post_id, $sub_field );
+				
+		}
+		
+		
+		// return
+		return true;
+		
+	}
+	
+	
 	
 	
 	/*
@@ -931,140 +1227,113 @@ class fieldmaster_field_flexible_content extends fieldmaster_field {
 	
 	function update_value( $value, $post_id, $field ) {
 		
-		// remove fieldscloneindex
-		if( isset($value['fieldscloneindex']) ) {
+		// bail early if no layouts
+		if( empty($field['layouts']) ) return $value;
 		
-			unset($value['fieldscloneindex']);
+		
+		// vars
+		$new_value = array();
+		$old_value = fieldmaster_get_metadata( $post_id, $field['name'] );
+		$old_value = is_array($old_value) ? $old_value : array();
+		
+		
+		// update
+		if( !empty($value) ) { $i = -1;
+			
+			// remove fieldmastercloneindex
+			if( isset($value['fieldmastercloneindex']) ) {
+			
+				unset($value['fieldmastercloneindex']);
+				
+			}
+			
+			
+			// loop through rows
+			foreach( $value as $row ) {	$i++;
+				
+				// bail early if no layout reference
+				if( !is_array($row) || !isset($row['fieldmaster_fc_layout']) ) continue;
+				
+				
+				// delete old row if layout has changed
+				if( isset($old_value[ $i ]) && $old_value[ $i ] !== $row['fieldmaster_fc_layout'] ) {
+					
+					$this->delete_row( $i, $field, $post_id );
+					
+				}
+				
+				
+				// update row
+				$this->update_row( $row, $i, $field, $post_id );
+				
+				
+				// append to order
+				$new_value[] = $row['fieldmaster_fc_layout'];
+				
+			}
 			
 		}
 		
 		
 		// vars
-		$order = array();
-		$layouts = array();
+		$old_count = empty($old_value) ? 0 : count($old_value);
+		$new_count = empty($new_value) ? 0 : count($new_value);
 		
 		
-		// populate $layouts
-		foreach( $field['layouts'] as $layout ) {
-			
-			$layouts[ $layout['name'] ] = $layout['sub_fields'];
-			
-		}
-		
-		
-		// update sub fields
-		if( !empty($value) ) {
-			
-			// $i
-			$i = -1;
-			
-			
-			// loop through rows
-			foreach( $value as $row ) {	
-				
-				// $i
-				$i++;
-				
-				
-				// get layout
-				$l = $row['fields_fc_layout'];
-				
-				
-				// append to order
-				$order[] = $l;
-				
-				
-				// loop through sub fields
-				if( !empty($layouts[ $l ]) ) {
-					
-					foreach( $layouts[ $l ] as $sub_field ) {
-						
-						// value
-						$v = false;
-						
-						
-						// key (backend)
-						if( isset($row[ $sub_field['key'] ]) ) {
-							
-							$v = $row[ $sub_field['key'] ];
-							
-						} elseif( isset($row[ $sub_field['name'] ]) ) {
-							
-							$v = $row[ $sub_field['name'] ];
-							
-						} else {
-							
-							// input is not set (hidden by conditioanl logic)
-							continue;
-							
-						}
-						
-						
-						// modify name for save
-						$sub_field['name'] = "{$field['name']}_{$i}_{$sub_field['name']}";
-						
-						
-						// update field
-						fields_update_value( $v, $post_id, $sub_field );
-						
-					}
-					// foreach
-					
-				}
-				// if
-				
-			}
-			// foreach
-			
-		}
-		// if
-		
-		
-		// remove old data
-		$old_order = fields_get_value( $post_id, $field, true );
-		$old_count = empty($old_order) ? 0 : count($old_order);
-		$new_count = empty($order) ? 0 : count($order);
-		
-		
+		// remove old rows
 		if( $old_count > $new_count ) {
 			
+			// loop
 			for( $i = $new_count; $i < $old_count; $i++ ) {
 				
-				// get layout
-				$l = $old_order[ $i ];
-				
-				
-				// loop through sub fields
-				if( !empty($layouts[ $l ]) ) {
-					
-					foreach( $layouts[ $l ] as $sub_field ) {
-						
-						// modify name for delete
-						$sub_field['name'] = "{$field['name']}_{$i}_{$sub_field['name']}";
-						
-						
-						// delete value
-						fields_delete_value( $post_id, $sub_field );
-						
-					}
-					
-				}
+				$this->delete_row( $i, $field, $post_id );
 				
 			}
 			
 		}
-
+		
 		
 		// save false for empty value
-		if( empty($order) ) {
-			
-			$order = false;
-		
-		}
+		if( empty($new_value) ) $new_value = '';
 		
 		
 		// return
-		return $order;
+		return $new_value;
+		
+	}
+	
+	
+	/*
+	*  delete_value
+	*
+	*  description
+	*
+	*  @type	function
+	*  @date	1/07/2015
+	*  @since	5.2.3
+	*
+	*  @param	$post_id (int)
+	*  @return	$post_id (int)
+	*/
+	
+	function delete_value( $post_id, $key, $field ) {
+		
+		// vars
+		$old_value = fieldmaster_get_metadata( $post_id, $field['name'] );
+		$old_value = is_array($old_value) ? $old_value : array();
+		
+		
+		// bail early if no rows or no sub fields
+		if( empty($old_value) ) return;
+				
+		
+		// loop
+		foreach( array_keys($old_value) as $i ) {
+				
+			$this->delete_row( $i, $field, $post_id );
+			
+		}
+			
 	}
 	
 	
@@ -1078,32 +1347,19 @@ class fieldmaster_field_flexible_content extends fieldmaster_field {
 	*  @date	23/01/13
 	*
 	*  @param	$field - the field array holding all the field options
-	*  @param	$post_id - the field group ID (post_type = fields)
+	*  @param	$post_id - the field group ID (post_type = fieldmaster)
 	*
 	*  @return	$field - the modified field
 	*/
 
 	function update_field( $field ) {
 		
-		// vars
-		$layouts = fields_extract_var($field, 'layouts');
-		
-		
-		// update layouts
-		$field['layouts'] = array();
-		
-		
-		// loop through sub fields
-		if( !empty($layouts) ) {
+		// loop
+		if( !empty($field['layouts']) ) {
 			
-			foreach( $layouts as $layout ) {
-				
-				// remove sub fields
+			foreach( $field['layouts'] as &$layout ) {
+		
 				unset($layout['sub_fields']);
-				
-				
-				// append to layouts
-				$field['layouts'][] = $layout;	
 				
 			}
 			
@@ -1140,7 +1396,7 @@ class fieldmaster_field_flexible_content extends fieldmaster_field {
 				
 					foreach( $layout['sub_fields'] as $sub_field ) {
 					
-						fields_delete_field( $sub_field['ID'] );
+						fieldmaster_delete_field( $sub_field['ID'] );
 						
 					}
 					// foreach
@@ -1183,7 +1439,7 @@ class fieldmaster_field_flexible_content extends fieldmaster_field {
 			foreach( $field['layouts'] as $layout ) {
 				
 				// extract sub fields
-				$extra = fields_extract_var( $layout, 'sub_fields' );
+				$extra = fieldmaster_extract_var( $layout, 'sub_fields' );
 				
 				
 				// merge
@@ -1201,11 +1457,11 @@ class fieldmaster_field_flexible_content extends fieldmaster_field {
 		
 		
 		// save field to get ID
-		$field = fields_update_field( $field );
+		$field = fieldmaster_update_field( $field );
 		
 		
 		// duplicate sub fields
-		fields_duplicate_fields( $sub_fields, $field['ID'] );
+		fieldmaster_duplicate_fields( $sub_fields, $field['ID'] );
 		
 		
 		// return		
@@ -1213,10 +1469,330 @@ class fieldmaster_field_flexible_content extends fieldmaster_field {
 		
 	}
 	
+	
+	/*
+	*  ajax_layout_title
+	*
+	*  description
+	*
+	*  @type	function
+	*  @date	2/03/2016
+	*  @since	5.3.2
+	*
+	*  @param	$post_id (int)
+	*  @return	$post_id (int)
+	*/
+	
+	function ajax_layout_title() {
+		
+		// options
+   		$options = fieldmaster_parse_args( $_POST, array(
+			'post_id'		=> 0,
+			'i'				=> 0,
+			'field_key'		=> '',
+			'nonce'			=> '',
+			'layout'		=> '',
+			'value'			=> array()
+		));
+		
+		
+		// load field
+		$field = fieldmaster_get_field( $options['field_key'] );
+		if( !$field ) die();
+		
+		
+		// vars
+		$layout = $this->get_layout( $options['layout'], $field );
+		if( !$layout ) die();
+		
+		
+		// title
+		$title = $this->get_layout_title( $field, $layout, $options['i'], $options['value'] );
+		
+		
+		// echo
+		echo $title;
+		die;
+		
+	}
+	
+	
+	function get_layout_title( $field, $layout, $i, $value ) {
+		
+		// vars
+		$rows = array();
+		$rows[ $i ] = $value;
+		
+		
+		// add loop
+		fieldmaster_add_loop(array(
+			'selector'	=> $field['name'],
+			'name'		=> $field['name'],
+			'value'		=> $rows,
+			'field'		=> $field,
+			'i'			=> $i,
+			'post_id'	=> 0,
+		));
+		
+		
+		// vars
+		$title = $layout['label'];
+		
+		
+		// filters
+		$title = apply_filters('fieldmaster/fields/flexible_content/layout_title', 							$title, $field, $layout, $i);
+		$title = apply_filters('fieldmaster/fields/flexible_content/layout_title/name='.$field['_name'],	$title, $field, $layout, $i);
+		$title = apply_filters('fieldmaster/fields/flexible_content/layout_title/key='.$field['key'],		$title, $field, $layout, $i);
+		
+		
+		// remove loop
+		fieldmaster_remove_loop();
+		
+		
+		// prepend order
+		$order = is_numeric($i) ? $i+1 : 0;
+		$title = '<span class="fieldmaster-fc-layout-order">' . $order . '</span> ' . $title;
+		
+		
+		// return
+		return $title;
+		
+	}
+	
+	
+	/*
+	*  clone_any_field
+	*
+	*  This function will update clone field settings based on the origional field
+	*
+	*  @type	function
+	*  @date	28/06/2016
+	*  @since	5.3.8
+	*
+	*  @param	$clone (array)
+	*  @param	$field (array)
+	*  @return	$clone
+	*/
+	
+	function clone_any_field( $field, $clone_field ) {
+		
+		// remove parent_layout
+		// - allows a sub field to be rendered as a normal field
+		unset($field['parent_layout']);
+		
+		
+		// attempt to merger parent_layout
+		if( isset($clone_field['parent_layout']) ) {
+			
+			$field['parent_layout'] = $clone_field['parent_layout'];
+			
+		}
+		
+		
+		// return
+		return $field;
+		
+	}
+	
+	
+	/*
+	*  prepare_field_for_export
+	*
+	*  description
+	*
+	*  @type	function
+	*  @date	11/03/2014
+	*  @since	5.0.0
+	*
+	*  @param	$post_id (int)
+	*  @return	$post_id (int)
+	*/
+	
+	function prepare_field_for_export( $field ) {
+		
+		// loop
+		if( !empty($field['layouts']) ) {
+			
+			foreach( $field['layouts'] as &$layout ) {
+		
+				$layout['sub_fields'] = fieldmaster_prepare_fields_for_export( $layout['sub_fields'] );
+				
+			}
+			
+		}
+		
+		
+		// return
+		return $field;
+		
+	}
+	
+	function prepare_any_field_for_export( $field ) {
+		
+		// remove parent_layout
+		unset( $field['parent_layout'] );
+		
+		
+		// return
+		return $field;
+		
+	}
+	
+	
+	/*
+	*  prepare_field_for_import
+	*
+	*  description
+	*
+	*  @type	function
+	*  @date	11/03/2014
+	*  @since	5.0.0
+	*
+	*  @param	$post_id (int)
+	*  @return	$post_id (int)
+	*/
+	
+	function prepare_field_for_import( $field ) {
+		
+		// bail early if no layouts
+		if( empty($field['layouts']) ) return $field;
+		
+		
+		// var
+		$extra = array();
+		
+		
+		// loop
+		foreach( array_keys($field['layouts']) as $i ) {
+			
+			// extract layout
+			$layout = fieldmaster_extract_var( $field['layouts'], $i );
+			
+			
+			// get valid layout (fixes FieldMaster4 export code bug undefined index 'key')
+			if( empty($layout['key']) ) $layout['key'] = uniqid();
+			
+			
+			// extract sub fields
+			$sub_fields = fieldmaster_extract_var( $layout, 'sub_fields');
+			
+			
+			// validate sub fields
+			if( !empty($sub_fields) ) {
+				
+				// loop over sub fields
+				foreach( array_keys($sub_fields) as $j ) {
+					
+					// extract sub field
+					$sub_field = fieldmaster_extract_var( $sub_fields, $j );
+					
+					
+					// attributes
+					$sub_field['parent'] = $field['key'];
+					$sub_field['parent_layout'] = $layout['key'];
+					
+					
+					// append to extra
+					$extra[] = $sub_field;
+					
+				}
+				
+			}
+			
+			
+			// append to layout
+			$field['layouts'][ $i ] = $layout;
+		
+		}
+		
+		
+		// extra
+		if( !empty($extra) ) {
+			
+			array_unshift($extra, $field);
+			
+			return $extra;
+			
+		}
+		
+		
+		// return
+		return $field;
+		
+	}
+	
+	
+	/*
+	*  validate_any_field
+	*
+	*  This function will add compatibility for the 'column_width' setting
+	*
+	*  @type	function
+	*  @date	30/1/17
+	*  @since	5.5.6
+	*
+	*  @param	$field (array)
+	*  @return	$field
+	*/
+	
+	function validate_any_field( $field ) {
+		
+		// width has changed
+		if( isset($field['column_width']) ) {
+			
+			$field['wrapper']['width'] = fieldmaster_extract_var($field, 'column_width');
+			
+		}
+		
+		
+		// return
+		return $field;
+		
+	}
+	
+	
+	/*
+	*  translate_field
+	*
+	*  This function will translate field settings
+	*
+	*  @type	function
+	*  @date	8/03/2016
+	*  @since	5.3.2
+	*
+	*  @param	$field (array)
+	*  @return	$field
+	*/
+	
+	function translate_field( $field ) {
+		
+		// translate
+		$field['button_label'] = fieldmaster_translate( $field['button_label'] );
+		
+		
+		// loop
+		if( !empty($field['layouts']) ) {
+			
+			foreach( $field['layouts'] as &$layout ) {
+		
+				$layout['label'] = fieldmaster_translate($layout['label']);
+				
+			}
+			
+		}
+		
+		
+		// return
+		return $field;
+		
+	}
+	
 }
 
-new fieldmaster_field_flexible_content();
 
-endif;
+// initialize
+fieldmaster_register_field_type( new fieldmaster_field_flexible_content() );
+
+endif; // class_exists check
 
 ?>

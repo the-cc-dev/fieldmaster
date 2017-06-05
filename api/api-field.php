@@ -1,96 +1,7 @@
 <?php
 
 /*
-*  fields_get_field_types
-*
-*  This function will return all available field types
-*
-*  @type	function
-*  @date	1/10/13
-*  @since	5.0.0
-*
-*  @param	n/a
-*  @return	(array)
-*/
-
-function fields_get_field_types() {
-
-	return apply_filters('fields/get_field_types', array());
-	
-}
-
-
-/*
-*  fields_get_field_type_label
-*
-*  This function will return the label of a field type
-*
-*  @type	function
-*  @date	1/10/13
-*  @since	5.0.0
-*
-*  @param	n/a
-*  @return	(array)
-*/
-
-function fields_get_field_type_label( $field_type ) {
-
-	// vars
-	$field_types = fields_get_field_types();
-	
-	
-	// loop through categories
-	foreach( $field_types as $category ) {
-		
-		if( isset( $category[ $field_type ] ) ) {
-		
-			return $category[ $field_type ];
-			
-		}
-		
-	}
-	
-	
-	// return
-	return false;
-	
-}
-
-
-/*
-*  fieldmaster_field_type_exists
-*
-*  This function will check if the field_type is available
-*
-*  @type	function
-*  @date	1/10/13
-*  @since	5.0.0
-*
-*  @param	$field_type (string)
-*  @return	(boolean)
-*/
-
-function fieldmaster_field_type_exists( $field_type ) {
-
-	// vars
-	$label = fields_get_field_type_label( $field_type );
-	
-	
-	// return true if label exists
-	if( !empty( $label ) ) {
-		
-		return true;
-		
-	}
-		
-	
-	// return
-	return false;
-}
-
-
-/*
-*  fields_is_field_key
+*  fieldmaster_is_field_key
 *
 *  This function will return true or false for the given $field_key parameter
 *
@@ -102,22 +13,22 @@ function fieldmaster_field_type_exists( $field_type ) {
 *  @return	(boolean)
 */
 
-function fields_is_field_key( $key = '' ) {
+function fieldmaster_is_field_key( $key = '' ) {
 	
-	// look for 'field_' prefix
-	if( is_string($key) && substr($key, 0, 6) === 'field_' ) {
-		
-		return true;
-		
-	}
+	// bail early if not string
+	if( !is_string($key) ) return false;
 	
 	
-	// allow local field group key to not start with prefix
-	if( fields_is_local_field($key) ) {
-		
-		return true;
-		
-	}
+	// bail early if is numeric (could be numeric string '123')
+	if( is_numeric($key) ) return false;
+	
+	
+	// default - starts with 'field_'
+	if( substr($key, 0, 6) === 'field_' ) return true;
+	
+	
+	// special - allow local field key to be any string
+	if( fieldmaster_is_local_field_key($key) ) return true;
 	
 	
 	// return
@@ -127,45 +38,7 @@ function fields_is_field_key( $key = '' ) {
 
 
 /*
-*  fields_get_valid_field_key
-*
-*  This function will return a valid field key starting with 'field_'
-*
-*  @type	function
-*  @date	2/02/2015
-*  @since	5.1.5
-*
-*  @param	$key (string)
-*  @return	$key
-*/
-
-function fields_get_valid_field_key( $key = '' ) {
-	
-	// test if valid
-	if( !fields_is_field_key($key) ) {
-		
-		// empty
-		if( !$key ) {
-			
-			$key =  uniqid();
-			
-		} 
-		
-		
-		// add prefix
-		$key = "field_{$key}";
-		
-	}
-	
-	
-	// return
-	return $key;
-	
-}
-
-
-/*
-*  fields_get_valid_field
+*  fieldmaster_get_valid_field
 *
 *  This function will fill in any missing keys to the $field array making it valid
 *
@@ -177,26 +50,18 @@ function fields_get_valid_field_key( $key = '' ) {
 *  @return	$field (array)
 */
 
-function fields_get_valid_field( $field = false ) {
+function fieldmaster_get_valid_field( $field = false ) {
 	
 	// $field must be an array
-	if( !is_array($field) ) {
-		
-		$field = array();
-		
-	}
+	if( !is_array($field) ) $field = array();
 	
 	
 	// bail ealry if already valid
-	if( !empty($field['_valid']) ) {
-		
-		return $field;
-		
-	}
+	if( !empty($field['_valid']) ) return $field;
 	
 	
 	// defaults
-	$field = fields_parse_args($field, array(
+	$field = wp_parse_args($field, array(
 		'ID'				=> 0,
 		'key'				=> '',
 		'label'				=> '',
@@ -211,14 +76,16 @@ function fields_get_valid_field( $field = false ) {
 		'class'				=> '',
 		'conditional_logic'	=> 0,
 		'parent'			=> 0,
-		'wrapper'			=> array(
-			'width'				=> '',
-			'class'				=> '',
-			'id'				=> ''
-		),
+		'wrapper'			=> array(),
 		'_name'				=> '',
-		'_input'			=> '',
+		'_prepare'			=> 0,
 		'_valid'			=> 0,
+	));
+	
+	$field['wrapper'] = wp_parse_args($field['wrapper'], array(
+		'width'				=> '',
+		'class'				=> '',
+		'id'				=> ''
 	));
 	
 	
@@ -226,30 +93,99 @@ function fields_get_valid_field( $field = false ) {
 	$field['_name'] = $field['name'];
 	
 	
-	// translate
-	foreach( array('label', 'instructions') as $s ) {
-		
-		$field[ $s ] = __($field[ $s ]);
-		
-	}
-	
-	
-	// field specific defaults
-	$field = apply_filters( "fields/get_valid_field", $field );
-	$field = apply_filters( "fields/get_valid_field/type={$field['type']}", $field );
-	
-	
 	// field is now valid
 	$field['_valid'] = 1;
 	
 	
+	// field specific defaults
+	$field = apply_filters( "fieldmaster/validate_field", $field );
+	$field = apply_filters( "fieldmaster/validate_field/type={$field['type']}", $field );
+	
+	
+	// translate
+	$field = fieldmaster_translate_field( $field );
+	
+	
 	// return
 	return $field;
+	
 }
 
 
 /*
-*  fields_prepare_field
+*  fieldmaster_translate_field
+*
+*  This function will translate field's settings
+*
+*  @type	function
+*  @date	8/03/2016
+*  @since	5.3.2
+*
+*  @param	$field (array)
+*  @return	$field
+*/
+
+function fieldmaster_translate_field( $field ) {
+	
+	// vars
+	$l10n = fieldmaster_get_setting('l10n');
+	$l10n_textdomain = fieldmaster_get_setting('l10n_textdomain');
+	
+	
+	// if
+	if( $l10n && $l10n_textdomain ) {
+		
+		// translate
+		$field['label'] = fieldmaster_translate( $field['label'] );
+		$field['instructions'] = fieldmaster_translate( $field['instructions'] );
+		
+		
+		// filters
+		$field = apply_filters( "fieldmaster/translate_field", $field );
+		$field = apply_filters( "fieldmaster/translate_field/type={$field['type']}", $field );
+		
+	}
+	
+	
+	// return
+	return $field;
+	
+}
+
+
+/*
+*  fieldmaster_clone_field
+*
+*  This function will allow customization to a field when it is cloned
+*  Cloning a field is the act of mimicing another. Some settings may need to be altered
+*
+*  @type	function
+*  @date	8/03/2016
+*  @since	5.3.2
+*
+*  @param	$field (array)
+*  @return	$field
+*/
+
+function fieldmaster_clone_field( $field, $clone_field ) {
+	
+	// add reference
+	$field['_clone'] = $clone_field['key'];
+	
+	
+	// filters
+	$field = apply_filters( "fieldmaster/clone_field", $field, $clone_field );
+	$field = apply_filters( "fieldmaster/clone_field/type={$field['type']}", $field, $clone_field );
+	
+	
+	// return
+	return $field;
+	
+}
+
+
+/*
+*  fieldmaster_prepare_field
 *
 *  This function will prepare the field for input
 *
@@ -261,49 +197,37 @@ function fields_get_valid_field( $field = false ) {
 *  @return	$field (array)
 */
 
-function fields_prepare_field( $field ) {
+function fieldmaster_prepare_field( $field ) {
 	
 	// bail early if already prepared
-	if( $field['_input'] ) {
-		
-		return $field;
-			
-	}
+	if( $field['_prepare'] ) return $field;
 	
 	
-	// _input
-	$field['_input'] = $field['name'];
-	
-
-	// _input: key overrides name
-	if( $field['key'] ) {
-		
-		$field['_input'] = $field['key'];
-		
-	}
+	// key overrides name
+	if( $field['key'] ) $field['name'] = $field['key'];
 
 	
-	// _input: prefix prepends name
-	if( $field['prefix'] ) {
-		
-		$field['_input'] = "{$field['prefix']}[{$field['_input']}]";
-		
-	}
+	// prefix
+	if( $field['prefix'] ) $field['name'] = $field['prefix'] . '[' . $field['name'] . ']';
 	
 	
-	// add id (may be custom set)
-	if( !$field['id'] ) {
-		
-		$field['id'] = str_replace(array('][', '[', ']'), array('-', '-', ''), $field['_input']);
-		
-	}
+	// field is now prepared
+	$field['_prepare'] = 1;
 	
 	
 	// filter to 3rd party customization
-	$field = apply_filters( "fields/prepare_field", $field );
-	$field = apply_filters( "fields/prepare_field/type={$field['type']}", $field );
-	$field = apply_filters( "fields/prepare_field/name={$field['name']}", $field );
-	$field = apply_filters( "fields/prepare_field/key={$field['key']}", $field );
+	$field = apply_filters( "fieldmaster/prepare_field", $field );
+	$field = apply_filters( "fieldmaster/prepare_field/type={$field['type']}", $field );
+	$field = apply_filters( "fieldmaster/prepare_field/name={$field['_name']}", $field );
+	$field = apply_filters( "fieldmaster/prepare_field/key={$field['key']}", $field );
+	
+	
+	// bail ealry if no field
+	if( !$field ) return false;
+	
+	
+	// id attr is generated from name
+	$field['id'] = str_replace(array('][', '[', ']'), array('-', '-', ''), $field['name']);
 	
 	
 	// return
@@ -313,7 +237,7 @@ function fields_prepare_field( $field ) {
 
 
 /*
-*  fields_is_sub_field
+*  fieldmaster_is_sub_field
 *
 *  This function will return true if the field is a sub field
 *
@@ -325,22 +249,14 @@ function fields_prepare_field( $field ) {
 *  @return	(boolean)
 */
 
-function fields_is_sub_field( $field ) {
+function fieldmaster_is_sub_field( $field ) {
 	
 	// local field uses a field instead of ID
-	if( fields_is_field_key($field['parent']) ) {
-		
-		return true;
-		
-	}
+	if( fieldmaster_is_field_key($field['parent']) ) return true;
 	
 	
 	// attempt to load parent field
-	if( fields_get_field($field['parent']) ) {
-		
-		return true;
-		
-	}
+	if( fieldmaster_get_field($field['parent']) ) return true;
 	
 	
 	// return
@@ -350,7 +266,7 @@ function fields_is_sub_field( $field ) {
 
 
 /*
-*  fields_get_field_label
+*  fieldmaster_get_field_label
 *
 *  This function will return the field label with appropriate required label
 *
@@ -362,7 +278,7 @@ function fields_is_sub_field( $field ) {
 *  @return	$label (string)
 */
 
-function fields_get_field_label( $field ) {
+function fieldmaster_get_field_label( $field ) {
 	
 	// vars
 	$label = $field['label'];
@@ -370,9 +286,13 @@ function fields_get_field_label( $field ) {
 	
 	if( $field['required'] ) {
 		
-		$label .= ' <span class="fields-required">*</span>';
+		$label .= ' <span class="fieldmaster-required">*</span>';
 		
 	}
+	
+	
+	// filter for 3rd party customization
+	$label = apply_filters("fieldmaster/get_field_label", $label, $field);
 	
 	
 	// return
@@ -380,15 +300,15 @@ function fields_get_field_label( $field ) {
 
 }
 
-function fields_the_field_label( $field ) {
-
-	echo fields_get_field_label( $field );
+function fieldmaster_the_field_label( $field ) {
+	
+	echo fieldmaster_get_field_label( $field );
 	
 }
 
 
 /*
-*  fields_render_fields
+*  fieldmaster_render_fields
 *
 *  This function will render an array of fields for a given form.
 *  Becasue the $field's values have not been loaded yet, this function will also load values
@@ -404,14 +324,11 @@ function fields_the_field_label( $field ) {
 *  @return	n/a
 */
 
-function fields_render_fields( $post_id = 0, $fields, $el = 'div', $instruction = 'label' ) {
+function fieldmaster_render_fields( $post_id = 0, $fields, $el = 'div', $instruction = 'label' ) {
 	
 	// bail early if no fields
-	if( empty($fields) ) {
-		
-		return false;
-			
-	}
+	if( empty($fields) ) return false;
+	
 		
 	// remove corrupt fields
 	$fields = array_filter($fields);
@@ -423,17 +340,13 @@ function fields_render_fields( $post_id = 0, $fields, $el = 'div', $instruction 
 		// load value
 		if( $field['value'] === null ) {
 			
-			$field['value'] = fields_get_value( $post_id, $field );
+			$field['value'] = fieldmaster_get_value( $post_id, $field );
 			
 		} 
 		
 		
-		// set prefix for correct post name (prefix + key)
-		$field['prefix'] = 'fields';
-		
-		
 		// render
-		fields_render_field_wrap( $field, $el, $instruction );
+		fieldmaster_render_field_wrap( $field, $el, $instruction );
 		
 	}
 	
@@ -441,7 +354,7 @@ function fields_render_fields( $post_id = 0, $fields, $el = 'div', $instruction 
 
 
 /*
-*  fields_render_field
+*  fieldmaster_render_field
 *
 *  This function will render a field input
 *
@@ -453,29 +366,29 @@ function fields_render_fields( $post_id = 0, $fields, $el = 'div', $instruction 
 *  @return	n/a
 */
 
-function fields_render_field( $field = false ) {
+function fieldmaster_render_field( $field = false ) {
 	
 	// get valid field
-	$field = fields_get_valid_field( $field );
+	$field = fieldmaster_get_valid_field( $field );
 	
 	
 	// prepare field for input
-	$field = fields_prepare_field( $field );
+	$field = fieldmaster_prepare_field( $field );
 	
 	
-	// update $field['name']
-	$field['name'] = $field['_input'];
+	// bail ealry if no field
+	if( !$field ) return;
 		
 	
 	// create field specific html
-	do_action( "fields/render_field", $field );
-	do_action( "fields/render_field/type={$field['type']}", $field );
+	do_action( "fieldmaster/render_field", $field );
+	do_action( "fieldmaster/render_field/type={$field['type']}", $field );
 	
 }
 
 
 /*
-*  fields_render_field_wrap
+*  fieldmaster_render_field_wrap
 *
 *  This function will render the complete HTML wrap with label & field
 *
@@ -490,18 +403,22 @@ function fields_render_field( $field = false ) {
 *  @return	N/A
 */
 
-function fields_render_field_wrap( $field, $el = 'div', $instruction = 'label' ) {
+function fieldmaster_render_field_wrap( $field, $el = 'div', $instruction = 'label' ) {
 	
 	// get valid field
-	$field = fields_get_valid_field( $field );
+	$field = fieldmaster_get_valid_field( $field );
 	
 	
 	// prepare field for input
-	$field = fields_prepare_field( $field );
+	$field = fieldmaster_prepare_field( $field );
+	
+	
+	// bail ealry if no field
+	if( !$field ) return;
 	
 	
 	// el
-	$elements = apply_filters('fields/render_field_wrap/elements', array(
+	$elements = apply_filters('fieldmaster/render_field_wrap/elements', array(
 		'div'	=> 'div',
 		'tr'	=> 'td',
 		'ul'	=> 'li',
@@ -522,10 +439,10 @@ function fields_render_field_wrap( $field, $el = 'div', $instruction = 'label' )
 	// wrapper
 	$wrapper = array(
 		'id'		=> '',
-		'class'		=> 'fields-field',
+		'class'		=> 'fm-field',
 		'width'		=> '',
 		'style'		=> '',
-		'data-name'	=> $field['name'],
+		'data-name'	=> $field['_name'],
 		'data-type'	=> $field['type'],
 		'data-key'	=> '',
 	);
@@ -540,13 +457,13 @@ function fields_render_field_wrap( $field, $el = 'div', $instruction = 'label' )
 	
 	
 	// add type
-	$wrapper['class'] .= " fields-field-{$field['type']}";
+	$wrapper['class'] .= " fm-field-{$field['type']}";
 	
 	
 	// add key
 	if( $field['key'] ) {
 		
-		$wrapper['class'] .= " fields-field-{$field['key']}";
+		$wrapper['class'] .= " fm-field-{$field['key']}";
 		$wrapper['data-key'] = $field['key'];
 		
 	}
@@ -558,7 +475,7 @@ function fields_render_field_wrap( $field, $el = 'div', $instruction = 'label' )
 	
 	
 	// wrap classes have changed (5.2.7)
-	if( fields_get_compatibility('field_wrapper_class') ) {
+	if( fieldmaster_get_compatibility('field_wrapper_class') ) {
 		
 		$wrapper['class'] .= " field_type-{$field['type']}";
 		
@@ -572,11 +489,11 @@ function fields_render_field_wrap( $field, $el = 'div', $instruction = 'label' )
 	
 	
 	// merge in atts
-	$wrapper = fields_merge_atts( $wrapper, $field['wrapper'] );
+	$wrapper = fieldmaster_merge_atts( $wrapper, $field['wrapper'] );
 	
 	
 	// add width
-	$width = (int) fields_extract_var( $wrapper, 'width' );
+	$width = (int) fieldmaster_extract_var( $wrapper, 'width' );
 	
 	if( $el == 'tr' || $el == 'td' ) {
 		
@@ -603,34 +520,27 @@ function fields_render_field_wrap( $field, $el = 'div', $instruction = 'label' )
 	
 	
 	// vars
-	$show_label = true;
-	
-	if( $el == 'td' ) {
-		
-		$show_label = false;
-		
-	}
+	$show_label = ($el !== 'td') ? true : false;
 	
 	
-?><<?php echo $el; ?> <?php echo fields_esc_attr($wrapper); ?>>
+?><<?php echo $el; ?> <?php echo fieldmaster_esc_attr($wrapper); ?>>
 <?php if( $show_label ): ?>
-	<<?php echo $elements[ $el ]; ?> class="fields-label">
-		<label for="<?php echo $field['id']; ?>"><?php echo fields_get_field_label($field); ?></label>
+	<<?php echo $elements[ $el ]; ?> class="fieldmaster-label">
+		<label for="<?php echo $field['id']; ?>"><?php echo fieldmaster_get_field_label($field); ?></label>
 <?php if( $instruction == 'label' && $field['instructions'] ): ?>
 		<p class="description"><?php echo $field['instructions']; ?></p>
 <?php endif; ?>
 	</<?php echo $elements[ $el ]; ?>>
 <?php endif; ?>
-	<<?php echo $elements[ $el ]; ?> class="fields-input">
-		<?php fields_render_field( $field ); ?>
-		
+	<<?php echo $elements[ $el ]; ?> class="fieldmaster-input">
+		<?php fieldmaster_render_field( $field ); ?>
 <?php if( $instruction == 'field' && $field['instructions'] ): ?>
 		<p class="description"><?php echo $field['instructions']; ?></p>
 <?php endif; ?>
 	</<?php echo $elements[ $el ]; ?>>
 <?php if( !empty($field['conditional_logic'])): ?>
 	<script type="text/javascript">
-		if(typeof fields !== 'undefined'){ fields.conditional_logic.add( '<?php echo $field['key']; ?>', <?php echo json_encode($field['conditional_logic']); ?>); }
+		if(typeof fieldmaster !== 'undefined'){ fieldmaster.conditional_logic.add( '<?php echo $field['key']; ?>', <?php echo json_encode($field['conditional_logic']); ?>); }
 	</script>
 <?php endif; ?>
 </<?php echo $el; ?>>
@@ -640,7 +550,7 @@ function fields_render_field_wrap( $field, $el = 'div', $instruction = 'label' )
 
 
 /*
-*  fields_render_field_setting
+*  fieldmaster_render_field_setting
 *
 *  This function will render a tr element containing a label and field cell, but also setting the tr data attribute for AJAX 
 *
@@ -653,13 +563,13 @@ function fields_render_field_wrap( $field, $el = 'div', $instruction = 'label' )
 *  @return	n/a
 */
 
-function fields_render_field_setting( $field, $setting, $global = false ) {
+function fieldmaster_render_field_setting( $field, $setting, $global = false ) {
 	
 	// validate
-	$setting = fields_get_valid_field( $setting );
+	$setting = fieldmaster_get_valid_field( $setting );
 	
 	
-	// if this setting is not global, add a data attribute
+	// specific
 	if( !$global ) {
 		
 		$setting['wrapper']['data-setting'] = $field['type'];
@@ -667,26 +577,48 @@ function fields_render_field_setting( $field, $setting, $global = false ) {
 	}
 	
 	
+	// class
+	$setting['wrapper']['class'] .= ' fm-field-setting-' . $setting['name'];
+	
+	
 	// copy across prefix
 	$setting['prefix'] = $field['prefix'];
 		
+	
+	// attempt find value
+	if( $setting['value'] === null ) {
 		
-	// copy across the $setting value
-	if( isset($field[ $setting['name'] ]) ) {
+		// name
+		if( isset($field[ $setting['name'] ]) ) {
+			
+			$setting['value'] = $field[ $setting['name'] ];
 		
-		$setting['value'] = $field[ $setting['name'] ];
+		// default
+		} elseif( isset($setting['default_value']) ) {
+			
+			$setting['value'] = $setting['default_value'];
+			
+		}
+		
+	}
+	
+	
+	// append (used by JS to join settings)
+	if( isset($setting['_append']) ) {
+		
+		$setting['wrapper']['data-append'] = $setting['_append'];
 		
 	}
 	
 	
 	// render
-	fields_render_field_wrap( $setting, 'tr', 'label' );
+	fieldmaster_render_field_wrap( $setting, 'tr', 'label' );
 	
 }
 
 
 /*
-*  fields_get_fields
+*  fieldmaster_get_fields
 *
 *  This function will return an array of fields for the given $parent
 *
@@ -698,21 +630,18 @@ function fields_render_field_setting( $field, $setting, $global = false ) {
 *  @return	(array)
 */
 
-function fields_get_fields( $parent = false ) {
+function fieldmaster_get_fields( $parent = false ) {
 	
 	// allow $parent to be a field group ID
 	if( !is_array($parent) ) {
 		
-		$parent = fields_get_field_group( $parent );
+		$parent = fieldmaster_get_field_group( $parent );
 	
 	}
 	
 	
-	// validate
-	if( !$parent )
-	{
-		return false;
-	}
+	// bail early if no parent
+	if( !$parent ) return false;
 	
 	
 	// vars
@@ -720,25 +649,29 @@ function fields_get_fields( $parent = false ) {
 	
 	
 	// try JSON before DB to save query time
-	if( fields_have_local_fields( $parent['key'] ) ) {
+	if( fieldmaster_have_local_fields( $parent['key'] ) ) {
 		
-		$fields = fields_get_local_fields( $parent['key'] );
+		$fields = fieldmaster_get_local_fields( $parent['key'] );
 		
 	} else {
 		
-		$fields = fields_get_fields_by_id( $parent['ID'] );
+		$fields = fieldmaster_get_fields_by_id( $parent['ID'] );
 	
 	}
 	
 	
+	// filter
+	$fields = apply_filters('fieldmaster/get_fields', $fields, $parent);
+	
+	
 	// return
-	return apply_filters('fields/get_fields', $fields, $parent);
+	return $fields;
 	
 }
 
 
 /*
-*  fields_get_fields_by_id
+*  fieldmaster_get_fields_by_id
 *
 *  This function will get all fields for the given parent
 *
@@ -750,58 +683,68 @@ function fields_get_fields( $parent = false ) {
 *  @return	$fields (array)
 */
 
-function fields_get_fields_by_id( $id = 0 ) {
+function fieldmaster_get_fields_by_id( $parent_id = 0 ) {
+	
+	// bail early if no ID
+	if( !$parent_id ) return false;
+	
 	
 	// vars
 	$fields = array();
+	$post_ids = array();
+	$cache_key = "get_fields/ID={$parent_id}";
 	
 	
-	// validate
-	if( empty($id) ) {
+	// check cache for child ids
+	if( fieldmaster_isset_cache($cache_key) ) {
 		
-		return $fields;
+		$post_ids = fieldmaster_get_cache($cache_key);
+	
+	// query DB for child ids
+	} else {
+		
+		// query
+		$posts = get_posts(array(
+			'posts_per_page'			=> -1,
+			'post_type'					=> 'fm-field',
+			'orderby'					=> 'menu_order',
+			'order'						=> 'ASC',
+			'suppress_filters'			=> true, // DO NOT allow WPML to modify the query
+			'post_parent'				=> $parent_id,
+			'post_status'				=> 'publish, trash', // 'any' won't get trashed fields
+			'update_post_meta_cache'	=> false
+		));
+		
+		
+		// loop
+		if( $posts ) {
+			
+			foreach( $posts as $post ) {
+				
+				$post_ids[] = $post->ID;
+				
+			}
+				
+		}
+		
+		
+		// update cache
+		fieldmaster_set_cache($cache_key, $post_ids);
 		
 	}
 	
 	
-	// cache
-	$found = false;
-	$cache = wp_cache_get( 'get_fields/parent=' . $id, 'fields', false, $found );
+	// bail early if no children
+	if( empty($post_ids) ) return false;
 	
-	if( $found )
-	{
-		return $cache;
-	}
-	
-	
-	// args
-	$args = array(
-		'posts_per_page'			=> -1,
-		'post_type'					=> 'fields-field',
-		'orderby'					=> 'menu_order',
-		'order'						=> 'ASC',
-		'suppress_filters'			=> true, // DO NOT allow WPML to modify the query
-		'post_parent'				=> $id,
-		'post_status'				=> 'publish, trash', // 'any' won't get trashed fields
-		'update_post_meta_cache'	=> false
-	);
-		
 	
 	// load fields
-	$posts = get_posts( $args );
-	
-	if( $posts )
-	{
-		foreach( $posts as $post )
-		{
-			$fields[] = fields_get_field( $post->ID );
-		}	
+	foreach( $post_ids as $post_id ) {
+		
+		$fields[] = fieldmaster_get_field( $post_id );
+		
 	}
 	
-	
-	// set cache
-	wp_cache_set( 'get_fields/parent=' . $id, $fields, 'fields' );
-		
 	
 	// return
 	return $fields;
@@ -810,7 +753,7 @@ function fields_get_fields_by_id( $id = 0 ) {
 
 
 /*
-*  fields_get_field
+*  fieldmaster_get_field
 *
 *  This function will return a field for the given selector. 
 *
@@ -823,29 +766,29 @@ function fields_get_fields_by_id( $id = 0 ) {
 *  @return	$field (array)
 */
 
-function fields_get_field( $selector = null, $db_only = false ) {
+function fieldmaster_get_field( $selector = null, $db_only = false ) {
 	
 	// vars
 	$field = false;
 	$type = 'ID';
 	
 	
-	// is $selector an ID
+	// ID
 	if( is_numeric($selector) ) {
 		
 		// do nothing
 	
-	// is $selector a string (name|key)	
-	} elseif( is_string($selector) ) {
-		
-		$type = fields_is_field_key($selector) ? 'key' : 'name';
-	
-	// is $selector an object
+	// object
 	} elseif( is_object($selector) ) {
 		
 		$selector = $selector->ID;
 	
-	// selector not valid
+	// string
+	} elseif( is_string($selector) ) {
+		
+		$type = fieldmaster_is_field_key($selector) ? 'key' : 'name';
+	
+	// other
 	} else {
 		
 		return false;
@@ -853,62 +796,65 @@ function fields_get_field( $selector = null, $db_only = false ) {
 	}
 	
 	
-	// get cache key
+	// return early if cache is found
 	$cache_key = "get_field/{$type}={$selector}";
 	
-	
-	// get cache
-	if( !$db_only ) {
+	if( !$db_only && fieldmaster_isset_cache($cache_key) ) {
 		
-		$found = false;
-		$cache = wp_cache_get( $cache_key, 'fields', false, $found );
-		
-		if( $found ) {
-			
-			return $cache;
-			
-		}
+		return fieldmaster_get_cache($cache_key);
 		
 	}
 	
 	
-	// get field group from ID or key
+	// ID
 	if( $type == 'ID' ) {
 		
-		$field = _fields_get_field_by_id( $selector, $db_only );
+		$field = _fieldmaster_get_field_by_id( $selector, $db_only );
+	
+	// key	
+	} elseif( $type == 'key' ) {
 		
-	} elseif( $type == 'name' ) {
-		
-		$field = _fields_get_field_by_name( $selector, $db_only );
-		
+		$field = _fieldmaster_get_field_by_key( $selector, $db_only );
+	
+	// name (rare case)
 	} else {
 		
-		$field = _fields_get_field_by_key( $selector, $db_only );
+		$field = _fieldmaster_get_field_by_name( $selector, $db_only );
 		
 	}
+	
+	
+	// bail early if no field
+	if( !$field ) return false;
+	
+	
+	// validate
+	$field = fieldmaster_get_valid_field( $field );
+	
+	
+	// set prefix (fieldmaster fields save with prefix 'fieldmaster')
+	$field['prefix'] = 'fieldmaster';
 	
 	
 	// bail early if db only value (no need to update cache)
-	if( $db_only ) {
-		
-		return $field;
-		
-	}
+	if( $db_only ) return $field;
 	
 	
 	// filter for 3rd party customization
-	if( $field ) {
-		
-		$field = apply_filters( "fields/load_field", $field);
-		$field = apply_filters( "fields/load_field/type={$field['type']}", $field );
-		$field = apply_filters( "fields/load_field/name={$field['name']}", $field );
-		$field = apply_filters( "fields/load_field/key={$field['key']}", $field );
-		
-	}
+	$field = apply_filters( "fieldmaster/load_field", $field);
+	$field = apply_filters( "fieldmaster/load_field/type={$field['type']}", $field );
+	$field = apply_filters( "fieldmaster/load_field/name={$field['name']}", $field );
+	$field = apply_filters( "fieldmaster/load_field/key={$field['key']}", $field );
 	
 	
-	// set cache
-	wp_cache_set( $cache_key, $field, 'fields' );
+	// update cache
+	// - Use key instead of ID for best compatibility (not all fields exist in the DB)
+	$cache_key = fieldmaster_set_cache("get_field/key={$field['key']}", $field);
+	
+	
+	// update cache reference
+	// - allow cache to return if using an ID selector
+	fieldmaster_set_cache_reference("get_field/ID={$field['ID']}", $cache_key);
 
 	
 	// return
@@ -918,7 +864,7 @@ function fields_get_field( $selector = null, $db_only = false ) {
 
 
 /*
-*  _fields_get_field_by_id
+*  _fieldmaster_get_field_by_id
 *
 *  This function will get a field via its ID
 *
@@ -930,18 +876,14 @@ function fields_get_field( $selector = null, $db_only = false ) {
 *  @return	$field (array)
 */
 
-function _fields_get_field_by_id( $post_id = 0, $db_only = false ) {
+function _fieldmaster_get_field_by_id( $post_id = 0, $db_only = false ) {
 	
 	// get post
 	$post = get_post( $post_id );
 	
 	
 	// bail early if no post, or is not a field
-	if( empty($post) || $post->post_type != 'fields-field' ) {
-	
-		return false;
-		
-	}
+	if( empty($post) || $post->post_type != 'fm-field' ) return false;
 	
 	
 	// unserialize
@@ -958,27 +900,21 @@ function _fields_get_field_by_id( $post_id = 0, $db_only = false ) {
 
 
 	// override with JSON
-	if( !$db_only && fields_is_local_field($field['key']) ) {
+	if( !$db_only && fieldmaster_is_local_field($field['key']) ) {
 		
-		// extract some args
-		$backup = fields_extract_vars($field, array(
-			'ID',
-			'parent'
-		));
-		
-
 		// load JSON field
-		$field = fields_get_local_field( $field['key'] );
+		$local = fieldmaster_get_local_field( $field['key'] );
 		
 		
-		// merge in backup
-		$field = array_merge($field, $backup);
+		// override IDs
+		$local['ID'] = $field['ID'];
+		$local['parent'] = $field['parent'];
+		
+		
+		// return
+		return $local;
 		
 	}
-	
-	
-	// validate
-	$field = fields_get_valid_field( $field );
 	
 	
 	// return
@@ -988,7 +924,7 @@ function _fields_get_field_by_id( $post_id = 0, $db_only = false ) {
 
 
 /*
-*  _fields_get_field_by_key
+*  _fieldmaster_get_field_by_key
 *
 *  This function will get a field via its key
 *
@@ -1000,42 +936,32 @@ function _fields_get_field_by_id( $post_id = 0, $db_only = false ) {
 *  @return	$field (array)
 */
 
-function _fields_get_field_by_key( $key = '', $db_only = false ) {
+function _fieldmaster_get_field_by_key( $key = '', $db_only = false ) {
 	
 	// try JSON before DB to save query time
-	if( !$db_only && fields_is_local_field( $key ) ) {
+	if( !$db_only && fieldmaster_is_local_field( $key ) ) {
 		
-		$field = fields_get_local_field( $key );
-		
-		// validate
-		$field = fields_get_valid_field( $field );
-	
-		// return
-		return $field;
+		return fieldmaster_get_local_field( $key );
 		
 	}
 	
 	
 	// vars
-	$post_id = fields_get_field_id( $key );
+	$post_id = fieldmaster_get_field_id( $key );
 	
 	
-	// validate
-	if( !$post_id ) {
+	// bail early if no post_id
+	if( !$post_id ) return false;
 		
-		return false;
-		
-	}
-	
 	
 	// return
-	return _fields_get_field_by_id( $post_id, $db_only );
+	return _fieldmaster_get_field_by_id( $post_id, $db_only );
 	
 }
 
 
 /*
-*  _fields_get_field_by_name
+*  _fieldmaster_get_field_by_name
 *
 *  This function will get a field via its name
 *
@@ -1047,12 +973,20 @@ function _fields_get_field_by_key( $key = '', $db_only = false ) {
 *  @return	$field (array)
 */
 
-function _fields_get_field_by_name( $name = '', $db_only = false ) {
+function _fieldmaster_get_field_by_name( $name = '', $db_only = false ) {
+	
+	// try JSON before DB to save query time
+	if( !$db_only && fieldmaster_is_local_field( $name ) ) {
+		
+		return fieldmaster_get_local_field( $name );
+		
+	}
+	
 	
 	// vars
 	$args = array(
 		'posts_per_page'	=> 1,
-		'post_type'			=> 'fields-field',
+		'post_type'			=> 'fm-field',
 		'orderby' 			=> 'menu_order title',
 		'order'				=> 'ASC',
 		'suppress_filters'	=> false,
@@ -1064,22 +998,18 @@ function _fields_get_field_by_name( $name = '', $db_only = false ) {
 	$posts = get_posts( $args );
 	
 	
-	// validate
-	if( empty($posts) ) {
-		
-		return false;	
-		
-	}
+	// bail early if no posts
+	if( empty($posts) ) return false;
 	
 	
 	// return
-	return _fields_get_field_by_id( $posts[0]->ID, $db_only );
+	return _fieldmaster_get_field_by_id( $posts[0]->ID, $db_only );
 	
 }
 
 
 /*
-*  fields_maybe_get_field
+*  fieldmaster_maybe_get_field
 *
 *  This function will return a field for the given selector.
 *  It will also review the field_reference to ensure the correct field is returned which makes it useful for the template API
@@ -1094,63 +1024,51 @@ function _fields_get_field_by_name( $name = '', $db_only = false ) {
 *  @return	$field (array)
 */
 
-function fields_maybe_get_field( $selector, $post_id = false, $strict = true ) {
+function fieldmaster_maybe_get_field( $selector, $post_id = false, $strict = true ) {
 	
-	// complete loading
-	// this function may be used in a theme file before the init action has been run
-	fieldsAPI()->complete();
-	
-	
-	// vars
-	$field_name = false;
+	// init
+	fieldmaster_init();
 	
 	
-	// get valid post_id
-	$post_id = fields_get_valid_post_id( $post_id );
-	
-	
-	// load field reference if not a field_key
-	if( !fields_is_field_key($selector) ) {
+	// bail early if is field key
+	if( fieldmaster_is_field_key($selector) ) {
 		
-		// save selector as field_name (could be sub field name)
-		$field_name = $selector;
-			
-			
-		// get reference
-		$field_key = fields_get_field_reference( $selector, $post_id );
-		
-		
-		if( $field_key ) {
-			
-			$selector = $field_key;
-			
-		} elseif( $strict ) {
-			
-			return false;
-			
-		}
+		return fieldmaster_get_field( $selector );
 		
 	}
 	
 	
-	// get field key
-	$field = fields_get_field( $selector );
+	// save selector as field_name (could be sub field name 'images_0_image')
+	$field_name = $selector;
 	
 	
-	// bail early if no field
-	if( !$field ) {
+	// get valid post_id
+	$post_id = fieldmaster_get_valid_post_id( $post_id );
+	
+	
+	// get reference
+	$field_key = fieldmaster_get_field_reference( $selector, $post_id );
+	
+	
+	// update selector
+	if( $field_key ) {
+		
+		$selector = $field_key;
+	
+	// bail early if no reference	
+	} elseif( $strict ) {
 		
 		return false;
 		
 	}
 	
 	
-	// Override name - allows the $selector to be a sub field (images_0_image)
-	if( $field_name ) {
+	// get field
+	$field = fieldmaster_get_field( $selector );
 	
-		$field['name'] = $field_name;	
-		
-	}
+	
+	// update name
+	if( $field ) $field['name'] = $field_name;
 	
 	
 	// return
@@ -1160,7 +1078,7 @@ function fields_maybe_get_field( $selector, $post_id = false, $strict = true ) {
 
 
 /*
-*  fields_get_field_id
+*  fieldmaster_get_field_id
 *
 *  This function will lookup a field's ID from the DB
 *  Useful for local fields to find DB sibling
@@ -1173,12 +1091,12 @@ function fields_maybe_get_field( $selector, $post_id = false, $strict = true ) {
 *  @return	$post_id (int)
 */
 
-function fields_get_field_id( $key = '' ) {
+function fieldmaster_get_field_id( $key = '' ) {
 	
 	// vars
 	$args = array(
 		'posts_per_page'	=> 1,
-		'post_type'			=> 'fields-field',
+		'post_type'			=> 'fm-field',
 		'orderby' 			=> 'menu_order title',
 		'order'				=> 'ASC',
 		'suppress_filters'	=> false,
@@ -1191,11 +1109,7 @@ function fields_get_field_id( $key = '' ) {
 	
 	
 	// validate
-	if( empty($posts) ) {
-		
-		return 0;
-		
-	}
+	if( empty($posts) ) return 0;
 	
 	
 	// return
@@ -1205,7 +1119,7 @@ function fields_get_field_id( $key = '' ) {
 
 
 /*
-*  fields_update_field
+*  fieldmaster_update_field
 *
 *  This function will update a field into the DB.
 *  The returned field will always contain an ID
@@ -1218,29 +1132,29 @@ function fields_get_field_id( $key = '' ) {
 *  @return	$field (array)
 */
 
-function fields_update_field( $field = false, $specific = false ) {
+function fieldmaster_update_field( $field = false, $specific = false ) {
 	
 	// $field must be an array
-	if( !is_array($field) ) {
-	
-		return false;
-		
-	}
+	if( !is_array($field) ) return false;
 	
 	
 	// validate
-	$field = fields_get_valid_field( $field );
+	$field = fieldmaster_get_valid_field( $field );
 	
 	
 	// may have been posted. Remove slashes
 	$field = wp_unslash( $field );
 	
 	
+	// parse types (converts string '0' to int 0)
+	$field = fieldmaster_parse_types( $field );
+	
+	
 	// clean up conditional logic keys
 	if( !empty($field['conditional_logic']) ) {
 		
 		// extract groups
-		$groups = fields_extract_var( $field, 'conditional_logic' );
+		$groups = fieldmaster_extract_var( $field, 'conditional_logic' );
 		
 		
 		// clean array
@@ -1263,11 +1177,20 @@ function fields_update_field( $field = false, $specific = false ) {
 	}
 	
 	
+	// parent may be a field key
+	// - lookup parent ID
+	if( fieldmaster_is_field_key($field['parent']) ) {
+		
+		$field['parent'] = fieldmaster_get_field_id( $field['parent'] );
+		
+	}
+	
+	
 	// filter for 3rd party customization
-	$field = apply_filters( "fields/update_field", $field);
-	$field = apply_filters( "fields/update_field/type={$field['type']}", $field );
-	$field = apply_filters( "fields/update_field/name={$field['name']}", $field );
-	$field = apply_filters( "fields/update_field/key={$field['key']}", $field );
+	$field = apply_filters( "fieldmaster/update_field", $field);
+	$field = apply_filters( "fieldmaster/update_field/type={$field['type']}", $field );
+	$field = apply_filters( "fieldmaster/update_field/name={$field['name']}", $field );
+	$field = apply_filters( "fieldmaster/update_field/key={$field['key']}", $field );
 	
 	
 	// store origional field for return
@@ -1275,7 +1198,7 @@ function fields_update_field( $field = false, $specific = false ) {
 	
 	
 	// extract some args
-	$extract = fields_extract_vars($data, array(
+	$extract = fieldmaster_extract_vars($data, array(
 		'ID',
 		'key',
 		'label',
@@ -1287,7 +1210,7 @@ function fields_update_field( $field = false, $specific = false ) {
 		'class',
 		'parent',
 		'_name',
-		'_input',
+		'_prepare',
 		'_valid',
 	));
 	
@@ -1300,7 +1223,7 @@ function fields_update_field( $field = false, $specific = false ) {
     $save = array(
     	'ID'			=> $extract['ID'],
     	'post_status'	=> 'publish',
-    	'post_type'		=> 'fields-field',
+    	'post_type'		=> 'fm-field',
     	'post_title'	=> $extract['label'],
     	'post_name'		=> $extract['key'],
     	'post_excerpt'	=> $extract['name'],
@@ -1311,48 +1234,48 @@ function fields_update_field( $field = false, $specific = false ) {
     
     
     // $specific
-    if( !empty($specific) )
-    {
-    	// prepend ID
+    if( !empty($specific) ) {
+	    
+	    // prepend ID
     	array_unshift( $specific, 'ID' );
     	
     	
+	    // vars
+	    $_save = $save;
+	    
+	    
+	    // reset
+	    $save = array();
+	    
+    	
     	// appen data
-    	foreach( $specific as $key )
-    	{
-	    	$_save[ $key ] = $save[ $key ];
+    	foreach( $specific as $key ) {
+	    	
+	    	$save[ $key ] = $_save[ $key ];
+	    	
     	}
-    	
-    	
-    	// override save
-    	$save = $_save;
-    	
-    	
-    	// clean up
-    	unset($_save);
     	
     }
     
     
     // allow fields to contain the same name
-	add_filter( 'wp_unique_post_slug', 'fields_update_field_wp_unique_post_slug', 100, 6 ); 
+	add_filter( 'wp_unique_post_slug', 'fieldmaster_update_field_wp_unique_post_slug', 100, 6 ); 
 	
 	
     // update the field and update the ID
-    if( $field['ID'] )
-    {
+    if( $field['ID'] ) {
+	    
 	    wp_update_post( $save );
-    }
-    else
-    {
+	    
+    } else  {
+	    
 	    $field['ID'] = wp_insert_post( $save );
+	    
     }
 	
     
     // clear cache
-	wp_cache_delete( "get_field/ID={$field['ID']}", 'fields' );
-	wp_cache_delete( "get_field/key={$field['key']}", 'fields' );
-	wp_cache_delete( "get_fields/parent={$field['parent']}", 'fields' );
+    fieldmaster_delete_cache("get_field/key={$field['key']}");
 	
 	
     // return
@@ -1360,20 +1283,22 @@ function fields_update_field( $field = false, $specific = false ) {
 	
 }
 
-function fields_update_field_wp_unique_post_slug( $slug, $post_ID, $post_status, $post_type, $post_parent, $original_slug ) {
+function fieldmaster_update_field_wp_unique_post_slug( $slug, $post_ID, $post_status, $post_type, $post_parent, $original_slug ) {
 		
-	if( $post_type == 'fields-field' ) {
+	if( $post_type == 'fm-field' ) {
 	
 		$slug = $original_slug;
 	
 	}
 	
+	// return
 	return $slug;
+	
 }
 
 
 /*
-*  fields_duplicate_fields
+*  fieldmaster_duplicate_fields
 *
 *  This function will duplicate an array of fields and update conditional logic references
 *
@@ -1386,14 +1311,10 @@ function fields_update_field_wp_unique_post_slug( $slug, $post_ID, $post_status,
 *  @return	n/a
 */
 
-function fields_duplicate_fields( $fields, $new_parent = 0 ) {
+function fieldmaster_duplicate_fields( $fields, $new_parent = 0 ) {
 	
 	// bail early if no fields
-	if( empty($fields) ) {
-		
-		return;
-		
-	}
+	if( empty($fields) ) return;
 	
 	
 	// create new field keys (for conditional logic fixes)
@@ -1402,7 +1323,7 @@ function fields_duplicate_fields( $fields, $new_parent = 0 ) {
 		// ensure a delay for unique ID
 		usleep(1);
 		
-		fields_update_setting( 'duplicate_key_' . $field['key'] , uniqid('field_') );
+		fieldmaster_update_setting( 'duplicate_key_' . $field['key'] , uniqid('field_') );
 		
 	}
 	
@@ -1411,7 +1332,7 @@ function fields_duplicate_fields( $fields, $new_parent = 0 ) {
 	foreach( $fields as $field ) {
 	
 		// duplicate
-		fields_duplicate_field( $field['ID'], $new_parent );
+		fieldmaster_duplicate_field( $field['ID'], $new_parent );
 		
 	}
 	
@@ -1419,7 +1340,7 @@ function fields_duplicate_fields( $fields, $new_parent = 0 ) {
 
 
 /*
-*  fields_duplicate_field
+*  fieldmaster_duplicate_field
 *
 *  This function will duplicate a field and attach it to the given field group ID
 *
@@ -1432,14 +1353,14 @@ function fields_duplicate_fields( $fields, $new_parent = 0 ) {
 *  @return	$field (array) the new field
 */
 
-function fields_duplicate_field( $selector = 0, $new_parent = 0 ){
+function fieldmaster_duplicate_field( $selector = 0, $new_parent = 0 ){
 	
-	// disable JSON to avoid conflicts between DB and JSON
-	fields_disable_local();
+	// disable filters to ensure FieldMaster loads raw data from DB
+	fieldmaster_disable_filters();
 	
 	
 	// load the origional field
-	$field = fields_get_field( $selector );
+	$field = fieldmaster_get_field( $selector );
 	
 	
 	// bail early if field did not load correctly
@@ -1455,7 +1376,7 @@ function fields_duplicate_field( $selector = 0, $new_parent = 0 ){
 	
 	
 	// try duplicate keys
-	$field['key'] = fields_get_setting( 'duplicate_key_' . $field['key'] );
+	$field['key'] = fieldmaster_get_setting( 'duplicate_key_' . $field['key'] );
 	
 	
 	// default key
@@ -1478,14 +1399,14 @@ function fields_duplicate_field( $selector = 0, $new_parent = 0 ){
 	if( !empty($field['conditional_logic']) ) {
 	
 		// extract groups
-		$groups = fields_extract_var( $field, 'conditional_logic' );
+		$groups = fieldmaster_extract_var( $field, 'conditional_logic' );
 		
 		
 		// loop over groups
 		foreach( array_keys($groups) as $g ) {
 			
 			// extract group
-			$group = fields_extract_var( $groups, $g );
+			$group = fieldmaster_extract_var( $groups, $g );
 			
 			
 			// bail early if empty
@@ -1500,11 +1421,11 @@ function fields_duplicate_field( $selector = 0, $new_parent = 0 ){
 			foreach( array_keys($group) as $r ) {
 				
 				// extract rule
-				$rule = fields_extract_var( $group, $r );
+				$rule = fieldmaster_extract_var( $group, $r );
 				
 				
 				// vars
-				$new_key = fields_get_setting( 'duplicate_key_' . $rule['field'] );
+				$new_key = fieldmaster_get_setting( 'duplicate_key_' . $rule['field'] );
 				
 				
 				// update rule with new key
@@ -1534,20 +1455,19 @@ function fields_duplicate_field( $selector = 0, $new_parent = 0 ){
 	}
 	
 	
-	
 	// filter for 3rd party customization
-	$field = apply_filters( "fields/duplicate_field", $field);
-	$field = apply_filters( "fields/duplicate_field/type={$field['type']}", $field );
+	$field = apply_filters( "fieldmaster/duplicate_field", $field);
+	$field = apply_filters( "fieldmaster/duplicate_field/type={$field['type']}", $field );
 	
 	
 	// save
-	return fields_update_field( $field );
+	return fieldmaster_update_field( $field );
 	
 }
 
 
 /*
-*  fields_delete_field
+*  fieldmaster_delete_field
 *
 *  This function will delete a field from the databse
 *
@@ -1559,22 +1479,18 @@ function fields_duplicate_field( $selector = 0, $new_parent = 0 ){
 *  @return	(boolean)
 */
 
-function fields_delete_field( $selector = 0 ) {
+function fieldmaster_delete_field( $selector = 0 ) {
 	
-	// disable JSON to avoid conflicts between DB and JSON
-	fields_disable_local();
+	// disable filters to ensure FieldMaster loads raw data from DB
+	fieldmaster_disable_filters();
 	
 	
 	// load the origional field gorup
-	$field = fields_get_field( $selector );
+	$field = fieldmaster_get_field( $selector );
 	
 	
 	// bail early if field did not load correctly
-	if( empty($field) ) {
-		
-		return false;
-	
-	}
+	if( empty($field) ) return false;
 	
 	
 	// delete field
@@ -1582,23 +1498,22 @@ function fields_delete_field( $selector = 0 ) {
 	
 	
 	// action for 3rd party customisation
-	do_action( "fields/delete_field", $field);
-	do_action( "fields/delete_field/type={$field['type']}", $field );
+	do_action( "fieldmaster/delete_field", $field);
+	do_action( "fieldmaster/delete_field/type={$field['type']}", $field );
 	
 	
 	// clear cache
-	wp_cache_delete( "get_field/ID={$field['ID']}", 'fields' );
-	wp_cache_delete( "get_field/key={$field['key']}", 'fields' );
-	wp_cache_delete( "get_fields/parent={$field['parent']}", 'fields' );
+	fieldmaster_delete_cache("get_field/key={$field['key']}");
 	
 	
 	// return
 	return true;
+	
 }
 
 
 /*
-*  fields_trash_field
+*  fieldmaster_trash_field
 *
 *  This function will trash a field from the databse
 *
@@ -1610,22 +1525,18 @@ function fields_delete_field( $selector = 0 ) {
 *  @return	(boolean)
 */
 
-function fields_trash_field( $selector = 0 ) {
+function fieldmaster_trash_field( $selector = 0 ) {
 	
-	// disable JSON to avoid conflicts between DB and JSON
-	fields_disable_local();
+	// disable filters to ensure FieldMaster loads raw data from DB
+	fieldmaster_disable_filters();
 	
 	
 	// load the origional field gorup
-	$field = fields_get_field( $selector );
+	$field = fieldmaster_get_field( $selector );
 	
 	
 	// bail early if field did not load correctly
-	if( empty($field) ) {
-		
-		return false;
-	
-	}
+	if( empty($field) ) return false;
 	
 	
 	// delete field
@@ -1633,16 +1544,17 @@ function fields_trash_field( $selector = 0 ) {
 	
 	
 	// action for 3rd party customisation
-	do_action( 'fields/trash_field', $field );
+	do_action( 'fieldmaster/trash_field', $field );
 	
 	
 	// return
 	return true;
+	
 }
 
 
 /*
-*  fields_untrash_field
+*  fieldmaster_untrash_field
 *
 *  This function will restore a field from the trash
 *
@@ -1654,22 +1566,18 @@ function fields_trash_field( $selector = 0 ) {
 *  @return	(boolean)
 */
 
-function fields_untrash_field( $selector = 0 ) {
+function fieldmaster_untrash_field( $selector = 0 ) {
 	
-	// disable JSON to avoid conflicts between DB and JSON
-	fields_disable_local();
+	// disable filters to ensure FieldMaster loads raw data from DB
+	fieldmaster_disable_filters();
 	
 	
 	// load the origional field gorup
-	$field = fields_get_field( $selector );
+	$field = fieldmaster_get_field( $selector );
 	
 	
 	// bail early if field did not load correctly
-	if( empty($field) ) {
-		
-		return false;
-	
-	}
+	if( empty($field) ) return false;
 	
 	
 	// delete field
@@ -1677,7 +1585,7 @@ function fields_untrash_field( $selector = 0 ) {
 	
 	
 	// action for 3rd party customisation
-	do_action( 'fields/untrash_field', $field );
+	do_action( 'fieldmaster/untrash_field', $field );
 	
 	
 	// return
@@ -1686,7 +1594,7 @@ function fields_untrash_field( $selector = 0 ) {
 
 
 /*
-*  fields_prepare_fields_for_export
+*  fieldmaster_prepare_fields_for_export
 *
 *  description
 *
@@ -1698,28 +1606,19 @@ function fields_untrash_field( $selector = 0 ) {
 *  @return	$post_id (int)
 */
 
-function fields_prepare_fields_for_export( $fields = false ) {
+function fieldmaster_prepare_fields_for_export( $fields = false ) {
 	
 	// validate
-	if( empty($fields) ) {
-		
-		return $fields;
-	}
+	if( empty($fields) ) return $fields;
 	
 	
 	// format
-	$keys = array_keys( $fields );
-	
-	foreach( $keys as $key ) {
+	foreach( array_keys($fields) as $i ) {
 		
 		// prepare
-		$fields[ $key ] = fields_prepare_field_for_export( $fields[ $key ] );
+		$fields[ $i ] = fieldmaster_prepare_field_for_export( $fields[ $i ] );
 				
 	}
-	
-	
-	// filter for 3rd party customization
-	$fields = apply_filters('fields/prepare_fields_for_export', $fields);
 	
 	
 	// return
@@ -1729,7 +1628,7 @@ function fields_prepare_fields_for_export( $fields = false ) {
 
 
 /*
-*  fields_prepare_field_for_export
+*  fieldmaster_prepare_field_for_export
 *
 *  description
 *
@@ -1741,10 +1640,10 @@ function fields_prepare_fields_for_export( $fields = false ) {
 *  @return	$post_id (int)
 */
 
-function fields_prepare_field_for_export( $field ) {
+function fieldmaster_prepare_field_for_export( $field ) {
 	
 	// extract some args
-	$extract = fields_extract_vars($field, array(
+	$extract = fieldmaster_extract_vars($field, array(
 		'ID',
 		'prefix',
 		'value',
@@ -1753,13 +1652,14 @@ function fields_prepare_field_for_export( $field ) {
 		'class',
 		'parent',
 		'_name',
-		'_input',
+		'_prepare',
 		'_valid',
 	));
 	
 	
 	// filter for 3rd party customization
-	$field = apply_filters( "fields/prepare_field_for_export", $field );
+	$field = apply_filters( "fieldmaster/prepare_field_for_export", $field );
+	$field = apply_filters( "fieldmaster/prepare_field_for_export/type={$field['type']}", $field );
 	
 	
 	// return
@@ -1768,7 +1668,7 @@ function fields_prepare_field_for_export( $field ) {
 
 
 /*
-*  fields_prepare_fields_for_import
+*  fieldmaster_prepare_fields_for_import
 *
 *  description
 *
@@ -1780,13 +1680,10 @@ function fields_prepare_field_for_export( $field ) {
 *  @return	$post_id (int)
 */
 
-function fields_prepare_fields_for_import( $fields = false ) {
+function fieldmaster_prepare_fields_for_import( $fields = false ) {
 	
 	// validate
-	if( empty($fields) ) {
-		
-		return $fields;
-	}
+	if( empty($fields) ) return array();
 	
 	
 	// re-index array
@@ -1801,30 +1698,26 @@ function fields_prepare_fields_for_import( $fields = false ) {
 	while( $i < count($fields) ) {
 		
 		// prepare field
-		$field = fields_prepare_field_for_import( $fields[ $i ] );
+		$field = fieldmaster_prepare_field_for_import( $fields[ $i ] );
 		
 		
-		// $field may be an array of multiple fields (including sub fields)
-		if( !isset($field['key']) ) {
+		// allow multiple fields to be returned ($field + $sub_fields)
+		if( fieldmaster_is_sequential_array($field) ) {
 			
-			$extra = $field;
-			
-			$field = array_shift($extra);
-			$fields = array_merge($fields, $extra);
+			// merge in $field (1 or more fields)
+			array_splice($fields, $i, 1, $field);
 			
 		}
-		
-		// prepare
-		$fields[ $i ] = $field;
-		
+				
 		
 		// $i
-		$i++;	
+		$i++;
+		
 	}
 	
 	
 	// filter for 3rd party customization
-	$fields = apply_filters('fields/prepare_fields_for_import', $fields);
+	$fields = apply_filters('fieldmaster/prepare_fields_for_import', $fields);
 	
 	
 	// return
@@ -1834,7 +1727,7 @@ function fields_prepare_fields_for_import( $fields = false ) {
 
 
 /*
-*  fields_prepare_field_for_import
+*  fieldmaster_prepare_field_for_import
 *
 *  description
 *
@@ -1846,21 +1739,22 @@ function fields_prepare_fields_for_import( $fields = false ) {
 *  @return	$post_id (int)
 */
 
-function fields_prepare_field_for_import( $field ) {
+function fieldmaster_prepare_field_for_import( $field ) {
 	
 	// extract some args
-	$extract = fields_extract_vars($field, array(
+	$extract = fieldmaster_extract_vars($field, array(
 		'value',
 		'id',
 		'class',
 		'_name',
-		'_input',
+		'_prepare',
 		'_valid',
 	));
 	
 	
 	// filter for 3rd party customization
-	$field = apply_filters( "fields/prepare_field_for_import", $field );
+	$field = apply_filters( "fieldmaster/prepare_field_for_import", $field );
+	$field = apply_filters( "fieldmaster/prepare_field_for_import/type={$field['type']}", $field );
 	
 	
 	// return
@@ -1869,7 +1763,7 @@ function fields_prepare_field_for_import( $field ) {
 
 
 /*
-*  fields_get_sub_field
+*  fieldmaster_get_sub_field
 *
 *  This function will return a field for the given selector, and $field (parent). 
 *
@@ -1882,88 +1776,118 @@ function fields_prepare_field_for_import( $field ) {
 *  @return	$field (array)
 */
 
-function fields_get_sub_field( $selector, $field ) {
+function fieldmaster_get_sub_field( $selector, $field ) {
 	
-	// sub fields
-	if( $field['type'] == 'repeater' ) {
-		
-		// extract sub fields
-		$sub_fields = fields_extract_var( $field, 'sub_fields');
-		
-		if( !empty($sub_fields) ) {
-		
-			foreach( $sub_fields as $sub_field ) {
-				
-				if( $sub_field['name'] == $selector || $sub_field['key'] == $selector ) {
-					
-					// return
-					return $sub_field;
-					
-				}
-				// if
-				
-			}
-			// foreach
-			
-		}
-		// if
-		
-	} elseif( $field['type'] == 'flexible_content' ) {
-		
-		// vars
-		$layouts = fields_extract_var( $field, 'layouts');
-		$current = get_row_layout();
-		
-		
-		if( !empty($layouts) ) {
-			
-			foreach( $layouts as $layout ) {
-				
-				// skip layout if the current layout key does not match
-				if( $current && $current !== $layout['name'] ) {
-					
-					continue;
-					
-				} 
-				
-				
-				// extract sub fields
-				$sub_fields = fields_extract_var( $layout, 'sub_fields');
-				
-				if( !empty($sub_fields) ) {
-					
-					foreach( $sub_fields as $sub_field ) {
-						
-						if( $sub_field['name'] == $selector || $sub_field['key'] == $selector ) {
-							
-							// return
-							return $sub_field;
-							
-						}
-						// if
-						
-					}
-					// foreach
-					
-				}
-				// if
-				
-			}
-			// foreach
-			
-		}
-		// if
-
-	}
-	// if
+	// vars
+	$sub_field = false;
+	
+	
+	// filter for 3rd party customization
+	$sub_field = apply_filters( "fieldmaster/get_sub_field", $sub_field, $selector, $field );
+	$sub_field = apply_filters( "fieldmaster/get_sub_field/type={$field['type']}", $sub_field, $selector, $field );
 	
 	
 	// return
-	return false;
+	return $sub_field;
 	
 }
 
 
+/*
+*  fieldmaster_get_field_ancestors
+*
+*  This function will return an array of all ancestor fields
+*
+*  @type	function
+*  @date	22/06/2016
+*  @since	5.3.8
+*
+*  @param	$field (array)
+*  @return	(array)
+*/
+
+function fieldmaster_get_field_ancestors( $field ) {
+	
+	// get field
+	$ancestors = array();
+	
+	
+	// loop
+	while( $field && fieldmaster_is_field_key($field['parent']) ) {
+		
+		$ancestors[] = $field['parent'];
+		$field = fieldmaster_get_field($field['parent']);
+		
+	}
+	
+	
+	// return
+	return $ancestors;
+	
+}
+
+
+/*
+*  fieldmaster_maybe_get_sub_field
+*
+*  This function will attempt to find a sub field
+*
+*  @type	function
+*  @date	3/10/2016
+*  @since	5.4.0
+*
+*  @param	$post_id (int)
+*  @return	$post_id (int)
+*/
+
+function fieldmaster_maybe_get_sub_field( $selectors, $post_id = false, $strict = true ) {
+	
+	// bail ealry if not enough selectors
+	if( !is_array($selectors) || count($selectors) < 3 ) return false;
+	
+	
+	// vars
+	$offset = fieldmaster_get_setting('row_index_offset');
+	$selector = fieldmaster_extract_var( $selectors, 0 );
+	$selectors = array_values( $selectors ); // reset keys
+	
+	
+	// attempt get field
+	$field = fieldmaster_maybe_get_field( $selector, $post_id, $strict );
+	
+	
+	// bail early if no field
+	if( !$field ) return false;
+	
+	
+	// loop
+	for( $j = 0; $j < count($selectors); $j+=2 ) {
+		
+		// vars
+		$sub_i = $selectors[ $j ];
+		$sub_s = $selectors[ $j+1 ];
+		$field_name = $field['name'];
+		
+		
+		// find sub field
+		$field = fieldmaster_get_sub_field( $sub_s, $field );
+		
+		
+		// bail early if no sub field
+		if( !$field ) return false;
+					
+		
+		// add to name
+		$field['name'] = $field_name . '_' . ($sub_i-$offset) . '_' . $field['name'];
+		
+	}
+	
+	
+	// return
+	return $field;
+	
+	
+}
 
 
 ?>

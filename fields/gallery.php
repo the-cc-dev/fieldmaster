@@ -33,10 +33,9 @@ class fieldmaster_field_gallery extends fieldmaster_field {
 		
 		// vars
 		$this->name = 'gallery';
-		$this->label = __("Gallery",'fields');
+		$this->label = __("Gallery",'fieldmaster');
 		$this->category = 'content';
 		$this->defaults = array(
-			'preview_size'	=> 'thumbnail',
 			'library'		=> 'all',
 			'min'			=> 0,
 			'max'			=> 0,
@@ -46,26 +45,27 @@ class fieldmaster_field_gallery extends fieldmaster_field {
 			'max_width'		=> 0,
 			'max_height'	=> 0,
 			'max_size'		=> 0,
-			'mime_types'	=> ''
+			'mime_types'	=> '',
+			'insert'		=> 'append'
 		);
 		$this->l10n = array(
-			'select'		=> __("Add Image to Gallery",'fields'),
-			'edit'			=> __("Edit Image",'fields'),
-			'update'		=> __("Update Image",'fields'),
-			'uploadedTo'	=> __("uploaded to this post",'fields'),
-			'max'			=> __("Maximum selection reached",'fields')
+			'select'		=> __("Add Image to Gallery",'fieldmaster'),
+			'edit'			=> __("Edit Image",'fieldmaster'),
+			'update'		=> __("Update Image",'fieldmaster'),
+			'uploadedTo'	=> __("Uploaded to this post",'fieldmaster'),
+			'max'			=> __("Maximum selection reached",'fieldmaster')
 		);
 		
 		
 		// actions
-		add_action('wp_ajax_fields/fields/gallery/get_attachment',				array($this, 'ajax_get_attachment'));
-		add_action('wp_ajax_nopriv_fields/fields/gallery/get_attachment',		array($this, 'ajax_get_attachment'));
+		add_action('wp_ajax_fieldmaster/fields/gallery/get_attachment',				array($this, 'ajax_get_attachment'));
+		add_action('wp_ajax_nopriv_fieldmaster/fields/gallery/get_attachment',		array($this, 'ajax_get_attachment'));
 		
-		add_action('wp_ajax_fields/fields/gallery/update_attachment',			array($this, 'ajax_update_attachment'));
-		add_action('wp_ajax_nopriv_fields/fields/gallery/update_attachment',	array($this, 'ajax_update_attachment'));
+		add_action('wp_ajax_fieldmaster/fields/gallery/update_attachment',			array($this, 'ajax_update_attachment'));
+		add_action('wp_ajax_nopriv_fieldmaster/fields/gallery/update_attachment',	array($this, 'ajax_update_attachment'));
 		
-		add_action('wp_ajax_fields/fields/gallery/get_sort_order',				array($this, 'ajax_get_sort_order'));
-		add_action('wp_ajax_nopriv_fields/fields/gallery/get_sort_order',		array($this, 'ajax_get_sort_order'));
+		add_action('wp_ajax_fieldmaster/fields/gallery/get_sort_order',				array($this, 'ajax_get_sort_order'));
+		add_action('wp_ajax_nopriv_fieldmaster/fields/gallery/get_sort_order',		array($this, 'ajax_get_sort_order'));
 		
 		
 		
@@ -90,36 +90,29 @@ class fieldmaster_field_gallery extends fieldmaster_field {
 	function ajax_get_attachment() {
 	
 		// options
-   		$options = fields_parse_args( $_POST, array(
-			'post_id'		=>	0,
-			'id'			=>	0,
-			'field_key'		=>	'',
-			'nonce'			=>	'',
+   		$options = fieldmaster_parse_args( $_POST, array(
+			'post_id'		=> 0,
+			'attachment'	=> 0,
+			'id'			=> 0,
+			'field_key'		=> '',
+			'nonce'			=> '',
 		));
    		
 		
 		// validate
-		if( ! wp_verify_nonce($options['nonce'], 'fields_nonce') ) {
-			
-			die();
-			
-		}
+		if( !wp_verify_nonce($options['nonce'], 'fieldmaster_nonce') ) die();
 		
-		if( empty($options['id']) ) {
 		
-			die();
-			
-		}
+		// bail early if no id
+		if( !$options['id'] ) die();
 		
 		
 		// load field
-		$field = fields_get_field( $options['field_key'] );
+		$field = fieldmaster_get_field( $options['field_key'] );
 		
-		if( !$field ) {
 		
-			die();
-			
-		}
+		// bali early if no field
+		if( !$field ) die();
 		
 		
 		// render
@@ -145,7 +138,7 @@ class fieldmaster_field_gallery extends fieldmaster_field {
 	function ajax_update_attachment() {
 		
 		// validate nonce
-		if( !wp_verify_nonce($_POST['nonce'], 'fields_nonce') ) {
+		if( !wp_verify_nonce($_POST['nonce'], 'fieldmaster_nonce') ) {
 		
 			wp_send_json_error();
 			
@@ -201,7 +194,7 @@ class fieldmaster_field_gallery extends fieldmaster_field {
 			
 			
 			// save meta
-			fields_save_post( $id );
+			fieldmaster_save_post( $id );
 						
 		}
 		
@@ -230,16 +223,16 @@ class fieldmaster_field_gallery extends fieldmaster_field {
 		// vars
 		$r = array();
 		$order = 'DESC';
-   		$args = fields_parse_args( $_POST, array(
-			'ids'			=>	0,
-			'sort'			=>	'date',
-			'field_key'		=>	'',
-			'nonce'			=>	'',
+   		$args = fieldmaster_parse_args( $_POST, array(
+			'ids'			=> 0,
+			'sort'			=> 'date',
+			'field_key'		=> '',
+			'nonce'			=> '',
 		));
 		
 		
 		// validate
-		if( ! wp_verify_nonce($args['nonce'], 'fields_nonce') ) {
+		if( ! wp_verify_nonce($args['nonce'], 'fieldmaster_nonce') ) {
 		
 			wp_send_json_error();
 			
@@ -306,9 +299,10 @@ class fieldmaster_field_gallery extends fieldmaster_field {
 		
 		// vars
 		$attachment = wp_prepare_attachment_for_js( $id );
-		$thumb = '';
-		$prefix = "attachments[{$id}]";
 		$compat = get_compat_media_markup( $id );
+		$compat = $compat['item'];
+		$prefix = 'attachments[' . $id . ']';
+		$thumb = '';
 		$dimentions = '';
 		
 		
@@ -331,16 +325,15 @@ class fieldmaster_field_gallery extends fieldmaster_field {
 		} else {
 			
 			// fallback (perhaps attachment does not exist)
-			$thumb = $attachment['icon'];
+			$thumb = wp_mime_type_icon();
 				
 		}
-		
 		
 		
 		// dimentions
 		if( $attachment['type'] === 'audio' ) {
 			
-			$dimentions = __('Length', 'fields') . ': ' . $attachment['fileLength'];
+			$dimentions = __('Length', 'fieldmaster') . ': ' . $attachment['fileLength'];
 			
 		} elseif( !empty($attachment['width']) ) {
 			
@@ -348,67 +341,106 @@ class fieldmaster_field_gallery extends fieldmaster_field {
 			
 		}
 		
-		if( $attachment['filesizeHumanReadable'] ) {
+		if( !empty($attachment['filesizeHumanReadable']) ) {
 			
 			$dimentions .=  ' (' . $attachment['filesizeHumanReadable'] . ')';
 			
 		}
 		
 		?>
-		<div class="fields-gallery-side-info fields-cf">
+		<div class="fieldmaster-gallery-side-info fieldmaster-cf">
 			<img src="<?php echo $thumb; ?>" alt="<?php echo $attachment['alt']; ?>" />
 			<p class="filename"><strong><?php echo $attachment['filename']; ?></strong></p>
 			<p class="uploaded"><?php echo $attachment['dateFormatted']; ?></p>
 			<p class="dimensions"><?php echo $dimentions; ?></p>
-			<p class="actions"><a href="#" class="edit-attachment" data-id="<?php echo $id; ?>"><?php _e('Edit', 'fields'); ?></a> <a href="#" class="remove-attachment" data-id="<?php echo $id; ?>"><?php _e('Remove', 'fields'); ?></a></p>
+			<p class="actions">
+				<a href="#" class="fieldmaster-gallery-edit" data-id="<?php echo $id; ?>"><?php _e('Edit', 'fieldmaster'); ?></a>
+				<a href="#" class="fieldmaster-gallery-remove" data-id="<?php echo $id; ?>"><?php _e('Remove', 'fieldmaster'); ?></a>
+			</p>
 		</div>
 		<table class="form-table">
 			<tbody>
 				<?php 
 				
-				fields_render_field_wrap(array(
+				fieldmaster_render_field_wrap(array(
 					//'key'		=> "{$field['key']}-title",
 					'name'		=> 'title',
 					'prefix'	=> $prefix,
 					'type'		=> 'text',
-					'label'		=> 'Title',
+					'label'		=> __('Title', 'fieldmaster'),
 					'value'		=> $attachment['title']
 				), 'tr');
 				
-				fields_render_field_wrap(array(
+				fieldmaster_render_field_wrap(array(
 					//'key'		=> "{$field['key']}-caption",
 					'name'		=> 'caption',
 					'prefix'	=> $prefix,
 					'type'		=> 'textarea',
-					'label'		=> 'Caption',
+					'label'		=> __('Caption', 'fieldmaster'),
 					'value'		=> $attachment['caption']
 				), 'tr');
 				
-				fields_render_field_wrap(array(
+				fieldmaster_render_field_wrap(array(
 					//'key'		=> "{$field['key']}-alt",
 					'name'		=> 'alt',
 					'prefix'	=> $prefix,
 					'type'		=> 'text',
-					'label'		=> 'Alt Text',
+					'label'		=> __('Alt Text', 'fieldmaster'),
 					'value'		=> $attachment['alt']
 				), 'tr');
 				
-				fields_render_field_wrap(array(
+				fieldmaster_render_field_wrap(array(
 					//'key'		=> "{$field['key']}-description",
 					'name'		=> 'description',
 					'prefix'	=> $prefix,
 					'type'		=> 'textarea',
-					'label'		=> 'Description',
+					'label'		=> __('Description', 'fieldmaster'),
 					'value'		=> $attachment['description']
 				), 'tr');
 				
 				?>
 			</tbody>
 		</table>
-		<?php echo $compat['item']; ?>
-		
 		<?php
 		
+		echo $compat;
+		
+	}
+	
+	
+	/*
+	*  get_attachments
+	*
+	*  This function will return an array of attachments for a given field value
+	*
+	*  @type	function
+	*  @date	13/06/2014
+	*  @since	5.0.0
+	*
+	*  @param	$value (array)
+	*  @return	$value
+	*/
+	
+	function get_attachments( $value ) {
+		
+		// bail early if no value
+		if( empty($value) ) return false;
+		
+		
+		// force value to array
+		$post__in = fieldmaster_get_array( $value );
+		
+		
+		// get posts
+		$posts = fieldmaster_get_posts(array(
+			'post_type'	=> 'attachment',
+			'post__in'	=> $post__in
+		));
+		
+		
+		// return
+		return $posts;
+				
 	}
 	
 	
@@ -427,128 +459,112 @@ class fieldmaster_field_gallery extends fieldmaster_field {
 	function render_field( $field ) {
 		
 		// enqueue
-		fields_enqueue_uploader();
+		fieldmaster_enqueue_uploader();
 		
 		
 		// vars
-		$posts = array();
 		$atts = array(
 			'id'				=> $field['id'],
-			'class'				=> "fields-gallery {$field['class']}",
-			'data-preview_size'	=> $field['preview_size'],
+			'class'				=> "fieldmaster-gallery {$field['class']}",
 			'data-library'		=> $field['library'],
 			'data-min'			=> $field['min'],
 			'data-max'			=> $field['max'],
 			'data-mime_types'	=> $field['mime_types'],
+			'data-insert'		=> $field['insert'],
+			'data-columns'		=> 4
 		);
 		
 		
 		// set gallery height
-		$height = fields_get_user_setting('gallery_height', 400);
+		$height = fieldmaster_get_user_setting('gallery_height', 400);
 		$height = max( $height, 200 ); // minimum height is 200
 		$atts['style'] = "height:{$height}px";
 		
 		
-		// load posts
-		if( !empty($field['value']) ) {
-			
-			$posts = fields_get_posts(array(
-				'post_type'	=> 'attachment',
-				'post__in'	=> $field['value']
-			));
-			
-		}
-		
+		// get posts
+		$value = $this->get_attachments( $field['value'] );
 		
 		?>
-<div <?php fields_esc_attr_e($atts); ?>>
+<div <?php fieldmaster_esc_attr_e($atts); ?>>
 	
-	<div class="fields-hidden">
-		<input type="hidden" <?php fields_esc_attr_e(array( 'name' => $field['name'], 'value' => '', 'data-name' => 'ids' )); ?> />
+	<div class="fieldmaster-hidden">
+		<?php fieldmaster_hidden_input(array( 'name' => $field['name'], 'value' => '' )); ?>
 	</div>
 	
-	<div class="fields-gallery-main">
+	<div class="fieldmaster-gallery-main">
 		
-		<div class="fields-gallery-attachments">
+		<div class="fieldmaster-gallery-attachments">
 			
-			<?php if( !empty($posts) ): ?>
+			<?php if( $value ): ?>
 			
-				<?php foreach( $posts as $post ): 
+				<?php foreach( $value as $i => $v ): 
+					
+					// bail early if no value
+					if( !$v ) continue;
+					
 					
 					// vars
-					$type = fields_maybe_get(explode('/', $post->post_mime_type), 0);
-					$thumb_id = $post->ID;
-					$thumb_url = '';
-					$thumb_class = 'fields-gallery-attachment fields-soh';
-					$filename = wp_basename($post->guid);
+					$a = array(
+						'ID' 		=> $v->ID,
+						'title'		=> $v->post_title,
+						'filename'	=> wp_basename($v->guid),
+						'type'		=> fieldmaster_maybe_get(explode('/', $v->post_mime_type), 0),
+						'class'		=> 'fieldmaster-gallery-attachment fieldmaster-soh'
+					);
 					
 					
-					// thumb
-					if( $type === 'image' || $type === 'audio' || $type === 'video' ) {
+					// thumbnail
+					$thumbnail = fieldmaster_get_post_thumbnail($a['ID'], 'medium');
+					
+					
+					// remove filename if is image
+					if( $a['type'] == 'image' ) $a['filename'] = '';
+					
+					
+					// class
+					$a['class'] .= ' -' . $a['type'];
+					
+					if( $thumbnail['type'] == 'icon' ) {
 						
-						// change $thumb_id
-						if( $type === 'audio' || $type === 'video' ) {
-							
-							$thumb_id = get_post_thumbnail_id( $post->ID );
-							
-						}
-						
-						
-						// get attachment
-						if( $thumb_id ) {
-							
-							$thumb_url = wp_get_attachment_image_src( $thumb_id, $field['preview_size'] );
-							$thumb_url = fields_maybe_get( $thumb_url, 0 );
-						
-						}
+						$a['class'] .= ' -icon';
 						
 					}
 					
-					
-					// fallback
-					if( !$thumb_url ) {
-						
-						$thumb_url = wp_mime_type_icon( $post->ID );
-						$thumb_class .= ' is-mime-icon';
-						
-					}
 					
 					?>
-					<div class="<?php echo $thumb_class; ?>" data-id="<?php echo $post->ID; ?>">
-						<input type="hidden" name="<?php echo $field['name']; ?>[]" value="<?php echo $post->ID; ?>" />
-						<div class="margin" title="<?php echo $filename; ?>">
+					<div class="<?php echo $a['class']; ?>" data-id="<?php echo $a['ID']; ?>">
+						<?php fieldmaster_hidden_input(array( 'name' => $field['name'].'[]', 'value' => $a['ID'] )); ?>
+						<div class="margin">
 							<div class="thumbnail">
-								<img src="<?php echo $thumb_url; ?>"/>
+								<img src="<?php echo $thumbnail['url']; ?>" alt="" title="<?php echo $a['title']; ?>"/>
 							</div>
-							<?php if( $type !== 'image' ): ?>
-							<div class="filename"><?php echo fields_get_truncated($filename, 18); ?></div>
+							<?php if( $a['filename'] ): ?>
+							<div class="filename"><?php echo fieldmaster_get_truncated($a['filename'], 30); ?></div>	
 							<?php endif; ?>
 						</div>
-						<div class="actions fields-soh-target">
-							<a class="fields-icon fields-icon-cancel dark remove-attachment" data-id="<?php echo $post->ID; ?>" href="#"></a>
+						<div class="actions fieldmaster-soh-target">
+							<a class="fieldmaster-icon -cancel dark fieldmaster-gallery-remove" href="#" data-id="<?php echo $a['ID']; ?>" title="<?php _e('Remove', 'fieldmaster'); ?>"></a>
 						</div>
 					</div>
-					
 				<?php endforeach; ?>
 				
 			<?php endif; ?>
 			
-			
 		</div>
 		
-		<div class="fields-gallery-toolbar">
+		<div class="fieldmaster-gallery-toolbar">
 			
-			<ul class="fields-hl">
+			<ul class="fieldmaster-hl">
 				<li>
-					<a href="#" class="fields-button blue add-attachment"><?php _e('Add to gallery', 'fields'); ?></a>
+					<a href="#" class="fieldmaster-button button button-primary fieldmaster-gallery-add"><?php _e('Add to gallery', 'fieldmaster'); ?></a>
 				</li>
-				<li class="fields-fr">
-					<select class="bulk-actions">
-						<option value=""><?php _e('Bulk actions', 'fields'); ?></option>
-						<option value="date"><?php _e('Sort by date uploaded', 'fields'); ?></option>
-						<option value="modified"><?php _e('Sort by date modified', 'fields'); ?></option>
-						<option value="title"><?php _e('Sort by title', 'fields'); ?></option>
-						<option value="reverse"><?php _e('Reverse current order', 'fields'); ?></option>
+				<li class="fieldmaster-fr">
+					<select class="fieldmaster-gallery-sort">
+						<option value=""><?php _e('Bulk actions', 'fieldmaster'); ?></option>
+						<option value="date"><?php _e('Sort by date uploaded', 'fieldmaster'); ?></option>
+						<option value="modified"><?php _e('Sort by date modified', 'fieldmaster'); ?></option>
+						<option value="title"><?php _e('Sort by title', 'fieldmaster'); ?></option>
+						<option value="reverse"><?php _e('Reverse current order', 'fieldmaster'); ?></option>
 					</select>
 				</li>
 			</ul>
@@ -557,19 +573,19 @@ class fieldmaster_field_gallery extends fieldmaster_field {
 		
 	</div>
 	
-	<div class="fields-gallery-side">
-	<div class="fields-gallery-side-inner">
+	<div class="fieldmaster-gallery-side">
+	<div class="fieldmaster-gallery-side-inner">
 			
-		<div class="fields-gallery-side-data"></div>
+		<div class="fieldmaster-gallery-side-data"></div>
 						
-		<div class="fields-gallery-toolbar">
+		<div class="fieldmaster-gallery-toolbar">
 			
-			<ul class="fields-hl">
+			<ul class="fieldmaster-hl">
 				<li>
-					<a href="#" class="fields-button close-sidebar"><?php _e('Close', 'fields'); ?></a>
+					<a href="#" class="fieldmaster-button button fieldmaster-gallery-close"><?php _e('Close', 'fieldmaster'); ?></a>
 				</li>
-				<li class="fields-fr">
-					<a class="fields-button blue update-attachment"><?php _e('Update', 'fields'); ?></a>
+				<li class="fieldmaster-fr">
+					<a class="fieldmaster-button button button-primary fieldmaster-gallery-update" href="#"><?php _e('Update', 'fieldmaster'); ?></a>
 				</li>
 			</ul>
 			
@@ -613,18 +629,14 @@ class fieldmaster_field_gallery extends fieldmaster_field {
 		
 		foreach( $clear as $k ) {
 			
-			if( empty($field[$k]) ) {
-				
-				$field[$k] = '';
-				
-			}
+			if( empty($field[$k]) ) $field[$k] = '';
 			
 		}
 		
 		
 		// min
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Minimum Selection','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Minimum Selection','fieldmaster'),
 			'instructions'	=> '',
 			'type'			=> 'number',
 			'name'			=> 'min'
@@ -632,108 +644,103 @@ class fieldmaster_field_gallery extends fieldmaster_field {
 		
 		
 		// max
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Maximum Selection','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Maximum Selection','fieldmaster'),
 			'instructions'	=> '',
 			'type'			=> 'number',
 			'name'			=> 'max'
 		));
 		
 		
-		// preview_size
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Preview Size','fields'),
-			'instructions'	=> __('Shown when entering data','fields'),
+		// insert
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Insert','fieldmaster'),
+			'instructions'	=> __('Specify where new attachments are added','fieldmaster'),
 			'type'			=> 'select',
-			'name'			=> 'preview_size',
-			'choices'		=> fields_get_image_sizes()
+			'name'			=> 'insert',
+			'choices' 		=> array(
+				'append'		=> __('Append to the end', 'fieldmaster'),
+				'prepend'		=> __('Prepend to the beginning', 'fieldmaster')
+			)
 		));
 		
 		
 		// library
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Library','fields'),
-			'instructions'	=> __('Limit the media library choice','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Library','fieldmaster'),
+			'instructions'	=> __('Limit the media library choice','fieldmaster'),
 			'type'			=> 'radio',
 			'name'			=> 'library',
 			'layout'		=> 'horizontal',
 			'choices' 		=> array(
-				'all'			=> __('All', 'fields'),
-				'uploadedTo'	=> __('Uploaded to post', 'fields')
+				'all'			=> __('All', 'fieldmaster'),
+				'uploadedTo'	=> __('Uploaded to post', 'fieldmaster')
 			)
 		));
 		
 		
 		// min
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Minimum','fields'),
-			'instructions'	=> __('Restrict which images can be uploaded','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Minimum','fieldmaster'),
+			'instructions'	=> __('Restrict which images can be uploaded','fieldmaster'),
 			'type'			=> 'text',
 			'name'			=> 'min_width',
-			'prepend'		=> __('Width', 'fields'),
+			'prepend'		=> __('Width', 'fieldmaster'),
 			'append'		=> 'px',
 		));
 		
-		fields_render_field_setting( $field, array(
+		fieldmaster_render_field_setting( $field, array(
 			'label'			=> '',
 			'type'			=> 'text',
 			'name'			=> 'min_height',
-			'prepend'		=> __('Height', 'fields'),
+			'prepend'		=> __('Height', 'fieldmaster'),
 			'append'		=> 'px',
-			'wrapper'		=> array(
-				'data-append' => 'min_width'
-			)
+			'_append' 		=> 'min_width'
 		));
 		
-		fields_render_field_setting( $field, array(
+		fieldmaster_render_field_setting( $field, array(
 			'label'			=> '',
 			'type'			=> 'text',
 			'name'			=> 'min_size',
-			'prepend'		=> __('File size', 'fields'),
+			'prepend'		=> __('File size', 'fieldmaster'),
 			'append'		=> 'MB',
-			'wrapper'		=> array(
-				'data-append' => 'min_width'
-			)
+			'_append' 		=> 'min_width'
 		));	
 		
 		
 		// max
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Maximum','fields'),
-			'instructions'	=> __('Restrict which images can be uploaded','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Maximum','fieldmaster'),
+			'instructions'	=> __('Restrict which images can be uploaded','fieldmaster'),
 			'type'			=> 'text',
 			'name'			=> 'max_width',
-			'prepend'		=> __('Width', 'fields'),
+			'prepend'		=> __('Width', 'fieldmaster'),
 			'append'		=> 'px',
 		));
 		
-		fields_render_field_setting( $field, array(
+		fieldmaster_render_field_setting( $field, array(
 			'label'			=> '',
 			'type'			=> 'text',
 			'name'			=> 'max_height',
-			'prepend'		=> __('Height', 'fields'),
+			'prepend'		=> __('Height', 'fieldmaster'),
 			'append'		=> 'px',
-			'wrapper'		=> array(
-				'data-append' => 'max_width'
-			)
+			'_append' 		=> 'max_width'
 		));
 		
-		fields_render_field_setting( $field, array(
+		fieldmaster_render_field_setting( $field, array(
 			'label'			=> '',
 			'type'			=> 'text',
 			'name'			=> 'max_size',
-			'prepend'		=> __('File size', 'fields'),
+			'prepend'		=> __('File size', 'fieldmaster'),
 			'append'		=> 'MB',
-			'wrapper'		=> array(
-				'data-append' => 'max_width'
-			)
+			'_append' 		=> 'max_width'
 		));	
 		
 		
 		// allowed type
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Allowed file types','fields'),
-			'instructions'	=> __('Comma separated list. Leave blank for all types','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Allowed file types','fieldmaster'),
+			'instructions'	=> __('Comma separated list. Leave blank for all types','fieldmaster'),
 			'type'			=> 'text',
 			'name'			=> 'mime_types',
 		));
@@ -760,26 +767,17 @@ class fieldmaster_field_gallery extends fieldmaster_field {
 	function format_value( $value, $post_id, $field ) {
 		
 		// bail early if no value
-		if( empty($value) ) {
-			
-			// return false as $value may be '' (from DB) which doesn't make much sense
-			return false;
-		
-		}
+		if( empty($value) ) return false;
 		
 		
 		// get posts
-		$posts = fields_get_posts(array(
-			'post_type'	=> 'attachment',
-			'post__in'	=> $value,
-		));
-		
+		$posts = $this->get_attachments($value);
 		
 		
 		// update value to include $post
 		foreach( array_keys($posts) as $i ) {
 			
-			$posts[ $i ] = fields_get_attachment( $posts[ $i ] );
+			$posts[ $i ] = fieldmaster_get_attachment( $posts[ $i ] );
 			
 		}
 				
@@ -814,7 +812,7 @@ class fieldmaster_field_gallery extends fieldmaster_field {
 		
 		if( count($value) < $field['min'] ) {
 		
-			$valid = _n( '%s requires at least %s selection', '%s requires at least %s selections', $field['min'], 'fields' );
+			$valid = _n( '%s requires at least %s selection', '%s requires at least %s selections', $field['min'], 'fieldmaster' );
 			$valid = sprintf( $valid, $field['label'], $field['min'] );
 			
 		}
@@ -823,12 +821,86 @@ class fieldmaster_field_gallery extends fieldmaster_field {
 		return $valid;
 		
 	}
+	
+	
+	/*
+	*  update_value()
+	*
+	*  This filter is appied to the $value before it is updated in the db
+	*
+	*  @type	filter
+	*  @since	3.6
+	*  @date	23/01/13
+	*
+	*  @param	$value - the value which will be saved in the database
+	*  @param	$post_id - the $post_id of which the value will be saved
+	*  @param	$field - the field array holding all the field options
+	*
+	*  @return	$value - the modified value
+	*/
+	
+	function update_value( $value, $post_id, $field ) {
+		
+		// bail early if no value
+		if( empty($value) || !is_array($value) ) return false;
+		
+		
+		// loop
+		foreach( $value as $i => $v ) {
+			
+			$value[ $i ] = $this->update_single_value( $v );
+			
+		}
+				
+		
+		// return
+		return $value;
+		
+	}
+	
+	
+	/*
+	*  update_single_value()
+	*
+	*  This filter is appied to the $value before it is updated in the db
+	*
+	*  @type	filter
+	*  @since	3.6
+	*  @date	23/01/13
+	*
+	*  @param	$value - the value which will be saved in the database
+	*  @param	$post_id - the $post_id of which the value will be saved
+	*  @param	$field - the field array holding all the field options
+	*
+	*  @return	$value - the modified value
+	*/
+	
+	function update_single_value( $value ) {
+		
+		// numeric
+		if( is_numeric($value) ) return $value;
+		
+		
+		// array?
+		if( is_array($value) && isset($value['ID']) ) return $value['ID'];
+		
+		
+		// object?
+		if( is_object($value) && isset($value->ID) ) return $value->ID;
+		
+		
+		// return
+		return $value;
+		
+	}
 
 	
 }
 
-new fieldmaster_field_gallery();
 
-endif;
+// initialize
+fieldmaster_register_field_type( new fieldmaster_field_gallery() );
+
+endif; // class_exists check
 
 ?>

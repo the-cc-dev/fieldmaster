@@ -5,14 +5,14 @@
 *
 *  All the logic for updates
 *
-*  @class 		fields_admin_update
+*  @class 		fieldmaster_admin_update
 *  @package		FieldMaster
 *  @subpackage	Admin
 */
 
-if( ! class_exists('fields_admin_update') ) :
+if( ! class_exists('fieldmaster_admin_update') ) :
 
-class fields_admin_update {
+class fieldmaster_admin_update {
 
 	/*
 	*  __construct
@@ -55,7 +55,7 @@ class fields_admin_update {
 	function network_admin_menu() {
 
 		// bail early if no show_admin
-		if( !fields_get_setting('show_admin') ) {
+		if( !fieldmaster_get_setting('show_admin') ) {
 
 			return;
 
@@ -78,7 +78,7 @@ class fields_admin_update {
 
 
 				// get site updates
-				$updates = fields_get_updates();
+				$updates = fieldmaster_get_updates();
 
 
 				// restore
@@ -110,7 +110,7 @@ class fields_admin_update {
 
 
 		// add page
-		add_submenu_page('update-core.php', __('Upgrade FieldMaster','fields'), __('Upgrade FieldMaster','fields'), fields_get_setting('capability'),'fields-upgrade', array($this,'network_html'));
+		add_submenu_page('update-core.php', __('Upgrade FieldMaster','fields'), __('Upgrade FieldMaster','fields'), fieldmaster_get_setting('capability'),'fields-upgrade', array($this,'network_html'));
 
 	}
 
@@ -131,7 +131,7 @@ class fields_admin_update {
 	function network_admin_notices() {
 
 		// bail ealry if already on update page
-		if( fields_is_screen('admin_page_fields-upgrade-network') ) {
+		if( fieldmaster_is_screen('admin_page_fields-upgrade-network') ) {
 
 			return;
 
@@ -147,7 +147,7 @@ class fields_admin_update {
 
 
 		// load view
-		fields_get_view('update-notice', $view);
+		fieldmaster_get_view('update-notice', $view);
 
 	}
 
@@ -168,7 +168,7 @@ class fields_admin_update {
 	function network_html() {
 
 		// vars
-		$plugin_version = fields_get_setting('version');
+		$plugin_version = fieldmaster_get_setting('version');
 
 
 		// loop through sites and find updates
@@ -188,17 +188,17 @@ class fields_admin_update {
 
 
 				// get site updates
-				$site['updates'] = fields_get_updates();
+				$site['updates'] = fieldmaster_get_updates();
 
 
 				// get site version
-				$site['fields_version'] = get_option('fields_version');
+				$site['fieldmaster_version'] = get_option('fieldmaster_version');
 
 
 				// no value equals new instal
-				if( !$site['fields_version'] ) {
+				if( !$site['fieldmaster_version'] ) {
 
-					$site['fields_version'] = $plugin_version;
+					$site['fieldmaster_version'] = $plugin_version;
 
 				}
 
@@ -223,11 +223,11 @@ class fields_admin_update {
 
 
 		// enqueue
-		fields_enqueue_scripts();
+		fieldmaster_enqueue_scripts();
 
 
 		// load view
-		fields_get_view('update-network', $view);
+		fieldmaster_get_view('update-network', $view);
 
 	}
 
@@ -248,21 +248,21 @@ class fields_admin_update {
 	function admin_menu() {
 
 		// vars
-		$plugin_version = fields_get_setting('version');
-		$fields_version = get_option('fields_version');
+		$plugin_version = fieldmaster_get_setting('version');
+		$fieldmaster_version = get_option('fieldmaster_version');
 
 
 		// bail early if a new install
-		if( !$fields_version ) {
+		if( !$fieldmaster_version ) {
 
-			update_option('fields_version', $plugin_version );
+			update_option('fieldmaster_version', $plugin_version );
 			return;
 
 		}
 
 
-		// bail early if $fields_version is >= $plugin_version
-		if( version_compare( $fields_version, $plugin_version, '>=') ) {
+		// bail early if $fieldmaster_version is >= $plugin_version
+		if( version_compare( $fieldmaster_version, $plugin_version, '>=') ) {
 
 			return;
 
@@ -270,20 +270,20 @@ class fields_admin_update {
 
 
 		// vars
-		$updates = fields_get_updates();
+		$updates = fieldmaster_get_updates();
 
 
 		// bail early if no updates available
 		if( empty($updates) ) {
 
-			update_option('fields_version', $plugin_version );
+			update_option('fieldmaster_version', $plugin_version );
 			return;
 
 		}
 
 
 		// bail early if no show_admin
-		if( !fields_get_setting('show_admin') ) {
+		if( !fieldmaster_get_setting('show_admin') ) {
 
 			return;
 
@@ -295,7 +295,7 @@ class fields_admin_update {
 
 
 		// add page
-		add_submenu_page('edit.php?post_type=fields-field-group', __('Upgrade','fields'), __('Upgrade','fields'), fields_get_setting('capability'),'fields-upgrade', array($this,'html') );
+		add_submenu_page('edit.php?post_type=fields-field-group', __('Upgrade','fields'), __('Upgrade','fields'), fieldmaster_get_setting('capability'),'fields-upgrade', array($this,'html') );
 
 	}
 
@@ -316,7 +316,7 @@ class fields_admin_update {
 	function admin_notices() {
 
 		// bail ealry if already on update page
-		if( fields_is_screen('custom-fields_page_fields-upgrade') ) {
+		if( fieldmaster_is_screen('custom-fieldmaster_page_fields-upgrade') ) {
 
 			return;
 
@@ -331,7 +331,7 @@ class fields_admin_update {
 
 
 		// load view
-		fields_get_view('update-notice', $view);
+		fieldmaster_get_view('update-notice', $view);
 
 	}
 
@@ -353,17 +353,17 @@ class fields_admin_update {
 
 		// view
 		$view = array(
-			'updates'			=> fields_get_updates(),
-			'plugin_version'	=> fields_get_setting('version')
+			'updates'			=> fieldmaster_get_updates(),
+			'plugin_version'	=> fieldmaster_get_setting('version')
 		);
 
 
 		// enqueue
-		fields_enqueue_scripts();
+		fieldmaster_enqueue_scripts();
 
 
 		// load view
-		fields_get_view('update', $view);
+		fieldmaster_get_view('update', $view);
 
 	}
 
@@ -390,7 +390,7 @@ class fields_admin_update {
 
 
 		// validate
-		if( !wp_verify_nonce($options['nonce'], 'fields_upgrade') ) {
+		if( !wp_verify_nonce($options['nonce'], 'fieldmaster_upgrade') ) {
 
 			wp_send_json_error();
 
@@ -406,7 +406,7 @@ class fields_admin_update {
 
 
 		// vars
-		$updates = fields_get_updates();
+		$updates = fieldmaster_get_updates();
 		$message = '';
 
 
@@ -420,7 +420,7 @@ class fields_admin_update {
 		}
 
 		// updates complete
-		update_option('fields_version', fields_get_setting('version'));
+		update_option('fieldmaster_version', fieldmaster_get_setting('version'));
 
 		// return
 		wp_send_json_success(array(
@@ -432,7 +432,7 @@ class fields_admin_update {
 }
 
 // initialize
-new fields_admin_update();
+new fieldmaster_admin_update();
 
 endif;
 

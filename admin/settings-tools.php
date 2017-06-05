@@ -1,6 +1,6 @@
 <?php 
 
-class fields_settings_tools {
+class fieldmaster_settings_tools {
 	
 	var $view = 'settings-tools',
 		$data = array();
@@ -43,15 +43,11 @@ class fields_settings_tools {
 	function admin_menu() {
 		
 		// bail early if no show_admin
-		if( !fields_get_setting('show_admin') ) {
-			
-			return;
-			
-		}
+		if( !fieldmaster_get_setting('show_admin') ) return;
 		
 		
 		// add page
-		$page = add_submenu_page('edit.php?post_type=fields-field-group', __('Tools','fields'), __('Tools','fields'), fields_get_setting('capability'),'fields-settings-tools', array($this,'html') );
+		$page = add_submenu_page('edit.php?post_type=fm-field-group', __('Tools','fieldmaster'), __('Tools','fieldmaster'), fieldmaster_get_setting('capability'),'fieldmaster-settings-tools', array($this,'html') );
 		
 		
 		// actions
@@ -75,16 +71,16 @@ class fields_settings_tools {
 	
 	function load() {
 		
-		// all export pages should not load local fields
-		fields_disable_local();
+		// disable filters to ensure FieldMaster loads raw data from DB
+		fieldmaster_disable_filters();
 		
 		
 		// run import / export
-		if( fields_verify_nonce('import') ) {
+		if( fieldmaster_verify_nonce('import') ) {
 			
 			$this->import();
 		
-		} elseif( fields_verify_nonce('export') ) {
+		} elseif( fieldmaster_verify_nonce('export') ) {
 			
 			if( isset($_POST['generate']) ) {
 				
@@ -99,8 +95,8 @@ class fields_settings_tools {
 		}
 		
 		
-		// load fields scripts
-		fields_enqueue_scripts();
+		// load fieldmaster scripts
+		fieldmaster_enqueue_scripts();
 		
 	}
 	
@@ -121,7 +117,7 @@ class fields_settings_tools {
 	function html() {
 		
 		// load view
-		fields_get_view($this->view, $this->data);
+		fieldmaster_get_view($this->view, $this->data);
 		
 	}
 	
@@ -148,20 +144,20 @@ class fields_settings_tools {
 		// validate
 		if( $json === false ) {
 			
-			fields_add_admin_notice( __("No field groups selected", 'fields') , 'error');
+			fieldmaster_add_admin_notice( __("No field groups selected", 'fieldmaster') , 'error');
 			return;
 		
 		}
 		
 		
 		// set headers
-		$file_name = 'fields-export-' . date('Y-m-d') . '.json';
+		$file_name = 'fieldmaster-export-' . date('Y-m-d') . '.json';
 		
 		header( "Content-Description: File Transfer" );
 		header( "Content-Disposition: attachment; filename={$file_name}" );
 		header( "Content-Type: application/json; charset=utf-8" );
 		
-		echo fields_json_encode( $json );
+		echo fieldmaster_json_encode( $json );
 		die;
 		
 	}
@@ -183,22 +179,22 @@ class fields_settings_tools {
 	function import() {
 		
 		// validate
-		if( empty($_FILES['fields_import_file']) ) {
+		if( empty($_FILES['fieldmaster_import_file']) ) {
 			
-			fields_add_admin_notice( __("No file selected", 'fields') , 'error');
+			fieldmaster_add_admin_notice( __("No file selected", 'fieldmaster') , 'error');
 			return;
 		
 		}
 		
 		
 		// vars
-		$file = $_FILES['fields_import_file'];
+		$file = $_FILES['fieldmaster_import_file'];
 		
 		
 		// validate error
 		if( $file['error'] ) {
 			
-			fields_add_admin_notice(__('Error uploading file. Please try again', 'fields'), 'error');
+			fieldmaster_add_admin_notice(__('Error uploading file. Please try again', 'fieldmaster'), 'error');
 			return;
 		
 		}
@@ -207,7 +203,7 @@ class fields_settings_tools {
 		// validate type
 		if( pathinfo($file['name'], PATHINFO_EXTENSION) !== 'json' ) {
 		
-			fields_add_admin_notice(__('Incorrect file type', 'fields'), 'error');
+			fieldmaster_add_admin_notice(__('Incorrect file type', 'fieldmaster'), 'error');
 			return;
 			
 		}
@@ -224,7 +220,7 @@ class fields_settings_tools {
 		// validate json
     	if( empty($json) ) {
     	
-    		fields_add_admin_notice(__('Import file empty', 'fields'), 'error');
+    		fieldmaster_add_admin_notice(__('Import file empty', 'fieldmaster'), 'error');
 	    	return;
     	
     	}
@@ -239,103 +235,118 @@ class fields_settings_tools {
     	
     	
     	// vars
-    	$added = array();
-    	$ignored = array();
-    	$ref = array();
-    	$order = array();
+    	$ids = array();
+    	$keys = array();
+    	$imported = array();
     	
+    	
+    	// populate keys
     	foreach( $json as $field_group ) {
-    		
-	    	// check if field group exists
-	    	if( fields_get_field_group($field_group['key'], true) ) {
-	    		
-	    		// append to ignored
-	    		$ignored[] = $field_group['title'];
-	    		continue;
 	    	
+	    	// append key
+	    	$keys[] = $field_group['key'];
+	    	
+	    }
+	    
+	    
+    	// look for existing ids
+    	foreach( $keys as $key ) {
+	    	
+	    	// attempt find ID
+	    	$field_group = _fieldmaster_get_field_group_by_key( $key );
+	    	
+	    	
+	    	// bail early if no field group
+	    	if( !$field_group ) continue;
+	    	
+	    	
+	    	// append
+	    	$ids[ $key ] = $field_group['ID'];
+	    	
+	    }
+	    
+    	
+    	// enable local
+		fieldmaster_enable_local();
+		
+		
+		// reset local (JSON class has already included .json field groups which may conflict)
+		fieldmaster_reset_local();
+		
+    	
+    	// add local field groups
+    	foreach( $json as $field_group ) {
+	    	
+	    	// add field group
+	    	fieldmaster_add_local_field_group( $field_group );
+	    	
+	    }
+	    
+	    
+    	// loop over keys
+    	foreach( $keys as $key ) {
+	    	
+	    	// vars
+	    	$field_group = fieldmaster_get_local_field_group( $key );
+	    	
+	    	
+	    	// attempt get id
+	    	$id = fieldmaster_maybe_get( $ids, $key );
+	    	
+	    	if( $id ) {
+		    	
+		    	$field_group['ID'] = $id;
+		    	
 	    	}
 	    	
 	    	
-	    	// remove fields
-			$fields = fields_extract_var($field_group, 'fields');
-			
-			
-			// format fields
-			$fields = fields_prepare_fields_for_import( $fields );
-			
-			
-			// save field group
-			$field_group = fields_update_field_group( $field_group );
-			
-			
-			// add to ref
-			$ref[ $field_group['key'] ] = $field_group['ID'];
-			
-			
-			// add to order
-			$order[ $field_group['ID'] ] = 0;
-			
-			
-			// add fields
-			foreach( $fields as $field ) {
+	    	// append fields
+			if( fieldmaster_have_local_fields($key) ) {
 				
-				// add parent
-				if( empty($field['parent']) ) {
-					
-					$field['parent'] = $field_group['ID'];
-					
-				} elseif( isset($ref[ $field['parent'] ]) ) {
-					
-					$field['parent'] = $ref[ $field['parent'] ];
-						
-				}
-				
-				
-				// add field menu_order
-				if( !isset($order[ $field['parent'] ]) ) {
-					
-					$order[ $field['parent'] ] = 0;
-					
-				}
-				
-				$field['menu_order'] = $order[ $field['parent'] ];
-				$order[ $field['parent'] ]++;
-				
-				
-				// save field
-				$field = fields_update_field( $field );
-				
-				
-				// add to ref
-				$ref[ $field['key'] ] = $field['ID'];
+				$field_group['fields'] = fieldmaster_get_local_fields( $key );
 				
 			}
 			
-			// append to added
-			$added[] = '<a href="' . admin_url("post.php?post={$field_group['ID']}&action=edit") . '" target="_blank">' . $field_group['title'] . '</a>';
+			
+			// import
+			$field_group = fieldmaster_import_field_group( $field_group );
+			
+			
+			// append message
+			$imported[] = array(
+				'ID'		=> $field_group['ID'],
+				'title'		=> $field_group['title'],
+				'updated'	=> $id ? 1 : 0
+			);
 			
     	}
     	
     	
     	// messages
-    	if( !empty($added) ) {
+    	if( !empty($imported) ) {
     		
-    		$message = __('<b>Success</b>. Import tool added %s field groups: %s', 'fields');
-    		$message = sprintf( $message, count($added), implode(', ', $added) );
+    		// vars
+    		$links = array();
+    		$count = count($imported);
+    		$message = sprintf(_n( 'Imported 1 field group', 'Imported %s field groups', $count, 'fieldmaster' ), $count) . '.';
     		
-	    	fields_add_admin_notice( $message );
+    		
+    		// populate links
+    		foreach( $imported as $import ) {
+	    		
+	    		$links[] = '<a href="' . admin_url("post.php?post={$import['ID']}&action=edit") . '" target="_blank">' . $import['title'] . '</a>';
+	    			
+	    	}
+	    	
+	    	
+	    	// append links
+	    	$message .= ' ' . implode(', ', $links);
+	    	
+	    	
+	    	// add notice
+	    	fieldmaster_add_admin_notice( $message );
     	
     	}
-    	
-    	if( !empty($ignored) ) {
-    		
-    		$message = __('<b>Warning</b>. Import tool detected %s field groups already exist and have been ignored: %s', 'fields');
-    		$message = sprintf( $message, count($ignored), implode(', ', $ignored) );
-    		
-	    	fields_add_admin_notice( $message, 'error' );
-    	
-    	}
-    	
 		
 	}
 	
@@ -355,6 +366,10 @@ class fields_settings_tools {
 	
 	function generate() {
 		
+		// prevent default translation and fake __() within string
+		fieldmaster_update_setting('l10n_var_export', true);
+		
+		
 		// vars
 		$json = $this->get_json();
 		
@@ -362,7 +377,7 @@ class fields_settings_tools {
 		// validate
 		if( $json === false ) {
 			
-			fields_add_admin_notice( __("No field groups selected", 'fields') , 'error');
+			fieldmaster_add_admin_notice( __("No field groups selected", 'fieldmaster') , 'error');
 			return;
 		
 		}
@@ -391,7 +406,7 @@ class fields_settings_tools {
 	function get_json() {
 		
 		// validate
-		if( empty($_POST['fields_export_keys']) ) {
+		if( empty($_POST['fieldmaster_export_keys']) ) {
 			
 			return false;
 				
@@ -403,30 +418,22 @@ class fields_settings_tools {
 		
 		
 		// construct JSON
-		foreach( $_POST['fields_export_keys'] as $key ) {
+		foreach( $_POST['fieldmaster_export_keys'] as $key ) {
 			
 			// load field group
-			$field_group = fields_get_field_group( $key );
+			$field_group = fieldmaster_get_field_group( $key );
 			
 			
 			// validate field group
-			if( empty($field_group) ) {
-				
-				continue;
-			
-			}
+			if( empty($field_group) ) continue;
 			
 			
 			// load fields
-			$field_group['fields'] = fields_get_fields( $field_group );
+			$field_group['fields'] = fieldmaster_get_fields( $field_group );
 	
 	
-			// prepare fields
-			$field_group['fields'] = fields_prepare_fields_for_export( $field_group['fields'] );
-			
-			
-			// extract field group ID
-			$id = fields_extract_var( $field_group, 'ID' );
+			// prepare for export
+			$field_group = fieldmaster_prepare_field_group_for_export( $field_group );
 			
 			
 			// add to json array
@@ -444,6 +451,6 @@ class fields_settings_tools {
 
 
 // initialize
-new fields_settings_tools();
+new fieldmaster_settings_tools();
 
 ?>

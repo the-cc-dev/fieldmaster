@@ -1,6 +1,6 @@
 <?php
 
-class fields_settings_info {
+class fieldmaster_settings_info {
 
 	/*
 	*  __construct
@@ -39,7 +39,7 @@ class fields_settings_info {
 	function admin_menu() {
 
 		// bail early if no show_admin
-		if( !fields_get_setting('show_admin') ) {
+		if( !fieldmaster_get_setting('show_admin') ) {
 		
 			return;
 			
@@ -47,7 +47,7 @@ class fields_settings_info {
 
 
 		// add page
-		add_submenu_page('edit.php?post_type=fields-field-group', __('Info','fields'), __('Info','fields'), fields_get_setting('capability'),'fields-settings-info', array($this,'html'));
+		add_submenu_page('edit.php?post_type=fm-field-group', __('Info','fieldmaster'), __('Info','fieldmaster'), fieldmaster_get_setting('capability'),'fieldmaster-settings-info', array($this,'html'));
 
 	}
 
@@ -69,11 +69,11 @@ class fields_settings_info {
 		
 		// vars
 		$view = array(
-			'version'		=> fields_get_setting('version'),
-			'have_pro'		=> fields_get_setting('pro'),
+			'version'		=> fieldmaster_get_setting('version'),
+			'have_pro'		=> fieldmaster_get_setting('pro'),
 			'tabs'			=> array(
-				'new'			=> __("What's New", 'fields'),
-				'changelog'		=> __("Changelog", 'fields')
+				'new'			=> __("What's New", 'fieldmaster'),
+				'changelog'		=> __("Changelog", 'fieldmaster')
 			),
 			'active'		=> 'new'
 		);
@@ -88,7 +88,7 @@ class fields_settings_info {
 		
 		
 		// load view
-		fields_get_view('settings-info', $view);
+		fieldmaster_get_view('settings-info', $view);
 
 	}
 
@@ -96,6 +96,6 @@ class fields_settings_info {
 
 
 // initialize
-new fields_settings_info();
+new fieldmaster_settings_info();
 
 ?>

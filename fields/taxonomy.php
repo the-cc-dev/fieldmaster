@@ -33,7 +33,7 @@ class fieldmaster_field_taxonomy extends fieldmaster_field {
 		
 		// vars
 		$this->name = 'taxonomy';
-		$this->label = __("Taxonomy",'fields');
+		$this->label = __("Taxonomy",'fieldmaster');
 		$this->category = 'relational';
 		$this->defaults = array(
 			'taxonomy' 			=> 'category',
@@ -48,129 +48,20 @@ class fieldmaster_field_taxonomy extends fieldmaster_field {
 		);
 		
 		
-		// extra
-		add_action('wp_ajax_fields/fields/taxonomy/query',			array($this, 'ajax_query'));
-		add_action('wp_ajax_nopriv_fields/fields/taxonomy/query',	array($this, 'ajax_query'));
-		add_action('wp_ajax_fields/fields/taxonomy/add_term',		array($this, 'ajax_add_term'));
+		// ajax
+		add_action('wp_ajax_fieldmaster/fields/taxonomy/query',			array($this, 'ajax_query'));
+		add_action('wp_ajax_nopriv_fieldmaster/fields/taxonomy/query',	array($this, 'ajax_query'));
+		add_action('wp_ajax_fieldmaster/fields/taxonomy/add_term',		array($this, 'ajax_add_term'));
+		
+		
+		// custom set_terms
+		$this->save_post_terms = array();
+		add_action('fieldmaster/save_post', array($this, 'save_post'), 15, 1);
 		
 		
 		// do not delete!
     	parent::__construct();
     	
-	}
-	
-	
-	/*
-	*  get_choices
-	*
-	*  This function will return an array of data formatted for use in a select2 AJAX response
-	*
-	*  @type	function
-	*  @date	15/10/2014
-	*  @since	5.0.9
-	*
-	*  @param	$options (array)
-	*  @return	(array)
-	*/
-	
-	function get_choices( $options = array() ) {
-		
-   		// defaults
-   		$options = fields_parse_args($options, array(
-			'post_id'		=> 0,
-			's'				=> '',
-			'field_key'		=> '',
-			'paged'			=> 1
-		));
-		
-		
-		// load field
-		$field = fields_get_field( $options['field_key'] );
-		
-		if( !$field ) {
-		
-			return false;
-			
-		}
-		
-		
-		// vars
-   		$r = array();
-		$args = array();
-		$is_hierarchical = is_taxonomy_hierarchical( $field['taxonomy'] );
-		$limit = 20;
-		$offset = 20 * ($options['paged'] - 1);
-		
-		
-		// hide empty
-		$args['hide_empty'] = false;
-		
-		
-		// pagination
-		// - don't bother for hierarchial terms, we will need to load all terms anyway
-		if( !$is_hierarchical ) {
-			
-			$args['offset'] = $offset;
-			$args['number'] = $limit;
-		
-		}
-		
-		
-		// search
-		if( $options['s'] ) {
-		
-			$args['search'] = $options['s'];
-		
-		}
-		
-		
-		// filters
-		$args = apply_filters('fields/fields/taxonomy/query', $args, $field, $options['post_id']);
-		$args = apply_filters('fields/fields/taxonomy/query/name=' . $field['name'], $args, $field, $options['post_id'] );
-		$args = apply_filters('fields/fields/taxonomy/query/key=' . $field['key'], $args, $field, $options['post_id'] );
-			
-		
-		// get terms
-		$terms = get_terms( $field['taxonomy'], $args );
-		
-		
-		// sort into hierachial order!
-		if( $is_hierarchical ) {
-			
-			// get parent
-			$parent = fields_maybe_get( $args, 'parent', 0 );
-			$parent = fields_maybe_get( $args, 'child_of', $parent );
-			
-			
-			// this will fail if a search has taken place because parents wont exist
-			if( empty($args['search']) ) {
-			
-				$terms = _get_term_children( $parent, $terms, $field['taxonomy'] );
-				
-			}
-			
-			
-			// fake pagination
-			$terms = array_slice($terms, $offset, $limit);
-			
-		}
-		
-		
-		/// append to r
-		foreach( $terms as $term ) {
-		
-			// add to json
-			$r[] = array(
-				'id'	=> $term->term_id,
-				'text'	=> $this->get_term_title( $term, $field, $options['post_id'] )
-			);
-			
-		}
-		
-		
-		// return
-		return $r;
-			
 	}
 	
 	
@@ -190,28 +81,162 @@ class fieldmaster_field_taxonomy extends fieldmaster_field {
 	function ajax_query() {
 		
 		// validate
-		if( !fields_verify_ajax() ) {
-		
-			die();
-			
-		}
+		if( !fieldmaster_verify_ajax() ) die();
 		
 		
 		// get choices
-		$choices = $this->get_choices( $_POST );
+		$response = $this->get_ajax_query( $_POST );
 		
 		
-		// validate
-		if( !$choices ) {
+		// return
+		fieldmaster_send_ajax_results($response);
 			
-			die();
+	}
+	
+	
+	/*
+	*  get_ajax_query
+	*
+	*  This function will return an array of data formatted for use in a select2 AJAX response
+	*
+	*  @type	function
+	*  @date	15/10/2014
+	*  @since	5.0.9
+	*
+	*  @param	$options (array)
+	*  @return	(array)
+	*/
+	
+	function get_ajax_query( $options = array() ) {
+		
+   		// defaults
+   		$options = fieldmaster_parse_args($options, array(
+			'post_id'		=> 0,
+			's'				=> '',
+			'field_key'		=> '',
+			'paged'			=> 0
+		));
+		
+		
+		// load field
+		$field = fieldmaster_get_field( $options['field_key'] );
+		if( !$field ) return false;
+		
+		
+		// bail early if taxonomy does not exist
+		if( !taxonomy_exists($field['taxonomy']) ) return false;
+		
+		
+		// vars
+   		$results = array();
+		$is_hierarchical = is_taxonomy_hierarchical( $field['taxonomy'] );
+		$is_pagination = ($options['paged'] > 0);
+		$is_search = false;
+		$limit = 20;
+		$offset = 20 * ($options['paged'] - 1);
+		
+		
+		// args
+		$args = array(
+			'taxonomy'		=> $field['taxonomy'],
+			'hide_empty'	=> false
+		);
+		
+		
+		// pagination
+		// - don't bother for hierarchial terms, we will need to load all terms anyway
+		if( $is_pagination && !$is_hierarchical ) {
+			
+			$args['number'] = $limit;
+			$args['offset'] = $offset;
+		
+		}
+		
+		
+		// search
+		if( $options['s'] !== '' ) {
+			
+			// strip slashes (search may be integer)
+			$s = wp_unslash( strval($options['s']) );
+			
+			
+			// update vars
+			$args['search'] = $s;
+			$is_search = true;
 			
 		}
 		
 		
-		// return JSON
-		echo json_encode( $choices );
-		die();
+		// filters
+		$args = apply_filters('fieldmaster/fields/taxonomy/query', $args, $field, $options['post_id']);
+		$args = apply_filters('fieldmaster/fields/taxonomy/query/name=' . $field['name'], $args, $field, $options['post_id'] );
+		$args = apply_filters('fieldmaster/fields/taxonomy/query/key=' . $field['key'], $args, $field, $options['post_id'] );
+		
+		
+		// get terms
+		$terms = fieldmaster_get_terms( $args );
+		
+		
+		// sort into hierachial order!
+		if( $is_hierarchical ) {
+			
+			// update vars
+			$limit = fieldmaster_maybe_get( $args, 'number', $limit );
+			$offset = fieldmaster_maybe_get( $args, 'offset', $offset );
+			
+			
+			// get parent
+			$parent = fieldmaster_maybe_get( $args, 'parent', 0 );
+			$parent = fieldmaster_maybe_get( $args, 'child_of', $parent );
+			
+			
+			// this will fail if a search has taken place because parents wont exist
+			if( !$is_search ) {
+				
+				// order terms
+				$ordered_terms = _get_term_children( $parent, $terms, $field['taxonomy'] );
+				
+				
+				// check for empty array (possible if parent did not exist within original data)
+				if( !empty($ordered_terms) ) {
+					
+					$terms = $ordered_terms;
+					
+				}
+			}
+			
+			
+			// fake pagination
+			if( $is_pagination ) {
+				
+				$terms = array_slice($terms, $offset, $limit);
+				
+			}
+			
+		}
+		
+		
+		/// append to r
+		foreach( $terms as $term ) {
+		
+			// add to json
+			$results[] = array(
+				'id'	=> $term->term_id,
+				'text'	=> $this->get_term_title( $term, $field, $options['post_id'] )
+			);
+			
+		}
+		
+		
+		// vars
+		$response = array(
+			'results'	=> $results,
+			'limit'		=> $limit
+		);
+		
+		
+		// return
+		return $response;
 			
 	}
 	
@@ -234,20 +259,7 @@ class fieldmaster_field_taxonomy extends fieldmaster_field {
 	function get_term_title( $term, $field, $post_id = 0 ) {
 		
 		// get post_id
-		if( !$post_id ) {
-			
-			$form_data = fields_get_setting('form_data');
-			
-			if( !empty($form_data['post_id']) ) {
-				
-				$post_id = $form_data['post_id'];
-				
-			} else {
-				
-				$post_id = get_the_ID();
-				
-			}
-		}
+		if( !$post_id ) $post_id = fieldmaster_get_form_data('post_id');
 		
 		
 		// vars
@@ -269,9 +281,9 @@ class fieldmaster_field_taxonomy extends fieldmaster_field {
 				
 		
 		// filters
-		$title = apply_filters('fields/fields/taxonomy/result', $title, $term, $field, $post_id);
-		$title = apply_filters('fields/fields/taxonomy/result/name=' . $field['_name'] , $title, $term, $field, $post_id);
-		$title = apply_filters('fields/fields/taxonomy/result/key=' . $field['key'], $title, $term, $field, $post_id);
+		$title = apply_filters('fieldmaster/fields/taxonomy/result', $title, $term, $field, $post_id);
+		$title = apply_filters('fieldmaster/fields/taxonomy/result/name=' . $field['_name'] , $title, $term, $field, $post_id);
+		$title = apply_filters('fieldmaster/fields/taxonomy/result/key=' . $field['key'], $title, $term, $field, $post_id);
 		
 		
 		// return
@@ -297,9 +309,10 @@ class fieldmaster_field_taxonomy extends fieldmaster_field {
 		// load terms in 1 query to save multiple DB calls from following code
 		if( count($value) > 1 ) {
 			
-			$terms = get_terms($taxonomy, array(
-				'hide_empty'	=> false,
+			$terms = fieldmaster_get_terms(array(
+				'taxonomy'		=> $taxonomy,
 				'include'		=> $value,
+				'hide_empty'	=> false
 			));
 			
 		}
@@ -341,26 +354,47 @@ class fieldmaster_field_taxonomy extends fieldmaster_field {
 	function load_value( $value, $post_id, $field ) {
 		
 		// get valid terms
-		$value = fields_get_valid_terms($value, $field['taxonomy']);
+		$value = fieldmaster_get_valid_terms($value, $field['taxonomy']);
 		
 		
-		// load/save
+		// load_terms
 		if( $field['load_terms'] ) {
 			
 			// get terms
-			$term_ids = wp_get_object_terms($post_id, $field['taxonomy'], array('fields' => 'ids', 'orderby' => 'none'));
+			$info = fieldmaster_get_post_id_info($post_id);
+			$term_ids = wp_get_object_terms($info['id'], $field['taxonomy'], array('fields' => 'ids', 'orderby' => 'none'));
 			
 			
-			// error
-			if( is_wp_error($term_ids) ) {
+			// bail early if no terms
+			if( empty($term_ids) || is_wp_error($term_ids) ) return false;
+			
+			
+			// sort
+			if( !empty($value) ) {
 				
-				return false;
+				$order = array();
+				
+				foreach( $term_ids as $i => $v ) {
 					
+					$order[ $i ] = array_search($v, $value);
+					
+				}
+				
+				array_multisort($order, $term_ids);
+				
 			}
 			
 			
-			// return
-			return $term_ids;
+			// update value
+			$value = $term_ids;
+						
+		}
+		
+		
+		// convert back from array if neccessary
+		if( $field['field_type'] == 'select' || $field['field_type'] == 'radio' ) {
+			
+			$value = array_shift($value);
 			
 		}
 		
@@ -405,44 +439,29 @@ class fieldmaster_field_taxonomy extends fieldmaster_field {
 			
 			
 			// force value to array
-			$term_ids = fields_get_array( $value );
+			$term_ids = fieldmaster_get_array( $value );
 			
 			
 			// convert to int
 			$term_ids = array_map('intval', $term_ids);
 			
 			
-			// bypass $this->set_terms if called directly from update_field
-			if( !did_action('fields/save_post') ) {
+			// get existing term id's (from a previously saved field)
+			$old_term_ids = isset($this->save_post_terms[ $taxonomy ]) ? $this->save_post_terms[ $taxonomy ] : array();
+			
+			
+			// append
+			$this->save_post_terms[ $taxonomy ] = array_merge($old_term_ids, $term_ids);
+			
+			
+			// if called directly from frontend update_field()
+			if( !did_action('fieldmaster/save_post') ) {
 				
-				wp_set_object_terms( $post_id, $term_ids, $taxonomy, false );
+				$this->save_post( $post_id );
 				
 				return $value;
 				
 			}
-			
-			
-			// initialize
-			if( empty($this->set_terms) ) {
-				
-				// create holder
-				$this->set_terms = array();
-				
-				
-				// add action
-				add_action('fields/save_post', array($this, 'set_terms'), 15, 1);
-				
-			}
-			
-			
-			// append
-			if( empty($this->set_terms[ $taxonomy ]) ) {
-				
-				$this->set_terms[ $taxonomy ] = array();
-				
-			}
-			
-			$this->set_terms[ $taxonomy ] = array_merge($this->set_terms[ $taxonomy ], $term_ids);
 			
 		}
 		
@@ -454,38 +473,39 @@ class fieldmaster_field_taxonomy extends fieldmaster_field {
 	
 	
 	/*
-	*  set_terms
+	*  save_post
 	*
-	*  description
+	*  This function will save any terms in the save_post_terms array
 	*
 	*  @type	function
 	*  @date	26/11/2014
 	*  @since	5.0.9
 	*
 	*  @param	$post_id (int)
-	*  @return	$post_id (int)
+	*  @return	n/a
 	*/
 	
-	function set_terms( $post_id ) {
+	function save_post( $post_id ) {
 		
 		// bail ealry if no terms
-		if( empty($this->set_terms) ) {
-			
-			return;
-			
-		}
+		if( empty($this->save_post_terms) ) return;
 		
 		
-		// loop over terms
-		foreach( $this->set_terms as $taxonomy => $term_ids ){
+		// vars
+		$info = fieldmaster_get_post_id_info($post_id);
+		
+		
+		// loop
+		foreach( $this->save_post_terms as $taxonomy => $term_ids ){
 			
-			wp_set_object_terms( $post_id, $term_ids, $taxonomy, false );
+			// save
+			wp_set_object_terms( $info['id'], $term_ids, $taxonomy, false );
 			
 		}
 		
 		
 		// reset array ( WP saves twice )
-		$this->set_terms = array();
+		$this->save_post_terms = array();
 		
 	}
 	
@@ -509,19 +529,11 @@ class fieldmaster_field_taxonomy extends fieldmaster_field {
 	function format_value( $value, $post_id, $field ) {
 		
 		// bail early if no value
-		if( empty($value) ) {
-			
-			return $value;
-		
-		}
+		if( empty($value) ) return false;
 		
 		
 		// force value to array
-		$value = fields_get_array( $value );
-		
-		
-		// convert values to int
-		$value = array_map('intval', $value);
+		$value = fieldmaster_get_array( $value );
 		
 		
 		// load posts if needed
@@ -543,6 +555,7 @@ class fieldmaster_field_taxonomy extends fieldmaster_field {
 
 		// return
 		return $value;
+		
 	}
 	
 	
@@ -561,16 +574,12 @@ class fieldmaster_field_taxonomy extends fieldmaster_field {
 	function render_field( $field ) {
 		
 		// force value to array
-		$field['value'] = fields_get_array( $field['value'] );
-		
-		
-		// convert values to int
-		$field['value'] = array_map('intval', $field['value']);
+		$field['value'] = fieldmaster_get_array( $field['value'] );
 		
 		
 		// vars
 		$div = array(
-			'class'				=> 'fields-taxonomy-field fields-soh',
+			'class'				=> 'fieldmaster-taxonomy-field fieldmaster-soh',
 			'data-save'			=> $field['save_terms'],
 			'data-type'			=> $field['field_type'],
 			'data-taxonomy'		=> $field['taxonomy']
@@ -581,9 +590,9 @@ class fieldmaster_field_taxonomy extends fieldmaster_field {
 		$taxonomy = get_taxonomy( $field['taxonomy'] );
 		
 		?>
-<div <?php fields_esc_attr_e($div); ?>>
+<div <?php fieldmaster_esc_attr_e($div); ?>>
 	<?php if( $field['add_term'] && current_user_can( $taxonomy->cap->manage_terms) ): ?>
-	<a href="#" class="fields-icon fields-icon-plus fields-js-tooltip small fields-soh-target" data-name="add" title="<?php echo sprintf( __('Add new %s ', 'fields'), $taxonomy->labels->singular_name ); ?>"></a>
+	<a href="#" class="fieldmaster-icon -plus fieldmaster-js-tooltip small fieldmaster-soh-target" data-name="add" title="<?php echo esc_attr($taxonomy->labels->add_new_item); ?>"></a>
 	<?php endif;
 
 	if( $field['field_type'] == 'select' ) {
@@ -648,7 +657,7 @@ class fieldmaster_field_taxonomy extends fieldmaster_field {
 				foreach( array_keys($terms) as $i ) {
 					
 					// vars
-					$term = fields_extract_var( $terms, $i );
+					$term = fieldmaster_extract_var( $terms, $i );
 					
 					
 					// append to choices
@@ -662,7 +671,7 @@ class fieldmaster_field_taxonomy extends fieldmaster_field {
 		
 		
 		// render select		
-		fields_render_field( $field );
+		fieldmaster_render_field( $field );
 		
 	}
 	
@@ -682,7 +691,7 @@ class fieldmaster_field_taxonomy extends fieldmaster_field {
 	function render_field_checkbox( $field ) {
 		
 		// hidden input
-		fields_hidden_input(array(
+		fieldmaster_hidden_input(array(
 			'type'	=> 'hidden',
 			'name'	=> $field['name'],
 		));
@@ -703,26 +712,26 @@ class fieldmaster_field_taxonomy extends fieldmaster_field {
 		// vars
 		$args = array(
 			'taxonomy'     		=> $field['taxonomy'],
-			'show_option_none'	=> __('No', 'fields') . ' ' . $taxonomy_obj->labels->name,
+			'show_option_none'	=> __('No', 'fieldmaster') . ' ' . $taxonomy_obj->labels->name,
 			'hide_empty'   		=> false,
 			'style'        		=> 'none',
-			'walker'       		=> new fields_taxonomy_field_walker( $field ),
+			'walker'       		=> new fieldmaster_taxonomy_field_walker( $field ),
 		);
 		
 		
 		// filter for 3rd party customization
-		$args = apply_filters('fields/fields/taxonomy/wp_list_categories', $args, $field);
-		$args = apply_filters('fields/fields/taxonomy/wp_list_categories/name=' . $field['_name'], $args, $field);
-		$args = apply_filters('fields/fields/taxonomy/wp_list_categories/key=' . $field['key'], $args, $field);
+		$args = apply_filters('fieldmaster/fields/taxonomy/wp_list_categories', $args, $field);
+		$args = apply_filters('fieldmaster/fields/taxonomy/wp_list_categories/name=' . $field['_name'], $args, $field);
+		$args = apply_filters('fieldmaster/fields/taxonomy/wp_list_categories/key=' . $field['key'], $args, $field);
 		
 		?><div class="categorychecklist-holder">
 		
-			<ul class="fields-checkbox-list fields-bl">
+			<ul class="fieldmaster-checkbox-list fieldmaster-bl">
 			
 				<?php if( $field['field_type'] == 'radio' && $field['allow_null'] ): ?>
 					<li>
 						<label class="selectit">
-							<input type="radio" name="<?php echo $field['name']; ?>" value="" /> <?php _e("None", 'fields'); ?>
+							<input type="radio" name="<?php echo $field['name']; ?>" value="" /> <?php _e("None", 'fieldmaster'); ?>
 						</label>
 					</li>
 				<?php endif; ?>
@@ -752,100 +761,84 @@ class fieldmaster_field_taxonomy extends fieldmaster_field {
 	function render_field_settings( $field ) {
 		
 		// default_value
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Taxonomy','fields'),
-			'instructions'	=> __('Select the taxonomy to be displayed','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Taxonomy','fieldmaster'),
+			'instructions'	=> __('Select the taxonomy to be displayed','fieldmaster'),
 			'type'			=> 'select',
 			'name'			=> 'taxonomy',
-			'choices'		=> fields_get_taxonomies(),
+			'choices'		=> fieldmaster_get_taxonomies(),
 		));
 		
 		
 		// field_type
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Appearance','fields'),
-			'instructions'	=> __('Select the appearance of this field','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Appearance','fieldmaster'),
+			'instructions'	=> __('Select the appearance of this field','fieldmaster'),
 			'type'			=> 'select',
 			'name'			=> 'field_type',
 			'optgroup'		=> true,
 			'choices'		=> array(
-				__("Multiple Values",'fields') => array(
-					'checkbox' => __('Checkbox', 'fields'),
-					'multi_select' => __('Multi Select', 'fields')
+				__("Multiple Values",'fieldmaster') => array(
+					'checkbox' => __('Checkbox', 'fieldmaster'),
+					'multi_select' => __('Multi Select', 'fieldmaster')
 				),
-				__("Single Value",'fields') => array(
-					'radio' => __('Radio Buttons', 'fields'),
-					'select' => __('Select', 'fields')
+				__("Single Value",'fieldmaster') => array(
+					'radio' => __('Radio Buttons', 'fieldmaster'),
+					'select' => _x('Select', 'noun', 'fieldmaster')
 				)
 			)
 		));
 		
 		
 		// allow_null
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Allow Null?','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Allow Null?','fieldmaster'),
 			'instructions'	=> '',
-			'type'			=> 'radio',
 			'name'			=> 'allow_null',
-			'choices'		=> array(
-				1				=> __("Yes",'fields'),
-				0				=> __("No",'fields'),
-			),
-			'layout'	=>	'horizontal',
+			'type'			=> 'true_false',
+			'ui'			=> 1,
 		));
 		
 		
 		// add_term
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Create Terms','fields'),
-			'instructions'	=> __('Allow new terms to be created whilst editing','fields'),
-			'type'			=> 'radio',
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Create Terms','fieldmaster'),
+			'instructions'	=> __('Allow new terms to be created whilst editing','fieldmaster'),
 			'name'			=> 'add_term',
-			'choices'		=> array(
-				1				=> __("Yes",'fields'),
-				0				=> __("No",'fields'),
-			),
-			'layout'	=>	'horizontal',
+			'type'			=> 'true_false',
+			'ui'			=> 1,
 		));
 		
 		
 		// save_terms
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Save Terms','fields'),
-			'instructions'	=> __('Connect selected terms to the post','fields'),
-			'type'			=> 'radio',
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Save Terms','fieldmaster'),
+			'instructions'	=> __('Connect selected terms to the post','fieldmaster'),
 			'name'			=> 'save_terms',
-			'choices'		=> array(
-				1				=> __("Yes",'fields'),
-				0				=> __("No",'fields'),
-			),
-			'layout'	=>	'horizontal',
+			'type'			=> 'true_false',
+			'ui'			=> 1,
 		));
 		
 		
 		// load_terms
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Load Terms','fields'),
-			'instructions'	=> __('Load value from posts terms','fields'),
-			'type'			=> 'radio',
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Load Terms','fieldmaster'),
+			'instructions'	=> __('Load value from posts terms','fieldmaster'),
 			'name'			=> 'load_terms',
-			'choices'		=> array(
-				1				=> __("Yes",'fields'),
-				0				=> __("No",'fields'),
-			),
-			'layout'	=>	'horizontal',
+			'type'			=> 'true_false',
+			'ui'			=> 1,
 		));
 		
 		
 		// return_format
-		fields_render_field_setting( $field, array(
-			'label'			=> __('Return Value','fields'),
+		fieldmaster_render_field_setting( $field, array(
+			'label'			=> __('Return Value','fieldmaster'),
 			'instructions'	=> '',
 			'type'			=> 'radio',
 			'name'			=> 'return_format',
 			'choices'		=> array(
-				'object'		=>	__("Term Object",'fields'),
-				'id'			=>	__("Term ID",'fields')
+				'object'		=>	__("Term Object",'fieldmaster'),
+				'id'			=>	__("Term ID",'fieldmaster')
 			),
 			'layout'	=>	'horizontal',
 		));
@@ -869,7 +862,7 @@ class fieldmaster_field_taxonomy extends fieldmaster_field {
 	function ajax_add_term() {
 		
 		// vars
-		$args = fields_parse_args($_POST, array(
+		$args = fieldmaster_parse_args($_POST, array(
 			'nonce'				=> '',
 			'field_key'			=> '',
 			'term_name'			=> '',
@@ -878,7 +871,7 @@ class fieldmaster_field_taxonomy extends fieldmaster_field {
 		
 		
 		// verify nonce
-		if( ! wp_verify_nonce($args['nonce'], 'fields_nonce') ) {
+		if( ! wp_verify_nonce($args['nonce'], 'fieldmaster_nonce') ) {
 		
 			die();
 			
@@ -886,7 +879,7 @@ class fieldmaster_field_taxonomy extends fieldmaster_field {
 		
 		
 		// load field
-		$field = fields_get_field( $args['field_key'] );
+		$field = fieldmaster_get_field( $args['field_key'] );
 		
 		if( !$field ) {
 		
@@ -904,7 +897,7 @@ class fieldmaster_field_taxonomy extends fieldmaster_field {
 		// note: this situation should never occur due to condition of the add new button
 		if( !current_user_can( $taxonomy_obj->cap->manage_terms) ) {
 			
-			echo '<p><strong>' . __("Error", 'fields') . '.</strong> ' . sprintf( __('User unable to add new %s', 'fields'), $taxonomy_label ) . '</p>';
+			echo '<p><strong>' . __("Error.", 'fieldmaster') . '</strong> ' . sprintf( __('User unable to add new %s', 'fieldmaster'), $taxonomy_label ) . '</p>';
 			die;
 			
 		}
@@ -917,7 +910,7 @@ class fieldmaster_field_taxonomy extends fieldmaster_field {
 			if( term_exists($args['term_name'], $field['taxonomy']) ) {
 				
 				wp_send_json_error(array(
-					'error'	=> sprintf( __('%s already exists', 'fields'), $taxonomy_label )
+					'error'	=> sprintf( __('%s already exists', 'fieldmaster'), $taxonomy_label )
 				));
 			
 			}
@@ -958,7 +951,7 @@ class fieldmaster_field_taxonomy extends fieldmaster_field {
 		
 			// success
 			wp_send_json_success(array(
-				'message'		=> sprintf( __('%s added', 'fields'), $taxonomy_label ),
+				'message'		=> sprintf( __('%s added', 'fieldmaster'), $taxonomy_label ),
 				'term_id'		=> $data['term_id'],
 				'term_name'		=> $args['term_name'],
 				'term_label'	=> $prefix . $args['term_name'],
@@ -969,8 +962,8 @@ class fieldmaster_field_taxonomy extends fieldmaster_field {
 		
 		?><form method="post"><?php
 		
-		fields_render_field_wrap(array(
-			'label'			=> 'Name',
+		fieldmaster_render_field_wrap(array(
+			'label'			=> __('Name', 'fieldmaster'),
 			'name'			=> 'term_name',
 			'type'			=> 'text'
 		));
@@ -979,11 +972,11 @@ class fieldmaster_field_taxonomy extends fieldmaster_field {
 		if( is_taxonomy_hierarchical( $field['taxonomy'] ) ) {
 			
 			$choices = array();
-			$choices2 = $this->get_choices(array( 'field_key' => $field['key'] ));
+			$response = $this->get_ajax_query($args);
 			
-			if( $choices2 ) {
+			if( $response ) {
 				
-				foreach( $choices2 as $v) { 
+				foreach( $response['results'] as $v ) { 
 					
 					$choices[ $v['id'] ] = $v['text'];
 					
@@ -991,8 +984,8 @@ class fieldmaster_field_taxonomy extends fieldmaster_field {
 				
 			}
 			
-			fields_render_field_wrap(array(
-				'label'			=> 'Parent',
+			fieldmaster_render_field_wrap(array(
+				'label'			=> __('Parent', 'fieldmaster'),
 				'name'			=> 'term_parent',
 				'type'			=> 'select',
 				'allow_null'	=> 1,
@@ -1003,7 +996,7 @@ class fieldmaster_field_taxonomy extends fieldmaster_field {
 		}
 		
 		
-		?><p class="fields-submit"><button class="fields-button blue" type="submit"><?php _e("Add", 'fields'); ?></button><i class="fields-spinner"></i><span></span></p></form><?php
+		?><p class="fieldmaster-submit"><button class="fieldmaster-button button button-primary" type="submit"><?php _e("Add", 'fieldmaster'); ?></button><i class="fieldmaster-spinner"></i><span></span></p></form><?php
 		
 		
 		// die
@@ -1014,13 +1007,17 @@ class fieldmaster_field_taxonomy extends fieldmaster_field {
 		
 }
 
-new fieldmaster_field_taxonomy();
 
-endif;
+// initialize
+fieldmaster_register_field_type( new fieldmaster_field_taxonomy() );
 
-if( ! class_exists('fields_taxonomy_field_walker') ) :
+endif; // class_exists check
 
-class fields_taxonomy_field_walker extends Walker {
+
+
+if( ! class_exists('fieldmaster_taxonomy_field_walker') ) :
+
+class fieldmaster_taxonomy_field_walker extends Walker {
 	
 	var $field = null,
 		$tree_type = 'category',
@@ -1053,7 +1050,7 @@ class fields_taxonomy_field_walker extends Walker {
 	function start_lvl( &$output, $depth = 0, $args = array() ) {
 		
 		// append
-		$output .= '<ul class="children fields-bl">' . "\n";
+		$output .= '<ul class="children fieldmaster-bl">' . "\n";
 		
 	}
 

@@ -5,14 +5,14 @@
 *
 *  All the logic for adding fields to comments
 *
-*  @class 		fields_form_comment
+*  @class 		fieldmaster_form_comment
 *  @package		FieldMaster
 *  @subpackage	Forms
 */
 
-if( ! class_exists('fields_form_comment') ) :
+if( ! class_exists('fieldmaster_form_comment') ) :
 
-class fields_form_comment {
+class fieldmaster_form_comment {
 	
 	
 	/*
@@ -35,8 +35,10 @@ class fields_form_comment {
 		
 		
 		// render
-		add_action( 'comment_form_logged_in_after',		array( $this, 'add_comment') );
-		add_action( 'comment_form_after_fields',		array( $this, 'add_comment') );
+		add_filter('comment_form_field_comment',		array($this, 'comment_form_field_comment'), 999, 1);
+		
+		//add_action( 'comment_form_logged_in_after',		array( $this, 'add_comment') );
+		//add_action( 'comment_form',						array( $this, 'add_comment') );
 
 		
 		// save
@@ -102,8 +104,8 @@ class fields_form_comment {
 		}
 		
 		
-		// load fields scripts
-		fields_enqueue_scripts();
+		// load fieldmaster scripts
+		fieldmaster_enqueue_scripts();
 		
 		
 		// actions
@@ -131,10 +133,10 @@ class fields_form_comment {
 		// vars
 		$post_id = "comment_{$comment->comment_ID}";
 
-
+		
 		// get field groups
-		$field_groups = fields_get_field_groups(array(
-			'comment' => $comment->comment_ID
+		$field_groups = fieldmaster_get_field_groups(array(
+			'comment' => get_post_type( $comment->comment_post_ID )
 		));
 		
 		
@@ -142,7 +144,7 @@ class fields_form_comment {
 		if( !empty($field_groups) ) {
 		
 			// render post data
-			fields_form_data(array( 
+			fieldmaster_form_data(array( 
 				'post_id'	=> $post_id, 
 				'nonce'		=> 'comment' 
 			));
@@ -151,17 +153,40 @@ class fields_form_comment {
 			foreach( $field_groups as $field_group ) {
 				
 				// load fields
-				$fields = fields_get_fields( $field_group );
+				$fields = fieldmaster_get_fields( $field_group );
+				
+				
+				// vars
+				$o = array(
+					'id'			=> 'fieldmaster-'.$field_group['ID'],
+					'key'			=> $field_group['key'],
+					//'style'			=> $field_group['style'],
+					'label'			=> $field_group['label_placement'],
+					'edit_url'		=> '',
+					'edit_title'	=> __('Edit field group', 'fieldmaster'),
+					//'visibility'	=> $visibility
+				);
+				
+				
+				// edit_url
+				if( $field_group['ID'] && fieldmaster_current_user_can_admin() ) {
+					
+					$o['edit_url'] = admin_url('post.php?post=' . $field_group['ID'] . '&action=edit');
+						
+				}
 				
 				?>
-				<div id="fields-<?php echo $field_group['ID']; ?>" class="stuffbox editcomment">
-					<h3><?php echo $field_group['title']; ?></h3>
+				<div id="fieldmaster-<?php echo $field_group['ID']; ?>" class="stuffbox">
+					<h3 class="hndle"><?php echo $field_group['title']; ?></h3>
 					<div class="inside">
-						<table class="form-table">
-							<tbody>
-								<?php fields_render_fields( $post_id, $fields, 'tr', 'field' ); ?>
-							</tbody>
-						</table>
+						<?php fieldmaster_render_fields( $post_id, $fields, 'div', $field_group['instruction_placement'] ); ?>
+						<script type="text/javascript">
+						if( typeof fieldmaster !== 'undefined' ) {
+								
+							fieldmaster.postbox.render(<?php echo json_encode($o); ?>);
+						
+						}
+						</script>
 					</div>
 				</div>
 				<?php
@@ -174,34 +199,43 @@ class fields_form_comment {
 	
 	
 	/*
-	*  add_comment
+	*  comment_form_field_comment
 	*
-	*  This function will add fields to the front end comment form
+	*  description
 	*
 	*  @type	function
-	*  @date	19/10/13
-	*  @since	5.0.0
+	*  @date	18/04/2016
+	*  @since	5.3.8
 	*
-	*  @param	n/a
-	*  @return	n/a
+	*  @param	$post_id (int)
+	*  @return	$post_id (int)
 	*/
 	
-	function add_comment() {
+	function comment_form_field_comment( $html ) {
+		
+		// global
+		global $post;
+		
 		
 		// vars
-		$post_id = "comment_0";
+		$post_id = false;
 
 		
 		// get field groups
-		$field_groups = fields_get_field_groups(array(
-			'comment' => 'new'
+		$field_groups = fieldmaster_get_field_groups(array(
+			'comment' => $post->post_type
 		));
 		
 		
-		if( !empty($field_groups) ) {
+		// bail early if no field groups
+		if( !$field_groups ) return $html;
+		
+		
+		// ob
+		ob_start();
 			
 			// render post data
-			fields_form_data(array( 
+			fieldmaster_form_data(array( 
 				'post_id'	=> $post_id, 
 				'nonce'		=> 'comment' 
 			));
@@ -209,19 +243,20 @@ class fields_form_comment {
 			
 			foreach( $field_groups as $field_group ) {
 				
-				$fields = fields_get_fields( $field_group );
+				$fields = fieldmaster_get_fields( $field_group );
 				
-				?>
-				<table class="form-table">
-					<tbody>
-						<?php fields_render_fields( $post_id, $fields, 'tr', 'field' ); ?>
-					</tbody>
-				</table>
-				<?php
+				fieldmaster_render_fields( $post_id, $fields, 'p', $field_group['instruction_placement'] );
 				
 			}
 		
-		}
+		
+		// append
+		$html .= ob_get_contents();
+		ob_end_clean();
+		
+		
+		// return
+		return $html;
 		
 	}
 	
@@ -242,7 +277,7 @@ class fields_form_comment {
 	function save_comment( $comment_id ) {
 		
 		// bail early if not valid nonce
-		if( ! fields_verify_nonce('comment') ) {
+		if( ! fieldmaster_verify_nonce('comment') ) {
 		
 			return $comment_id;
 			
@@ -250,9 +285,9 @@ class fields_form_comment {
 		
 	    
 	    // validate and save
-	    if( fields_validate_save_post(true) ) {
+	    if( fieldmaster_validate_save_post(true) ) {
 	    
-			fields_save_post( "comment_{$comment_id}" );	
+			fieldmaster_save_post( "comment_{$comment_id}" );	
 			
 		}
 				
@@ -302,7 +337,7 @@ class fields_form_comment {
 			
 }
 
-new fields_form_comment();
+new fieldmaster_form_comment();
 
 endif;
 

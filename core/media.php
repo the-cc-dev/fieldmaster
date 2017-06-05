@@ -1,6 +1,6 @@
 <?php 
 
-class fields_media {
+class fieldmaster_media {
 	
 	
 	/*
@@ -19,12 +19,13 @@ class fields_media {
 	function __construct() {
 		
 		// actions
-		add_action('fields/save_post', 				array($this, 'save_files'), 5, 1);
-		add_action('fields/input/admin_footer_js', 	array($this, 'admin_footer_js'));
+		add_action('fieldmaster/save_post', 				array($this, 'save_files'), 5, 1);
+		add_action('fieldmaster/input/admin_footer', 		array($this, 'admin_footer'));
 		
 		
 		// filters
 		add_filter('wp_handle_upload_prefilter', 	array($this, 'handle_upload_prefilter'), 10, 1);
+		add_filter('fieldmaster/input/admin_l10n',			array($this, 'fieldmaster_input_admin_l10n'), 10, 1);
 		
 		
 		// ajax
@@ -33,6 +34,37 @@ class fields_media {
 	}
 	
 	
+	/*
+	*  fieldmaster_input_admin_l10n
+	*
+	*  This function will append l10n strings for JS use
+	*
+	*  @type	function
+	*  @date	11/04/2016
+	*  @since	5.3.8
+	*
+	*  @param	$post_id (int)
+	*  @return	$post_id (int)
+	*/
+	
+	function fieldmaster_input_admin_l10n( $l10n ) {
+		
+		// append
+		$l10n['media'] = array(
+			'select'		=> _x('Select', 'verb', 'fieldmaster'),
+			'edit'			=> _x('Edit', 'verb', 'fieldmaster'),
+			'update'		=> _x('Update', 'verb', 'fieldmaster'),
+			'uploadedTo'	=> __("Uploaded to this post",'fieldmaster'),
+			'default_icon'	=> wp_mime_type_icon()
+		);
+		
+		
+		// return
+		return $l10n;
+		
+	}
+	
+		
 	/*
 	*  handle_upload_prefilter
 	*
@@ -48,8 +80,8 @@ class fields_media {
 	
 	function handle_upload_prefilter( $file ) {
 		
-		// bail early if no fields field
-		if( empty($_POST['_fieldsuploader']) ) {
+		// bail early if no fieldmaster field
+		if( empty($_POST['_fieldmasteruploader']) ) {
 		
 			return $file;
 			
@@ -57,7 +89,7 @@ class fields_media {
 		
 		
 		// load field
-		$field = fields_get_field( $_POST['_fieldsuploader'] );
+		$field = fieldmaster_get_field( $_POST['_fieldmasteruploader'] );
 		
 		if( !$field ) {
 		
@@ -67,14 +99,14 @@ class fields_media {
 		
 		
 		// get errors
-		$errors = fields_validate_attachment( $file, $field, 'upload' );
+		$errors = fieldmaster_validate_attachment( $file, $field, 'upload' );
 		
 		
 		// filter for 3rd party customization
-		$errors = apply_filters("fields/upload_prefilter", $errors, $file, $field);
-		$errors = apply_filters("fields/upload_prefilter/type={$field['type']}", $errors, $file, $field );
-		$errors = apply_filters("fields/upload_prefilter/name={$field['name']}", $errors, $file, $field );
-		$errors = apply_filters("fields/upload_prefilter/key={$field['key']}", $errors, $file, $field );
+		$errors = apply_filters("fieldmaster/upload_prefilter", $errors, $file, $field);
+		$errors = apply_filters("fieldmaster/upload_prefilter/type={$field['type']}", $errors, $file, $field );
+		$errors = apply_filters("fieldmaster/upload_prefilter/name={$field['name']}", $errors, $file, $field );
+		$errors = apply_filters("fieldmaster/upload_prefilter/key={$field['key']}", $errors, $file, $field );
 		
 		
 		// append error
@@ -107,7 +139,7 @@ class fields_media {
 	function save_files( $post_id = 0 ) {
 		
 		// bail early if no $_FILES data
-		if( empty($_FILES['fields']['name']) ) {
+		if( empty($_FILES['fieldmaster']['name']) ) {
 			
 			return;
 			
@@ -115,13 +147,13 @@ class fields_media {
 		
 		
 		// upload files
-		fields_upload_files();
+		fieldmaster_upload_files();
 	
 	}
 	
 	
 	/*
-	*  admin_footer_js
+	*  admin_footer
 	*
 	*  description
 	*
@@ -133,10 +165,13 @@ class fields_media {
 	*  @return	$post_id (int)
 	*/
 	
-	function admin_footer_js() {
+	function admin_footer() {
 		
-		?>fields.media.mime_types = <?php echo json_encode( get_allowed_mime_types() ); ?>;
-	<?php
+?>
+<script type="text/javascript">
+	if( fieldmaster ) fieldmaster.media.mime_types = <?php echo json_encode( get_allowed_mime_types() ); ?>;
+</script>
+<?php
 		
 	}
 	
@@ -163,11 +198,11 @@ class fields_media {
 	function wp_prepare_attachment_for_js( $response, $attachment, $meta ) {
 		
 		// append attribute
-		$response['fields_errors'] = false;
+		$response['fieldmaster_errors'] = false;
 		
 		
-		// bail early if no fields field
-		if( empty($_POST['query']['_fieldsuploader']) ) {
+		// bail early if no fieldmaster field
+		if( empty($_POST['query']['_fieldmasteruploader']) ) {
 		
 			return $response;
 			
@@ -175,7 +210,7 @@ class fields_media {
 		
 		
 		// load field
-		$field = fields_get_field( $_POST['query']['_fieldsuploader'] );
+		$field = fieldmaster_get_field( $_POST['query']['_fieldmasteruploader'] );
 		
 		if( !$field ) {
 		
@@ -185,13 +220,13 @@ class fields_media {
 		
 		
 		// get errors
-		$errors = fields_validate_attachment( $response, $field, 'prepare' );
+		$errors = fieldmaster_validate_attachment( $response, $field, 'prepare' );
 		
 		
 		// append errors
 		if( !empty($errors) ) {
 			
-			$response['fields_errors'] = implode('<br />', $errors);
+			$response['fieldmaster_errors'] = implode('<br />', $errors);
 			
 		}
 		
@@ -205,6 +240,6 @@ class fields_media {
 
 
 // initialize
-new fields_media();
+new fieldmaster_media();
 
 ?>
