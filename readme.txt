@@ -5,13 +5,13 @@ Requires at least: 4.0
 Tested up to: 4.7.5
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
-Copyright: GoldHat Group, Elliot Condon, FieldMaster (FieldMaster, www.advancedcustomfields.com)
+Copyright: GoldHat Group, Elliot Condon, Advanced Custom Fields (ACF, www.advancedcustomfields.com)
 
-Great field system for WordPress. Supports embedding into themes and plugins. Completely free.
+Great field system for WordPress. Supports embedding into themes and plugins. Completely free, codebase liberated from ACF Pro thanks to Elliot Condon and Advanced Custom Fields.
 
 == Description ==
 
-FieldMaster is the best fields plugin available for WP. FieldMaster was forked from FieldMaster (FieldMaster) in 2017 (advancedcustomfields.com).
+FieldMaster is the best fields plugin available for WP. FieldMaster was forked from ACF5 Pro (Advanced Custom Fields Pro) in 2017 (advancedcustomfields.com).
 
 * Visually create your Fields
 * Select from multiple input types (text, textarea, wysiwyg, image, file, page link, post object, relationship, select, checkbox, radio buttons, date picker, true / false, repeater, flexible content, gallery and more to come!)
@@ -80,8 +80,11 @@ Your votes really make a difference! Thanks.
 
 == Frequently Asked Questions ==
 
-= Q. I have a question =
-A. Chances are, someone else has asked it. Check out the support forum at: https:goldhat.ca.
+= I have a question =
+Chances are, someone else has asked it. Check out the support forum at: https:goldhat.ca.
+
+= What is different from ACF Pro? =
+Currently not much, but enhancements are planned including collapsible repeater fields, additional field types bundled into core, object-oriented exports, better field rendering and theming support.
 
 == Screenshots ==
 
@@ -90,4 +93,4 @@ Coming Soon! @todo
 == Changelog ==
 
 = 6.0.0 =
-FieldMaster (copyright Elliot Condon) forked and adapted to build FieldMaster, in accordance with the GPL license. Code from directory /pro transferred into the main plugin directories.
+ACF Pro (copyright Elliot Condon) forked and adapted to build FieldMaster, in accordance with the GPL license. Code from directory /pro transferred into the main plugin directories.
