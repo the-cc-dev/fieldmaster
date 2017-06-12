@@ -92,5 +92,5 @@ Coming Soon! @todo
 
 == Changelog ==
 
-= 6.0.0 =
+= 6.0.1 =
 ACF Pro (copyright Elliot Condon) forked and adapted to build FieldMaster, in accordance with the GPL license. Code from directory /pro transferred into the main plugin directories.
